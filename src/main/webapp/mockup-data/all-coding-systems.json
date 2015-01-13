@@ -1,0 +1,472 @@
+[
+  {
+    "abbreviation": "AIR",
+    "family": "AIR",
+    "name": "AI/RHEUM, 1993"
+  },
+  {
+    "abbreviation": "ALT",
+    "family": "ALT",
+    "name": "Alternative Billing Concepts, 2009"
+  },
+  {
+    "abbreviation": "AOD",
+    "family": "AOD",
+    "name": "Alcohol and Other Drug Thesaurus, 2000"
+  },
+  {
+    "abbreviation": "AOT",
+    "family": "AOT",
+    "name": "Authorized Osteopathic Thesaurus, 2003"
+  },
+  {
+    "abbreviation": "BI",
+    "family": "BI",
+    "name": "Beth Israel Vocabulary, 1.0"
+  },
+  {
+    "abbreviation": "CCC",
+    "family": "CCC",
+    "name": "Clinical Care Classification, 2_5"
+  },
+  {
+    "abbreviation": "CCPSS",
+    "family": "CCPSS",
+    "name": "Canonical Clinical Problem Statement System, 1999"
+  },
+  {
+    "abbreviation": "CCS",
+    "family": "CCS",
+    "name": "Clinical Classifications Software, 2005"
+  },
+  {
+    "abbreviation": "CHV",
+    "family": "CHV",
+    "name": "Consumer Health Vocabulary, 2011_02"
+  },
+  {
+    "abbreviation": "COSTAR",
+    "family": "COSTAR",
+    "name": "COSTAR, 1989-1995"
+  },
+  {
+    "abbreviation": "CPM",
+    "family": "CPM",
+    "name": "Medical Entities Dictionary, 2003"
+  },
+  {
+    "abbreviation": "CPT",
+    "family": "CPT",
+    "name": "Current Procedural Terminology, 2012"
+  },
+  {
+    "abbreviation": "CSP",
+    "family": "CSP",
+    "name": "CRISP Thesaurus, 2006"
+  },
+  {
+    "abbreviation": "CST",
+    "family": "CST",
+    "name": "COSTART, 1995"
+  },
+  {
+    "abbreviation": "DDB",
+    "family": "DDB",
+    "name": "Diseases Database, 2000"
+  },
+  {
+    "abbreviation": "DSM3R",
+    "family": "DSM3R",
+    "name": "DSM-III-R, 1987"
+  },
+  {
+    "abbreviation": "DSM4",
+    "family": "DSM4",
+    "name": "DSM-IV, 1994"
+  },
+  {
+    "abbreviation": "DXP",
+    "family": "DXP",
+    "name": "DXplain, 1994"
+  },
+  {
+    "abbreviation": "FMA",
+    "family": "FMA",
+    "name": "Foundational Model of Anatomy Ontology, 3_1"
+  },
+  {
+    "abbreviation": "GO",
+    "family": "GO",
+    "name": "Gene Ontology, 2012_04_03"
+  },
+  {
+    "abbreviation": "GS",
+    "family": "GS",
+    "name": "Gold Standard Drug Database, 2012_08_01"
+  },
+  {
+    "abbreviation": "HCDT",
+    "family": "HCPCS",
+    "name": "Current Dental Terminology (CDT), 2011-2012B"
+  },
+  {
+    "abbreviation": "HCPCS",
+    "family": "HCPCS",
+    "name": "Healthcare Common Procedure Coding System, 2012"
+  },
+  {
+    "abbreviation": "HCPT",
+    "family": "CPT",
+    "name": "HCPCS Version of Current Procedural Terminology (CPT), 2012"
+  },
+  {
+    "abbreviation": "HL7V2.5",
+    "family": "HL7V2.5",
+    "name": "HL7 Vocabulary Version 2.5, 2003_08_30"
+  },
+  {
+    "abbreviation": "HL7V3.0",
+    "family": "HL7V3.0",
+    "name": "HL7 Vocabulary Version 3.0, 2011_03"
+  },
+  {
+    "abbreviation": "ICD10",
+    "family": "ICD10",
+    "name": "ICD10, 1998"
+  },
+  {
+    "abbreviation": "ICD10AE",
+    "family": "ICD10",
+    "name": "ICD10, American English Equivalents, 1998"
+  },
+  {
+    "abbreviation": "ICD10AM",
+    "family": "ICD10AM",
+    "name": "International Statistical Classification of Diseases and Related Health Problems, 10th Revision, Australian Modification, January 2000 Release"
+  },
+  {
+    "abbreviation": "ICD10AMAE",
+    "family": "ICD10AM",
+    "name": "International Statistical Classification of Diseases and Related Health Problems, Australian Modification, Americanized English Equivalents, 2000"
+  },
+  {
+    "abbreviation": "ICD10CM",
+    "family": "ICD10CM",
+    "name": "International Classification of Diseases, 10th Edition, Clinical Modification, 2012"
+  },
+  {
+    "abbreviation": "ICD10PCS",
+    "family": "ICD10PCS",
+    "name": "ICD-10-PCS, 2012"
+  },
+  {
+    "abbreviation": "ICD9CM",
+    "family": "ICD9CM",
+    "name": "International Classification of Diseases, Ninth Revision, Clinical Modification, 2013"
+  },
+  {
+    "abbreviation": "ICF",
+    "family": "ICF",
+    "name": "International Classification of Functioning, Disability and Health, 2008_12_19"
+  },
+  {
+    "abbreviation": "ICF-CY",
+    "family": "ICF",
+    "name": "International Classification of Functioning, Disability and Health for Children and Youth, 2008"
+  },
+  {
+    "abbreviation": "ICNP",
+    "family": "ICNP",
+    "name": "International Classification for Nursing Practice, 2011"
+  },
+  {
+    "abbreviation": "ICPC",
+    "family": "ICPC",
+    "name": "International Classification of Primary Care, 1993"
+  },
+  {
+    "abbreviation": "ICPC2EENG",
+    "family": "ICPC2EENG",
+    "name": "International Classification of Primary Care 2nd Edition, Electronic, 2E, 200203"
+  },
+  {
+    "abbreviation": "ICPC2ICD10ENG",
+    "family": "ICPC2ICD10ENG",
+    "name": "ICPC2 - ICD10 Thesaurus, 200412"
+  },
+  {
+    "abbreviation": "ICPC2P",
+    "family": "ICPC2P",
+    "name": "ICPC-2 PLUS"
+  },
+  {
+    "abbreviation": "JABL",
+    "family": "JABL",
+    "name": "Online Congenital Multiple Anomaly/Mental Retardation Syndromes, 1999"
+  },
+  {
+    "abbreviation": "LCH",
+    "family": "LCH",
+    "name": "Library of Congress Subject Headings, 1990"
+  },
+  {
+    "abbreviation": "LNC",
+    "family": "LNC",
+    "name": "LOINC, 240"
+  },
+  {
+    "abbreviation": "MCM",
+    "family": "MCM",
+    "name": "McMaster University Epidemiology Terms, 1992"
+  },
+  {
+    "abbreviation": "MDDB",
+    "family": "MDDB",
+    "name": "Master Drug Data Base, 2012_08_01"
+  },
+  {
+    "abbreviation": "MDR",
+    "family": "MDR",
+    "name": "Medical Dictionary for Regulatory Activities Terminology (MedDRA), 15.0"
+  },
+  {
+    "abbreviation": "MEDCIN",
+    "family": "MEDCIN",
+    "name": "MEDCIN, 3_2012_07_16"
+  },
+  {
+    "abbreviation": "MEDLINEPLUS",
+    "family": "MEDLINEPLUS",
+    "name": "MedlinePlus Health Topics, 20111228"
+  },
+  {
+    "abbreviation": "MMSL",
+    "family": "MMSL",
+    "name": "Multum MediSource Lexicon, 2012_08_01"
+  },
+  {
+    "abbreviation": "MMX",
+    "family": "MMX",
+    "name": "Micromedex RED BOOK, 2012_07_30"
+  },
+  {
+    "abbreviation": "MSH",
+    "family": "MSH",
+    "name": "Medical Subject Headings, 2013_2012_08_28"
+  },
+  {
+    "abbreviation": "MTH",
+    "family": "MTH",
+    "name": "UMLS Metathesaurus"
+  },
+  {
+    "abbreviation": "MTHCH",
+    "family": "CPT",
+    "name": "Metathesaurus CPT Hierarchical Terms, 2012"
+  },
+  {
+    "abbreviation": "MTHFDA",
+    "family": "MTHFDA",
+    "name": "Metathesaurus FDA National Drug Code Directory, 2011_06_01"
+  },
+  {
+    "abbreviation": "MTHHH",
+    "family": "HCPCS",
+    "name": "Metathesaurus HCPCS Hierarchical Terms, 2012"
+  },
+  {
+    "abbreviation": "MTHICD9",
+    "family": "ICD9CM",
+    "name": "International Classification of Diseases, Ninth Revision, Clinical Modification, Metathesaurus additional entry terms, 2013"
+  },
+  {
+    "abbreviation": "MTHICPC2EAE",
+    "family": "ICPC2EENG",
+    "name": "International Classification of Primary Care 2nd Edition, Electronic, 2E, American English Equivalents, 200203"
+  },
+  {
+    "abbreviation": "MTHICPC2ICD107B",
+    "family": "ICPC2ICD10ENG",
+    "name": "ICPC2 - ICD10 Thesaurus, 7-bit Equivalents, 0412"
+  },
+  {
+    "abbreviation": "MTHMST",
+    "family": "MTHMST",
+    "name": "Metathesaurus Version of Minimal Standard Terminology Digestive Endoscopy, 2001"
+  },
+  {
+    "abbreviation": "MTHSPL",
+    "family": "MTHSPL",
+    "name": "Metathesaurus FDA Structured Product Labels, 2012_08_28"
+  },
+  {
+    "abbreviation": "NAN",
+    "family": "NAN",
+    "name": "NANDA nursing diagnoses: definitions & classification, 2004"
+  },
+  {
+    "abbreviation": "NCBI",
+    "family": "NCBI",
+    "name": "NCBI Taxonomy, 2012_04_16"
+  },
+  {
+    "abbreviation": "NCI",
+    "family": "NCI",
+    "name": "NCI Thesaurus, 2012_02D"
+  },
+  {
+    "abbreviation": "NDDF",
+    "family": "NDDF",
+    "name": "FDB MedKnowledge (formerly NDDF Plus), 2012_08_01"
+  },
+  {
+    "abbreviation": "NDFRT",
+    "family": "NDFRT",
+    "name": "National Drug File, 2012_09_04"
+  },
+  {
+    "abbreviation": "NEU",
+    "family": "NEU",
+    "name": "Neuronames Brain Hierarchy, 1999"
+  },
+  {
+    "abbreviation": "NIC",
+    "family": "NIC",
+    "name": "Nursing Interventions Classification (NIC), 2005"
+  },
+  {
+    "abbreviation": "NOC",
+    "family": "NOC",
+    "name": "Nursing Outcomes Classification, 3rd Edition"
+  },
+  {
+    "abbreviation": "OMIM",
+    "family": "OMIM",
+    "name": "Online Mendelian Inheritance in Man, 2012_05_02"
+  },
+  {
+    "abbreviation": "OMS",
+    "family": "OMS",
+    "name": "Omaha System, 2005"
+  },
+  {
+    "abbreviation": "PCDS",
+    "family": "PCDS",
+    "name": "Patient Care Data Set, 1997"
+  },
+  {
+    "abbreviation": "PDQ",
+    "family": "PDQ",
+    "name": "Physician Data Query, 2007_02"
+  },
+  {
+    "abbreviation": "PNDS",
+    "family": "PNDS",
+    "name": "Perioperative Nursing Data Set, 3rd edition, 2011"
+  },
+  {
+    "abbreviation": "PPAC",
+    "family": "PPAC",
+    "name": "Pharmacy Practice Activity Classification, 1998"
+  },
+  {
+    "abbreviation": "PSY",
+    "family": "PSY",
+    "name": "Thesaurus of Psychological Index Terms, 2004"
+  },
+  {
+    "abbreviation": "QMR",
+    "family": "QMR",
+    "name": "Quick Medical Reference (QMR), 1996"
+  },
+  {
+    "abbreviation": "RAM",
+    "family": "RAM",
+    "name": "QMR clinically related terms from Randolph A. Miller, 1999"
+  },
+  {
+    "abbreviation": "RCD",
+    "family": "RCD",
+    "name": "Clinical Terms Version 3 (CTV3) (Read Codes), 1999"
+  },
+  {
+    "abbreviation": "RCDAE",
+    "family": "RCD",
+    "name": "Read thesaurus, American English Equivalents, 1999"
+  },
+  {
+    "abbreviation": "RCDSA",
+    "family": "RCD",
+    "name": "Read thesaurus Americanized Synthesized Terms, 1999"
+  },
+  {
+    "abbreviation": "RCDSY",
+    "family": "RCD",
+    "name": "Read thesaurus, Synthesized Terms, 1999"
+  },
+  {
+    "abbreviation": "RXNORM",
+    "family": "RXNORM",
+    "name": "RxNorm Vocabulary, 12AA_120904F"
+  },
+  {
+    "abbreviation": "SCTUSX",
+    "family": "SNOMEDCT",
+    "name": "US Extension to SNOMED CT(R), 2012_09_01"
+  },
+  {
+    "abbreviation": "SNM",
+    "family": "SNM",
+    "name": "SNOMED-2, 2"
+  },
+  {
+    "abbreviation": "SNMI",
+    "family": "SNMI",
+    "name": "SNOMED International, 1998"
+  },
+  {
+    "abbreviation": "SNOMEDCT",
+    "family": "SNOMEDCT",
+    "name": "SNOMED Clinical Terms, 2012_07_31"
+  },
+  {
+    "abbreviation": "SPN",
+    "family": "SPN",
+    "name": "Standard Product Nomenclature, 2003"
+  },
+  {
+    "abbreviation": "SRC",
+    "family": "SRC",
+    "name": "Metathesaurus Source Terminology Names"
+  },
+  {
+    "abbreviation": "ULT",
+    "family": "ULT",
+    "name": "UltraSTAR, 1993"
+  },
+  {
+    "abbreviation": "UMD",
+    "family": "UMD",
+    "name": "UMDNS: product category thesaurus, 2012"
+  },
+  {
+    "abbreviation": "USPMG",
+    "family": "USPMG",
+    "name": "USP Model Guidelines, 2004"
+  },
+  {
+    "abbreviation": "UWDA",
+    "family": "UWDA",
+    "name": "University of Washington Digital Anatomist, 1.7.3"
+  },
+  {
+    "abbreviation": "VANDF",
+    "family": "VANDF",
+    "name": "Veterans Health Administration National Drug File, 2012_07_27"
+  },
+  {
+    "abbreviation": "WHO",
+    "family": "WHO",
+    "name": "WHO Adverse Reaction Terminology, 1997"
+  }
+]

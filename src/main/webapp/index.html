@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html ng-app="codeMapperApp">
+  <head>
+    <title>ADVANCE Code Mapper</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.js"></script>
+    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.12.0.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.28/angular-sanitize.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.5.0/bootstrap-table.min.js"></script>
+    <script src="lib/smart-table.min.js"></script>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.5.0/bootstrap-table.min.css">
+    <style type="text/css" title="currentStyle">
+      #search-concepts {
+        display: block;
+      }
+      .flag {
+        padding: 1em;
+      }
+      html, body { height: 100%; }
+      div#mask {
+        cursor: wait;
+        z-index: 999;
+        height: 100%;
+        width: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    </style>
+    <script src="advance-code-mapper.js"></script>
+  </head>
+  <body ng-controller="codeMapperCtrl">
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span2">
+          <image src="images/200709mslogo_erasmus_mc.jpg" height="100px" />
+        </div>
+        <div class="span8">
+          <h1>ADVANCE Code Mapper</h1>
+        </div>
+      </div>
+    </div>
+    <div><span class="flag glyphicon glyphicon-chevron-right" aria-hidden="true"></span>{{message}}</div>
+    <tabset>
+      <tab id="coding-systems-tab" heading="Coding systems">
+        <table id="vocabularies" st-table="vocabularies" class="table table-striped">
+          <thead>
+            <tr>
+              <th data-field="keep" data-checkbox="true">Keep</th>
+              <th data-field="name">Name</th>
+              <th data-field="abbreviation">Abbreviation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="voc in vocabularies">
+              <td><input type="checkbox" ng-checked="{{voc.keep}}" /></td>
+              <td>{{voc.name}}</td>
+              <td>{{voc.abbreviation}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </tab>
+      <tab id="case-definition-tab" heading="Case definition">
+        <textarea rows=20 cols=120 ng-model="caseDefinition"></textarea>
+        <button id="search-concepts" class="btn btn-default btn-sm" ng-click="searchConcepts()">
+          Search concepts
+        </button>
+      </tab>
+      <tab id="concepts-tab" heading="Concepts">
+        <button ng-click="downloadConcepts()"  class="btn btn-default btn-sm">Download CSV</button>
+        <table id="coding-systems" class="table table-striped">
+          <thead>
+            <tr>
+              <th data-field="keep" data-checkbox="true">Keep</th>
+              <th data-field="cui">CUI</th>
+              <th data-field="name">Name</th>
+              <th data-field="definition">Definition</th>
+              <th data-field="hyponyms">Hyponyms</th>
+              <th ng-repeat="voc in vocabularies | filter: { keep: true }" data-field={{voc}}>{{voc.abbreviation}}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="concept in concepts">
+              <td><input type="checkbox" ng-checked="{{concept.keep}}" /></td>
+              <td>{{concept.cui}}</td>
+              <td>{{concept.preferredName}}</td>
+              <td>
+                <div ng-bind-html="trustDefinition(concept.definition)"></div>
+              </td>
+              <td>
+                <button ng-repeat="hyponym in concept.hyponyms" ng-click="expandConcepts(concept, [hyponym])"  class="btn btn-default btn-sm">
+                  {{hyponym.preferredName}}
+                </button>
+                <button ng-if="concept.hyponyms" ng-click="expandConcepts(concept, concept.hyponyms)"  class="btn btn-default btn-sm">
+                  All
+                </button>
+              </td>
+              <td ng-repeat="voc in getSelectedVocabularies()"> 
+                <!-- Angular FTW! -->
+                <span ng-repeat="code in codesInVocabulary(concept, voc)">
+                  {{code}}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </tab>
+    </tabset>
+    <div id="mask" ng-show="isBlocked">
+    </div>
+  </body>
+</html>

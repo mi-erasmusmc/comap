@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee 
+                http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1" xmlns="http://xmlns.jcp.org/xml/ns/javaee">
+	<display-name>ADVANCE Code Mapper</display-name>
+	<servlet>
+		<servlet-name>nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest.CodeMapperApplication
+		</servlet-name>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<context-param>
+		<param-name>username</param-name>
+		<param-value>biosemantics</param-value>
+	</context-param>
+	<context-param>
+		<param-name>password</param-name>
+		<param-value>Mieur2100</param-value>
+	</context-param>
+	<context-param>
+		<param-name>version</param-name>
+		<param-value>2014AA</param-value>
+	</context-param>
+	<context-param>
+		<param-name>available-vocabularies</param-name>
+		<param-value>
+			PPAC,CCC,DDB,ULT,GS,AOT,SRC,HUGO,PNDS,MTHHH,RCDSA,2ICD10AE,MCM,SCTUSX,MMX,ICD10PCS,NAN,MTHICPC2ICD107B,MTHMST,HCPCS,ICF,RCDSY,ICF-CY,MTHICPC2EAE,HCDT,MTHCH,ICNP,VANDF,HCPT,CPT,JABL,ICD10AE,OMS,USPMG,ICD10AMAE,HL7V3.0,HL7V2.5,ALT,NIC,DSM3R,MDDB,HHC,AIR,SPN,RAM,NEU,BI,DSM4,UMD,PCDS,ICD10AM,MTHICD9,NCBI,FMA,ICD10CM,ICD9CM,CCS,RCDAE,ICPC2EENG,QMR,ICPC,DXP,NOC,ICPC2P,COSTAR,MDR,CCPSS,ICPC2ICD10ENG,WHO,ICD10,UWDA,OMIM,CST,MTHSPL,MTHFDA,MTH,MEDLINEPLUS,RXNORM,NDDF,PSY,MEDCIN,PDQ,MMSL,CPM,NCI,LCH,GO,AOD,SNOMEDCT,RCD,CHV,CSP,SNM,LNC,SNMI,NDFRT,MSH
+		</param-value>
+	</context-param>
+	<context-param>
+		<param-name>service-name</param-name>
+		<param-value>http://umlsks.nlm.nih.gov</param-value>
+	</context-param>
+	<context-param>
+		<param-name>log4j.appender.FILE.File</param-name>
+		<param-value>../logs/codemapper.log</param-value>
+	</context-param>
+	<context-param>
+		<param-name>log4j.appender.FILE.layout.conversionPattern</param-name>
+		<param-value>%d{ISO8601} %-5p - %m%n</param-value>
+	</context-param>
+	<context-param>
+		<param-name>log4j.rootLogger</param-name>
+		<param-value>DEBUG</param-value>
+	</context-param>
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+</web-app>

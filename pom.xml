@@ -1,0 +1,146 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>nl.erasmusmc.mieur.biosemantics.advance</groupId>
+	<artifactId>CodeMapper</artifactId>
+	<packaging>war</packaging>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>ADVANCE Code Mapper</name>
+	<url>http://biosemantics.org</url>
+
+	<build>
+		<finalName>AdvanceCodeMapper</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.2</version>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.tomcat.maven</groupId>
+				<artifactId>tomcat6-maven-plugin</artifactId>
+				<version>2.2</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.tomcat.maven</groupId>
+				<artifactId>tomcat7-maven-plugin</artifactId>
+				<version>2.2</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.3</version>
+				<configuration>
+					<webXml>
+						./WebContent/WEB-INF/web.xml
+					</webXml>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.jvnet.jax-ws-commons</groupId>
+				<artifactId>jaxws-maven-plugin</artifactId>
+				<version>2.1</version>
+				<!-- version 2.2 produces code that requires webservicefeature class -->
+				<executions>
+					<execution>
+						<id>wsimport-generate-utsapi20</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>wsimport</goal>
+						</goals>
+						<configuration>
+							<wsdlLocation>https://uts-ws.nlm.nih.gov/services/*</wsdlLocation>
+							<!--For local wsimport -->
+							<!-- <wsdlDirectory>src/main/resources/wsdl</wsdlDirectory> <wsdlFiles> 
+								<wsdlFile>nwsContent.xml</wsdlFile> <wsdlFile>nwsFinder.xml</wsdlFile> <wsdlFile>nwsHistory.xml</wsdlFile> 
+								<wsdlFile>nwsMetadata.xml</wsdlFile> <wsdlFile>nwsSecurity.xml</wsdlFile> 
+								<wsdlFile>nwsHistory.xml</wsdlFile> <wsdlFile>nwsSemanticNetwork.xml</wsdlFile> 
+								</wsdlFiles> -->
+							<wsdlUrls>
+								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsContent?wsdl</wsdlUrl>
+								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsSecurity?wsdl</wsdlUrl>
+								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsMetadata?wsdl</wsdlUrl>
+								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsFinder?wsdl</wsdlUrl>
+								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsHistory?wsdl</wsdlUrl>
+								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsSemanticNetwork?wsdl</wsdlUrl>
+							</wsdlUrls>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.m2e</groupId>
+				<artifactId>lifecycle-mapping</artifactId>
+				<version>1.0.0</version>
+				<configuration>
+					<lifecycleMappingMetadata>
+						<pluginExecutions>
+							<pluginExecution>
+								<pluginExecutionFilter>
+									<groupId>org.jvnet.jax-ws-commons</groupId>
+									<artifactId>jaxws-maven-plugin</artifactId>
+									<versionRange>[2.2,)</versionRange>
+									<goals>
+										<goal>wsimport</goal>
+									</goals>
+								</pluginExecutionFilter>
+								<action>
+									<ignore />
+								</action>
+							</pluginExecution>
+						</pluginExecutions>
+					</lifecycleMappingMetadata>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>3.8.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+		</dependency>
+		<dependency>
+
+			<groupId>org.glassfish.jersey.core</groupId>
+			<artifactId>jersey-server</artifactId>
+			<version>${jersey.version}</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>3.1.0</version>
+			<scope>provided</scope>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.glassfish.jersey.containers</groupId>
+			<artifactId>jersey-container-servlet</artifactId>
+			<version>${jersey.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.owlike</groupId>
+			<artifactId>genson</artifactId>
+			<version>1.2</version>
+		</dependency>
+
+	</dependencies>
+	<properties>
+		<jersey.version>2.14</jersey.version>
+	</properties>
+</project>

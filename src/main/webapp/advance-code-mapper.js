@@ -1,7 +1,7 @@
 
 var PEREGRINE_API_URL = 'http://scapa:8080/UMLS2014AA_ADVANCE/rest/';
-//var SEARCH_CONCEPTS_URL = PEREGRINE_API_URL + 'index'
- var SEARCH_CONCEPTS_URL = "http://localhost:8080/AdvanceCodeMapper/mockup-data/search-concepts.json";
+var SEARCH_CONCEPTS_URL = PEREGRINE_API_URL + 'index'
+// var SEARCH_CONCEPTS_URL = "http://localhost:8080/AdvanceCodeMapper/mockup-data/search-concepts.json";
 
 var CODE_MAPPER_API_URL = 'http://localhost:8080/AdvanceCodeMapper/resource/code-mapper/';
 var CODING_SYSTEMS_URL = CODE_MAPPER_API_URL + 'coding-systems';

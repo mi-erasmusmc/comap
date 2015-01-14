@@ -5,7 +5,8 @@
          version="3.1" xmlns="http://xmlns.jcp.org/xml/ns/javaee">
 	<display-name>ADVANCE Code Mapper</display-name>
 	<servlet>
-		<servlet-name>nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest.CodeMapperApplication
+		<servlet-name>
+		  nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest.CodeMapperApplication
 		</servlet-name>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
@@ -27,6 +28,12 @@
 			PPAC,CCC,DDB,ULT,GS,AOT,SRC,HUGO,PNDS,MTHHH,RCDSA,2ICD10AE,MCM,SCTUSX,MMX,ICD10PCS,NAN,MTHICPC2ICD107B,MTHMST,HCPCS,ICF,RCDSY,ICF-CY,MTHICPC2EAE,HCDT,MTHCH,ICNP,VANDF,HCPT,CPT,JABL,ICD10AE,OMS,USPMG,ICD10AMAE,HL7V3.0,HL7V2.5,ALT,NIC,DSM3R,MDDB,HHC,AIR,SPN,RAM,NEU,BI,DSM4,UMD,PCDS,ICD10AM,MTHICD9,NCBI,FMA,ICD10CM,ICD9CM,CCS,RCDAE,ICPC2EENG,QMR,ICPC,DXP,NOC,ICPC2P,COSTAR,MDR,CCPSS,ICPC2ICD10ENG,WHO,ICD10,UWDA,OMIM,CST,MTHSPL,MTHFDA,MTH,MEDLINEPLUS,RXNORM,NDDF,PSY,MEDCIN,PDQ,MMSL,CPM,NCI,LCH,GO,AOD,SNOMEDCT,RCD,CHV,CSP,SNM,LNC,SNMI,NDFRT,MSH
 		</param-value>
 	</context-param>
+  <context-param>
+    <param-name>vocabularies-with-definition</param-name>
+    <param-value>
+      MEDLINEPLUS,NCI,CCC,CHV,HL7V3.0
+    </param-value>
+  </context-param>
 	<context-param>
 		<param-name>service-name</param-name>
 		<param-value>http://umlsks.nlm.nih.gov</param-value>

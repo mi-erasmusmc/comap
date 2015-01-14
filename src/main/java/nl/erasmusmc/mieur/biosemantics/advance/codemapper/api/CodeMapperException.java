@@ -1,4 +1,4 @@
-package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
+package nl.erasmusmc.mieur.biosemantics.advance.codemapper.api;
 
 
 public class CodeMapperException extends Exception {

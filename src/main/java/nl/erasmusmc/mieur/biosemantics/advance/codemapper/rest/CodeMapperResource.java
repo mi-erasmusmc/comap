@@ -9,10 +9,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodingSystem;
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsConcept;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.api.CodeMapperException;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.api.UmlsApi;
 
 import org.apache.log4j.Logger;
 
@@ -20,7 +20,7 @@ import org.apache.log4j.Logger;
 public class CodeMapperResource {
 
 	private static Logger logger = Logger.getLogger("CodeMapperWebService");
-	
+
 	@GET
 	@Path("version")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -33,7 +33,8 @@ public class CodeMapperResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<CodingSystem> getCodingSystems() {
 		try {
-			return UmlsApi.getInstance().getCodingSystems();
+			UmlsApi api = CodeMapperApplication.getUmlsApi();
+			return api.getCodingSystems();
 		} catch (CodeMapperException e) {
 			logger.error(e);
 			throw new BadRequestException(e);
@@ -44,10 +45,10 @@ public class CodeMapperResource {
 	@Path("umls-concepts")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<UmlsConcept> getUmlsConcepts(@QueryParam("cuis") List<String> cuis,
-			@QueryParam("vocabularies") List<String> vocabularies) {
+			@QueryParam("vocabularies") List<String> vocabularies, @QueryParam("expand") List<String> expand) {
 		try {
-			UmlsApi api = UmlsApi.getInstance();
-			return api.getUmlsConcepts(cuis, vocabularies);
+			UmlsApi api = CodeMapperApplication.getUmlsApi();
+			return api.getUmlsConcepts(cuis, vocabularies, expand);
 		} catch (CodeMapperException e) {
 			logger.error(e);
 			throw new BadRequestException(e);

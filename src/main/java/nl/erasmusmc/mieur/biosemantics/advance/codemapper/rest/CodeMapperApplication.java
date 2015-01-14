@@ -9,10 +9,17 @@ import javax.ws.rs.core.Context;
 
 import org.glassfish.jersey.server.ResourceConfig;
 
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.api.UmlsApi;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.api.UmlsApiUtf;
 
 @ApplicationPath("resource")
 public class CodeMapperApplication extends ResourceConfig {
+
+	private static UmlsApi umlsApi = null;
+
+    public static UmlsApi getUmlsApi() {
+    	return umlsApi;
+    }
 
     public CodeMapperApplication(@Context ServletContext context) {
 //    	packages("nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest");
@@ -22,6 +29,8 @@ public class CodeMapperApplication extends ResourceConfig {
 		String password = context.getInitParameter("password");
 		List<String> availableVocabularies =
 				Arrays.asList(context.getInitParameter("available-vocabularies").split(",\\s*"));
-		UmlsApi.getInstance().init(serviceName, version, username, password, availableVocabularies);
+		List<String> vocabulariesWithDefinition =
+				Arrays.asList(context.getInitParameter("vocabularies-with-definition").split(",\\s*"));
+		umlsApi = new UmlsApiUtf(serviceName, version, username, password, availableVocabularies, vocabulariesWithDefinition);
     }
 }

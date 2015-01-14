@@ -38,23 +38,30 @@
         </div>
         <div class="span8">
           <h1>ADVANCE Code Mapper</h1>
+          <span>$Revision$</span>
         </div>
       </div>
     </div>
     <div><span class="flag glyphicon glyphicon-chevron-right" aria-hidden="true"></span>{{message}}</div>
     <tabset>
-      <tab id="coding-systems-tab" heading="Coding systems">
-        <table id="vocabularies" st-table="vocabularies" class="table table-striped">
+      <tab id="coding-systems-tab" heading="Vocabularies">
+      <div>
+      Selected vocabularies:
+      <span ng-repeat="voc in vocabularies | filter: { keep: true }">
+        {{voc.abbreviation}},
+      </span>
+      </div> 
+        <table id="vocabularies" class="table table-striped">
           <thead>
             <tr>
-              <th data-field="keep" data-checkbox="true">Keep</th>
-              <th data-field="name">Name</th>
-              <th data-field="abbreviation">Abbreviation</th>
+              <th>Keep</th>
+              <th>Name</th>
+              <th>Abbreviation</th>
             </tr>
           </thead>
           <tbody>
             <tr ng-repeat="voc in vocabularies">
-              <td><input type="checkbox" ng-checked="{{voc.keep}}" /></td>
+              <td><input type="checkbox" ng-model="voc.keep" /></td>
               <td>{{voc.name}}</td>
               <td>{{voc.abbreviation}}</td>
             </tr>
@@ -96,9 +103,9 @@
                   All
                 </button>
               </td>
-              <td ng-repeat="voc in getSelectedVocabularies()"> 
+              <td ng-repeat="voc in vocabularies | filter: { keep: true }"> 
                 <!-- Angular FTW! -->
-                <span ng-repeat="code in codesInVocabulary(concept, voc)">
+                <span ng-repeat="code in codesInVocabulary(concept, voc.abbreviation)">
                   {{code}}
                 </span>
               </td>

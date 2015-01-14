@@ -7,7 +7,7 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsConcept;
 
 public interface UmlsApi {
 
-	public abstract List<UmlsConcept> getUmlsConcepts(List<String> cuis, List<String> vocabularies, List<String> expand)
+	public abstract List<UmlsConcept> getConcepts(List<String> cuis, List<String> vocabularies, List<String> expand)
 			throws CodeMapperException;
 
 	public abstract List<CodingSystem> getCodingSystems() throws CodeMapperException;

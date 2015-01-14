@@ -1,5 +1,7 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper.api;
 
+import java.sql.SQLException;
+
 
 public class CodeMapperException extends Exception {
 
@@ -9,6 +11,10 @@ public class CodeMapperException extends Exception {
 
 	public CodeMapperException(String msg, Exception e) {
 		super(msg, e);
+	}
+
+	public CodeMapperException(SQLException e) {
+		super(e);
 	}
 
 	private static final long serialVersionUID = 1L;

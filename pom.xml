@@ -139,6 +139,12 @@
 			<version>1.2</version>
 		</dependency>
 
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.34</version>
+			<scope>provided</scope>
+		</dependency>
 	</dependencies>
 	<properties>
 		<jersey.version>2.14</jersey.version>

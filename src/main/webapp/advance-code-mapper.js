@@ -9,7 +9,8 @@ var UMLS_CONCEPTS_API_URL = CODE_MAPPER_API_URL + 'umls-concepts';
 var DEFAULT_CODING_SYSTEMS = [ 'MSH', 'ICD10', 'ICPC', 'MDR', 'MEDLINEPLUS',
 		'RCD' ];
 
-// AngularJS sends data for HTTP POST JSON -- this header encodes it as form data.
+// AngularJS sends data for HTTP POST JSON -- this header encodes it as form
+// data.
 var FORM_ENCODED_POST = {
 	headers : {
 		'Content-Type' : 'application/x-www-form-urlencoded'
@@ -20,15 +21,10 @@ var FORM_ENCODED_POST = {
 			if (obj[key] instanceof Array) {
 				for ( var idx in obj[key]) {
 					var subObj = obj[key][idx];
-					for ( var subKey in subObj) {
-						str.push(encodeURIComponent(key) + "[" + idx + "]["
-								+ encodeURIComponent(subKey) + "]="
-								+ encodeURIComponent(subObj[subKey]));
-					}
+					str.push(encodeURIComponent(key) + "=" + encodeURIComponent(subObj));
 				}
 			} else {
-				str.push(encodeURIComponent(key) + "="
-						+ encodeURIComponent(obj[key]));
+				str.push(encodeURIComponent(key) + "=" + encodeURIComponent(obj[key]));
 			}
 		}
 		return str.join("&");
@@ -71,7 +67,17 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 	$http.get(CODING_SYSTEMS_URL).error(function(err) {
 		alert("ERROR: Couldn't retrieve vocabularies", err);
 	}).success(function(vocabularies) {
-		$scope.vocabularies = vocabularies.map(function(vocabulary) {
+		$scope.vocabularies = vocabularies
+			.sort(function(v1, v2) {
+				if (v1.abbreviation < v2.abbreviation) {
+					return -1;
+				}
+				if (v1.abbreviation > v2.abbreviation) {
+					return 1;
+				}
+				return 0;
+			})
+			.map(function(vocabulary) {
 			var abbreviation = vocabulary.abbreviation;
 			var keep = 0 <= DEFAULT_CODING_SYSTEMS.indexOf(abbreviation);
 			return {
@@ -88,30 +94,48 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 		$scope.block("Search concepts in case definition ...");
 		$http.post(SEARCH_CONCEPTS_URL, {
 			text : caseDefinition
-		}, FORM_ENCODED_POST).error(function(err) {
+		}, FORM_ENCODED_POST)
+		.error(function(err) {
 			alert("ERROR: Couldn't search concepts in case definition", err);
 		}).success(
 				function(result) {
 					var cuis = result.spans.map(function(span) {
 						var id = '' + span.id;
-						return 'C' + Array(8 - id.length).join('0') + id
-					}).filter(function(cui, ix, cuis) {
-						return cuis.indexOf(cui) == ix;
+						return 'C' + Array(8 - id.length).join('0') + id;
+					}).filter(function(cui, ix, a) {
+						return a.indexOf(cui) == ix;
+					});
+					cuis.map(function(cui) {
+						console.log("Found cui", cui);
 					});
 					var vocabularies = $scope.getSelectedVocabularies();
 					$scope.block("Found " + cuis.length
 							+ " CUIs, looking up in vocabularies ...");
-					$http.get(UMLS_CONCEPTS_API_URL, {
-						params : {
-							cuis : cuis,
-							vocabularies : vocabularies
-						}
-					}).error(function(err) {
+					$http.post(UMLS_CONCEPTS_API_URL, {
+						cuis : cuis,
+						vocabularies : vocabularies
+					}, FORM_ENCODED_POST).error(function(err) {
 						var msg = "ERROR: Couldn't lookup concepts";
 						$scope.unblock(msg)
 						alert(msg, err);
 					}).success(
 							function(concepts) {
+								var cuis = concepts.map(function(c) { return c.cui; });
+								concepts.forEach(function(concept) {
+									concept.hyponyms = concept.hyponyms
+										.filter(function(hyponym) {
+											return cuis.indexOf(hyponym.cui) == -1;
+										})
+										.sort(function(c1, c2) {
+											if (c1.preferredName < c2.preferredName) {
+												return -1;
+											}
+											if (c1.preferredName > c2.preferredName) {
+												return 1;
+											}
+											return 0;
+										});
+								});
 								$scope.concepts = concepts;
 								$timeout(function() {
 									$('li#concepts-tab > a').click();
@@ -135,17 +159,15 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 		return $sce.trustAsHtml(definition);
 	};
 
-	$scope.expandConcepts = function(concept, hyponyms) {
-		var cuis = hyponyms.map(function(hyponym) {
+	$scope.expandConcepts = function(concept, preHyponyms) {
+		var cuis = preHyponyms.map(function(hyponym) {
 			return hyponym.cui;
 		});
-		$scope.block("Search " + hyponyms.length + " hyonyms ...");
-		$http.get(UMLS_CONCEPTS_API_URL, {
-			params : {
-				cuis : cuis,
-				vocabularies : $scope.getSelectedVocabularies()
-			}
-		}).error(function(err) {
+		$scope.block("Search " + preHyponyms.length + " hyonyms ...");
+		$http.post(UMLS_CONCEPTS_API_URL, {
+			cuis : cuis,
+			vocabularies : $scope.getSelectedVocabularies()
+		}, FORM_ENCODED_POST).error(function(err) {
 			var msg = "ERROR: Couldn't lookup concepts " + cuis.join(", ");
 			alert(msg, err);
 			$scope.unblock(msg);
@@ -162,14 +184,24 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 				});
 				if (currentCuis.indexOf(hyponym.cui) == -1) {
 					$scope.concepts.splice(ix + offset + 1, 0, hyponym);
-					concept.hyponyms = concept.hyponyms.filter(function(h) {
-						return h.cui != hyponym.cui;
-					});
 				} else {
 					console.log("Hyponym", hyponym, "already in available");
 				}
 			});
-			$scope.unblock("Found " + hyponyms.length + " hyponyms");
+			var preHyponymCuis = preHyponyms.map(function(h) { return h.cui; });
+			var hyponymCuis = hyponyms.map(function(h) { return h.cui; });
+			var noExpansion =
+				preHyponymCuis.filter(function(cui) {
+					return hyponymCuis.indexOf(cui) == -1;
+				});
+			concept.hyponyms = concept.hyponyms
+				.filter(function(h) {
+					return preHyponymCuis.indexOf(h.cui) == -1;
+				});
+			var msg = "Found " + hyponyms.length + " hyponyms";
+			if (noExpansion.length > 0)
+				msg += ", no expansion for " + noExpansion.join(", ");
+			$scope.unblock(msg);
 		});
 	};
 
@@ -207,8 +239,9 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 			}
 		});
 		console.log(csvEncode(columns, data, title));
-		var file = new Blob([ csvEncode(columns, data, title) ], {
-			type : 'attachment/csv'
+		var csv = csvEncode(columns, data, title);
+		var file = new Blob([ csv ], {
+			type : 'attachment/csv;charset=UTF-8'
 		});
 		var fileURL = URL.createObjectURL(file);
 		var a = document.createElement('a');

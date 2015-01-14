@@ -84,7 +84,7 @@ public class UmlsApiUtf implements UmlsApi {
 	 * getUmlsConcepts(java.util.List, java.util.List, java.util.List)
 	 */
 	@Override
-	public List<UmlsConcept> getUmlsConcepts(List<String> cuis, List<String> vocabularies, List<String> expand)
+	public List<UmlsConcept> getConcepts(List<String> cuis, List<String> vocabularies, List<String> expand)
 			throws CodeMapperException {
 		Psf psf = new Psf();
 		psf.getIncludedSources().addAll(vocabularies);

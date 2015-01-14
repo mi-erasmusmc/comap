@@ -1,5 +1,6 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlRootElement;
@@ -10,8 +11,8 @@ public class UmlsConcept {
     private String preferredName = null;
     private String definition = null;
     private List<String> semanticTypes = null;
-    private List<SourceConcept> sourceConcepts = null;
-    private List<UmlsConcept> hyponyms = null;
+    private List<SourceConcept> sourceConcepts = new LinkedList<>();;
+    private List<UmlsConcept> hyponyms = new LinkedList<>();
 
     public UmlsConcept() {
     }

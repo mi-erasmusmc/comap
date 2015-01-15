@@ -27,7 +27,7 @@
         top: 0;
         left: 0;
       }
-      .span, .code {
+      .span, .code, .vocabulary {
         display: inline-block;
         text-align: center;
         white-space: nowrap;
@@ -35,7 +35,7 @@
         padding: 2px 5px;
         font-size: 12px;
       }
-      .code {
+      .code, .vocabulary {
         background-color: #C9C9C9;
         border: 1px solid #adadad;
         border-radius: 3px;
@@ -61,8 +61,7 @@
       <tab id="coding-systems-tab" heading="Vocabularies">
       <div>
       Selected vocabularies:
-      <span ng-repeat="voc in vocabularies | filter: { keep: true }">
-        {{voc.abbreviation}},
+      <span ng-repeat="voc in vocabularies | filter: { keep: true }" ng-bind="voc.abbreviation" class="vocabulary">
       </span>
       </div> 
         <table id="vocabularies" class="table table-striped">
@@ -76,8 +75,8 @@
           <tbody>
             <tr ng-repeat="voc in vocabularies">
               <td><input type="checkbox" ng-model="voc.keep" /></td>
-              <td>{{voc.name}}</td>
-              <td>{{voc.abbreviation}}</td>
+              <td ng-bind="voc.name"></td>
+              <td ng-bind="voc.abbreviation"></td>
             </tr>
           </tbody>
         </table>
@@ -101,18 +100,16 @@
               <th>Hypernyms</th>
               <th>Hyponyms</th>
               <!--th>Synonyms</th-->
-              <th ng-repeat="voc in vocabularies | filter: { keep: true }" data-field={{voc}}>{{voc.abbreviation}}</th>
+              <th ng-repeat="voc in vocabularies | filter: { keep: true }" ng-bind="voc.abbreviation"></th>
             </tr>
           </thead>
           <tbody>
             <tr ng-repeat="concept in concepts">
               <td><button ng-click="deleteConcept(concept.cui)" class="btn btn-default btn-sm">Delete</button></td>
-              <td>{{concept.cui}}<span ng-if="concept.sourceConcepts.length == 0">*</span></td>
-              <td>{{concept.preferredName}}</td>
+              <td ng-bind="concept.cui"><span ng-if="concept.sourceConcepts.length == 0">*</span></td>
+              <td ng-bind="concept.preferredName"></td>
               <td>
-                <span ng-if="concept.spans != undefined" ng-repeat="span in concept.spans" class="span">
-                  {{span.text}}
-                </span>
+                <span class="span" ng-if="concept.spans != undefined" ng-repeat="span in concept.spans" ng-bind="span.text"></span>
               </td>
               <td>
                 <div ng-bind-html="trustDefinition(concept.definition)"></div>
@@ -135,9 +132,7 @@
               </td>
               <td ng-repeat="voc in vocabularies | filter: { keep: true }"> 
                 <!-- Angular FTW! -->
-                <span ng-repeat="code in codesInVocabulary(concept, voc.abbreviation)" class="code">
-                  {{code}}
-                </span>
+                <span class="code" ng-repeat="code in codesInVocabulary(concept, voc.abbreviation)" ng-bind="code"></span>
               </td>
             </tr>
           </tbody>

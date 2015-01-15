@@ -126,8 +126,9 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 									concept.spans = result.spans
 										.filter(function(span) {
 											return cuiOfId(span.id) == concept.cui;
-										})
-									filterRelated(concept, cuis);
+										});
+									concept.hypernyms = filterRelated(concept.hypernyms, cuis);
+									concept.hyponyms = filterRelated(concept.hyponyms, cuis);
 								});
 								$scope.concepts = concepts;
 								$timeout(function() {
@@ -192,23 +193,14 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 					$scope.concepts.splice(conceptOffset + ix + 1, 0,
 							hyponym);
 				});
-
-				// Drop prerelateds from all concepts
+				
+				var cuis = $scope.concepts.map(getCui);
 				$scope.concepts.forEach(function(concept) {
-					filterRelated(concept, preRelatedCuis);
+					concept.hypernyms = filterRelated(concept.hypernyms, cuis);
+					concept.hyponyms = filterRelated(concept.hyponyms, cuis);
 				});
-
-				// Identify relateds that were not found
-				var relatedCuis = relateds.map(getCui);
-				var noExpansion = preRelatedCuis
-					.filter(function(preRelatedCui) {
-						return relatedCuis.indexOf(preRelatedCui) == -1;
-					});
-				var msg = "Found " + relateds.length + " relateds";
-				if (noExpansion.length > 0)
-					msg += ", no expansion for " + noExpansion.join(", ")
-							+ " in selected vocabularies";
-				$scope.unblock(msg);
+				
+				$scope.unblock("Found " + relateds.length + " relateds");
 			});
 	};
 
@@ -267,29 +259,16 @@ function getCui(concept) {
 	return concept.cui;
 }
 
-function filterRelated(concept, cuis) {
-	concept.hyponyms = concept.hyponyms
-		.filter(function(h) {
-			return cuis.indexOf(h.cui) == -1;
+function filterRelated(related, cuis) {
+	return related
+		.filter(function(r) {
+			return cuis.indexOf(r.cui) == -1;
 		})
-		.sort(function(c1, c2) {
-			if (c1.preferredName < c2.preferredName) {
+		.sort(function(r1, r2) {
+			if (r1.preferredName < r2.preferredName) {
 				return -1;
 			}
-			if (c1.preferredName > c2.preferredName) {
-				return 1;
-			}
-			return 0;
-		});
-	concept.hypernyms = concept.hypernyms
-		.filter(function(h) {
-			return cuis.indexOf(h.cui) == -1;
-		})
-		.sort(function(c1, c2) {
-			if (c1.preferredName < c2.preferredName) {
-				return -1;
-			}
-			if (c1.preferredName > c2.preferredName) {
+			if (r1.preferredName > r2.preferredName) {
 				return 1;
 			}
 			return 0;

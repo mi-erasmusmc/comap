@@ -27,6 +27,22 @@
         top: 0;
         left: 0;
       }
+      .span, .code {
+        display: inline-block;
+        text-align: center;
+        white-space: nowrap;
+        margin: 0.2em;
+        padding: 2px 5px;
+        font-size: 12px;
+      }
+      .code {
+        background-color: #C9C9C9;
+        border: 1px solid #adadad;
+        border-radius: 3px;
+      }
+      .span {
+        background-color: #FFFCAB;
+      }
     </style>
     <script src="advance-code-mapper.js"></script>
   </head>
@@ -36,8 +52,8 @@
         <h1>ADVANCE Code Mapper</h1>
       </div>
       <div class="col-md-2">
+        <div style="text-align: right">$Revision$</div>
         <div><image src="images/200709mslogo_erasmus_mc.jpg" height="100px" /></div>
-        <div text-align="center">$Revision$</div>
       </div>
     </div>
     <div><span class="flag glyphicon glyphicon-chevron-right" aria-hidden="true"></span>{{message}}</div>
@@ -73,37 +89,43 @@
         </button>
       </tab>
       <tab id="concepts-tab" heading="Concepts">
-        <button ng-click="downloadConcepts()"  class="btn btn-default btn-sm">Download CSV</button>
+        <button ng-click="downloadConcepts()"  class="btn btn-default btn-sm">Download {{concepts.length}} concepts as CSV</button>
         <table id="coding-systems" class="table table-striped">
           <thead>
             <tr>
-              <th data-field="keep" data-checkbox="true">Keep</th>
-              <th data-field="cui">CUI</th>
-              <th data-field="name">Name</th>
-              <th data-field="definition">Definition</th>
-              <th data-field="hyponyms">Hyponyms</th>
+              <th></th>
+              <th>CUI</th>
+              <th>Name</th>
+              <th>Spans</th>
+              <th>Definition</th>
+              <th>Expand</th>
               <th ng-repeat="voc in vocabularies | filter: { keep: true }" data-field={{voc}}>{{voc.abbreviation}}</th>
             </tr>
           </thead>
           <tbody>
             <tr ng-repeat="concept in concepts">
-              <td><input type="checkbox" ng-checked="{{concept.keep}}" /></td>
+              <td><button ng-click="deleteConcept(concept.cui)" class="btn btn-default btn-sm">Delete</button></td>
               <td>{{concept.cui}}</td>
               <td>{{concept.preferredName}}</td>
+              <td>
+                <span ng-if="concept.spans != undefined" ng-repeat="span in concept.spans" class="span">
+                  {{span.text}}
+                </span>
+              </td>
               <td>
                 <div ng-bind-html="trustDefinition(concept.definition)"></div>
               </td>
               <td>
                 <button ng-repeat="hyponym in concept.hyponyms" ng-click="expandConcepts(concept, [hyponym])"  class="btn btn-default btn-sm">
-                  {{hyponym.preferredName}}
+                  {{hyponym.preferredName || hyponym.cui}}
                 </button>
                 <button ng-if="concept.hyponyms" ng-click="expandConcepts(concept, concept.hyponyms)"  class="btn btn-default btn-sm">
-                  All
+                  Expand all {{concept.hyponyms.length}}
                 </button>
               </td>
               <td ng-repeat="voc in vocabularies | filter: { keep: true }"> 
                 <!-- Angular FTW! -->
-                <span ng-repeat="code in codesInVocabulary(concept, voc.abbreviation)">
+                <span ng-repeat="code in codesInVocabulary(concept, voc.abbreviation)" class="code">
                   {{code}}
                 </span>
               </td>

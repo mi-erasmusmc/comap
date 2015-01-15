@@ -21,10 +21,12 @@ var FORM_ENCODED_POST = {
 			if (obj[key] instanceof Array) {
 				for ( var idx in obj[key]) {
 					var subObj = obj[key][idx];
-					str.push(encodeURIComponent(key) + "=" + encodeURIComponent(subObj));
+					str.push(encodeURIComponent(key) + "="
+							+ encodeURIComponent(subObj));
 				}
 			} else {
-				str.push(encodeURIComponent(key) + "=" + encodeURIComponent(obj[key]));
+				str.push(encodeURIComponent(key) + "="
+						+ encodeURIComponent(obj[key]));
 			}
 		}
 		return str.join("&");
@@ -38,7 +40,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 		$sce) {
 
 	$scope.vocabularies = [];
-	$scope.caseDefinition = "fever";
+	$scope.caseDefinition = "deafness";
 	$scope.concepts = [];
 
 	$scope.message = "";
@@ -67,17 +69,15 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 	$http.get(CODING_SYSTEMS_URL).error(function(err) {
 		alert("ERROR: Couldn't retrieve vocabularies", err);
 	}).success(function(vocabularies) {
-		$scope.vocabularies = vocabularies
-			.sort(function(v1, v2) {
-				if (v1.abbreviation < v2.abbreviation) {
-					return -1;
-				}
-				if (v1.abbreviation > v2.abbreviation) {
-					return 1;
-				}
-				return 0;
-			})
-			.map(function(vocabulary) {
+		$scope.vocabularies = vocabularies.sort(function(v1, v2) {
+			if (v1.abbreviation < v2.abbreviation) {
+				return -1;
+			}
+			if (v1.abbreviation > v2.abbreviation) {
+				return 1;
+			}
+			return 0;
+		}).map(function(vocabulary) {
 			var abbreviation = vocabulary.abbreviation;
 			var keep = 0 <= DEFAULT_CODING_SYSTEMS.indexOf(abbreviation);
 			return {
@@ -94,23 +94,25 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 		$scope.block("Search concepts in case definition ...");
 		$http.post(SEARCH_CONCEPTS_URL, {
 			text : caseDefinition
-		}, FORM_ENCODED_POST)
-		.error(function(err) {
+		}, FORM_ENCODED_POST).error(function(err) {
 			alert("ERROR: Couldn't search concepts in case definition", err);
 		}).success(
 				function(result) {
-					var cuis = result.spans.map(function(span) {
-						var id = '' + span.id;
+					var cuis = [];
+					function cuiOfId(id) {
 						return 'C' + Array(8 - id.length).join('0') + id;
-					}).filter(function(cui, ix, a) {
-						return a.indexOf(cui) == ix;
-					});
-					cuis.map(function(cui) {
-						console.log("Found cui", cui);
+					}
+					result.spans.forEach(function(span) {
+						var cui = cuiOfId(span.id);
+						if (cuis.indexOf(cui) == -1) {
+							cuis.push(cui);
+						}
 					});
 					var vocabularies = $scope.getSelectedVocabularies();
-					$scope.block("Found " + cuis.length
-							+ " CUIs, looking up in vocabularies ...");
+					$scope.block("Found " + cuis.length + " CUIs " +
+							"(from " + result.spans.length + " spans " +
+							"with " + cuis.length + " different CUIs) " +
+							"looking up in vocabularies ...");
 					$http.post(UMLS_CONCEPTS_API_URL, {
 						cuis : cuis,
 						vocabularies : vocabularies
@@ -120,21 +122,12 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 						alert(msg, err);
 					}).success(
 							function(concepts) {
-								var cuis = concepts.map(function(c) { return c.cui; });
 								concepts.forEach(function(concept) {
-									concept.hyponyms = concept.hyponyms
-										.filter(function(hyponym) {
-											return cuis.indexOf(hyponym.cui) == -1;
+									concept.spans = result.spans
+										.filter(function(span) {
+											return cuiOfId(span.id) == concept.cui;
 										})
-										.sort(function(c1, c2) {
-											if (c1.preferredName < c2.preferredName) {
-												return -1;
-											}
-											if (c1.preferredName > c2.preferredName) {
-												return 1;
-											}
-											return 0;
-										});
+									concept.hyponyms = filterHyponyms(concepts, concept.hyponyms);
 								});
 								$scope.concepts = concepts;
 								$timeout(function() {
@@ -144,7 +137,20 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 										+ " concepts");
 							});
 				});
-	}
+	};
+	
+	$scope.deleteConcept = function(cui) {
+		var deleted = [];
+		$scope.concepts = $scope.concepts
+			.filter(function(concept) {
+				if (concept.cui == cui) {
+					deleted.push(concept.preferredName);
+					return false;
+				}
+				return true;
+			});
+		$scope.unblock("Deleted concepts " + deleted.join(", "));
+	};
 
 	$scope.codesInVocabulary = function(concept, vocabularyAbbreviation) {
 		var res = concept.sourceConcepts.filter(function(sourceConcept) {
@@ -160,49 +166,54 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 	};
 
 	$scope.expandConcepts = function(concept, preHyponyms) {
-		var cuis = preHyponyms.map(function(hyponym) {
-			return hyponym.cui;
-		});
+		var preHyponymCuis = preHyponyms.map(getCui);
 		$scope.block("Search " + preHyponyms.length + " hyonyms ...");
-		$http.post(UMLS_CONCEPTS_API_URL, {
-			cuis : cuis,
+		var data = {
+			cuis : preHyponymCuis,
 			vocabularies : $scope.getSelectedVocabularies()
-		}, FORM_ENCODED_POST).error(function(err) {
-			var msg = "ERROR: Couldn't lookup concepts " + cuis.join(", ");
-			alert(msg, err);
-			$scope.unblock(msg);
-		}).success(function(hyponyms) {
-			var ix;
-			$scope.concepts.forEach(function(c, cIx) {
-				if (c.cui == concept.cui) {
-					ix = cIx;
-				}
+		};
+		$http.post(UMLS_CONCEPTS_API_URL, data, FORM_ENCODED_POST)
+			.error(function(err) {
+				var msg = "ERROR: Couldn't lookup concepts "
+						+ preHyponymCuis.join(", ");
+				alert(msg, err);
+				$scope.unblock(msg);
+			})
+			.success(function(hyponyms) {
+				var conceptOffset;
+				$scope.concepts.forEach(function(c, cIx) {
+					if (c.cui == concept.cui) {
+						conceptOffset = cIx;
+					}
+				});
+
+				// Insert each hyponym in list of concepts!
+				hyponyms.forEach(function(hyponym, ix) {
+					hyponym.hyponyms = filterHyponyms($scope.concepts,
+							hyponym.hyponyms);
+					$scope.concepts.splice(conceptOffset + ix + 1, 0,
+							hyponym);
+				});
+
+				// Drop preHyponyms from all concepts
+				$scope.concepts.forEach(function(concept) {
+					concept.hyponyms = concept.hyponyms.filter(function(h) {
+						return preHyponymCuis.indexOf(h.cui) == -1;
+					});
+				});
+
+				// Identify hyponyms that were not found
+				var hyponymCuis = hyponyms.map(getCui);
+				var noExpansion = preHyponymCuis
+					.filter(function(preHyponymCui) {
+						return hyponymCuis.indexOf(preHyponymCui) == -1;
+					});
+				var msg = "Found " + hyponyms.length + " hyponyms";
+				if (noExpansion.length > 0)
+					msg += ", no expansion for " + noExpansion.join(", ")
+							+ " in selected vocabularies";
+				$scope.unblock(msg);
 			});
-			hyponyms.forEach(function(hyponym, offset) {
-				var currentCuis = $scope.concepts.map(function(c) {
-					return c.cui;
-				});
-				if (currentCuis.indexOf(hyponym.cui) == -1) {
-					$scope.concepts.splice(ix + offset + 1, 0, hyponym);
-				} else {
-					console.log("Hyponym", hyponym, "already in available");
-				}
-			});
-			var preHyponymCuis = preHyponyms.map(function(h) { return h.cui; });
-			var hyponymCuis = hyponyms.map(function(h) { return h.cui; });
-			var noExpansion =
-				preHyponymCuis.filter(function(cui) {
-					return hyponymCuis.indexOf(cui) == -1;
-				});
-			concept.hyponyms = concept.hyponyms
-				.filter(function(h) {
-					return preHyponymCuis.indexOf(h.cui) == -1;
-				});
-			var msg = "Found " + hyponyms.length + " hyponyms";
-			if (noExpansion.length > 0)
-				msg += ", no expansion for " + noExpansion.join(", ");
-			$scope.unblock(msg);
-		});
 	};
 
 	$scope.downloadConcepts = function() {
@@ -218,9 +229,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 				sourceConcepts[vocabulary] = $scope.codesInVocabulary(concept,
 						vocabulary);
 			});
-			var hyponyms = concept.hyponyms.map(function(h) {
-				return h.cui;
-			});
+			var hyponyms = concept.hyponyms.map(getCui);
 			for (var ix = 0;; ix += 1) {
 				var dataRow = ix == 0 ? [ concept.cui, concept.preferredName,
 						concept.definition, ] : [ null, null, null ]
@@ -253,13 +262,32 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout,
 	};
 });
 
+function getCui(concept) {
+	return concept.cui;
+}
+
+var filterHyponyms = function(concepts, hyponyms) {
+	var cuis = concepts.map(getCui);
+	return hyponyms.filter(function(hyponym) {
+		return cuis.indexOf(hyponym.cui) == -1;
+	}).sort(function(c1, c2) {
+		if (c1.preferredName < c2.preferredName) {
+			return -1;
+		}
+		if (c1.preferredName > c2.preferredName) {
+			return 1;
+		}
+		return 0;
+	});
+};
+
 function csvEncode(columns, data, heading) {
 	function escape(field) {
 		if (field == null || field == undefined) {
 			return "";
 		} else {
 			if (typeof field == 'string'
-					&& (field.indexOf('"') != -1 || field.indexOf(';') != -1)) {
+					&& (field.indexOf('"') != -1 || field.indexOf(',') != -1)) {
 				return '"' + field.replace('"', '""') + '"';
 			} else {
 				return "" + field;
@@ -270,9 +298,9 @@ function csvEncode(columns, data, heading) {
 	if (heading) {
 		result += escape(heading) + "\n\n\n";
 	}
-	result += columns.map(escape).join('; ') + "\n";
+	result += columns.map(escape).join(', ') + "\n";
 	data.forEach(function(row) {
-		result += row.map(escape).join('; ') + "\n";
+		result += row.map(escape).join(', ') + "\n";
 	});
 	return result;
 }

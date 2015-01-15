@@ -23,6 +23,10 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsConcept;
 /**
  * Database based implementation of the UMLS API used for the code mapper.
  *
+ * Two SQL indices in MRREL for CUI1 and CUI2 speed up the lookup of hypernyms/hyponyms:
+ * CREATE INDEX MRREL_CUI1 ON MRREL (CUI1);
+ * CREATE INDEX MRREL_CUI2 ON MRREL (CUI2)
+ *
  * @author benus
  *
  */
@@ -121,7 +125,7 @@ public class UmlsApiDatabase implements UmlsApi {
 		}
 	}
 
-	public Map<String, UmlsConcept> getConceptsWithTerms(List<String> cuis, List<String> vocabularies)
+	public Map<String, List<SourceConcept>> getSourceConcepts(List<String> cuis, List<String> vocabularies)
 			throws CodeMapperException {
 
 		if (vocabularies == null)
@@ -151,9 +155,8 @@ public class UmlsApiDatabase implements UmlsApi {
 			System.out.println(statement);
 			ResultSet result = statement.executeQuery();
 
-			Map<String, UmlsConcept> concepts = new TreeMap<>();
+			Map<String, List<SourceConcept>> sourceConcepts = new TreeMap<>();
 			String lastCui = null, lastSab = null, lastCode = null;
-			UmlsConcept currentConcept = null;
 			SourceConcept currentSourceConcept = null;
 			while (result.next()) {
 				String cui = result.getString(1);
@@ -161,18 +164,15 @@ public class UmlsApiDatabase implements UmlsApi {
 				String code = result.getString(3);
 				String str = result.getString(4);
 				String tty = result.getString(5);
-				if (!cui.equals(lastCui)) {
-					currentConcept = new UmlsConcept();
-					currentConcept.setCui(cui);
-					concepts.put(cui, currentConcept);
-				}
 				if (!cui.equals(lastCui) || !sab.equals(lastSab) || !code.equals(lastCode)) {
 					currentSourceConcept = new SourceConcept();
 					currentSourceConcept.setCui(cui);
 					currentSourceConcept.setVocabulary(sab);
 					currentSourceConcept.setId(code);
 					currentSourceConcept.setPreferredTerm(str);
-					currentConcept.getSourceConcepts().add(currentSourceConcept);
+					if (!sourceConcepts.containsKey(cui))
+						sourceConcepts.put(cui, new LinkedList<SourceConcept>());
+					sourceConcepts.get(cui).add(currentSourceConcept);
 				}
 				if ("PT".equals(tty))
 					currentSourceConcept.setPreferredTerm(str);
@@ -183,23 +183,25 @@ public class UmlsApiDatabase implements UmlsApi {
 			}
 
 			Set<String> missings = new TreeSet<>(cuis);
-			missings.removeAll(concepts.keySet());
+			missings.removeAll(sourceConcepts.keySet());
 			for (String missing : missings)
 				logger.warn("No UMLS concept found for CUI " + missing);
-			return concepts;
+			return sourceConcepts;
 		} catch (SQLException e) {
 			throw new CodeMapperException(e);
 		}
 	}
 
-	private Map<String, List<UmlsConcept>> getHyponyms(List<String> cuis) throws CodeMapperException {
-		String queryFmt = "SELECT DISTINCT cui1, cui2 "
+	private Map<String, List<UmlsConcept>> getRelated(List<String> cuis, boolean hyponymsNotHypernyms) throws CodeMapperException {
+		String queryFmt = "SELECT DISTINCT %s "
 				+ "FROM MRREL "
 				+ "WHERE rel in ('RN', 'CHD') "
-				+ "AND cui1 IN (%s) "
+				+ "AND %s IN (%s) "
 				+ "AND cui1 != cui2 "
 				+ "AND (rela IS NULL OR rela = 'isa')";
-		String query = String.format(queryFmt, placeholders(cuis.size()));
+		String selection = hyponymsNotHypernyms ? "cui1, cui2" : "cui2, cui1";
+		String selector = hyponymsNotHypernyms ? "cui1" : "cui2";
+		String query = String.format(queryFmt, selection, selector, placeholders(cuis.size()));
 
 		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 
@@ -210,29 +212,28 @@ public class UmlsApiDatabase implements UmlsApi {
 			System.out.println(statement);
 			ResultSet result = statement.executeQuery();
 
-			Map<String, Set<String>> hyponymCuis = new TreeMap<>();
+			Map<String, Set<String>> relatedCuis = new TreeMap<>();
 			while (result.next()) {
-				String cui1 = result.getString(1);
-				String cui2 = result.getString(2);
-				if (!hyponymCuis.containsKey(cui1))
-					hyponymCuis.put(cui1, new TreeSet<String>());
-				hyponymCuis.get(cui1).add(cui2);
+				String cui = result.getString(1);
+				String relatedCui = result.getString(2);
+				if (!relatedCuis.containsKey(cui))
+					relatedCuis.put(cui, new TreeSet<String>());
+				relatedCuis.get(cui).add(relatedCui);
 			}
 
-			List<String> hyponymCuisList = new LinkedList<>();
-			for (Collection<String> cs : hyponymCuis.values())
-				hyponymCuisList.addAll(cs);
-			Map<String, String> names = getPreferredNames(hyponymCuisList);
+			Set<String> relatedCuisUnique = new TreeSet<>();
+			for (Collection<String> cs : relatedCuis.values())
+				relatedCuisUnique.addAll(cs);
+			Map<String, String> names = getPreferredNames(new LinkedList<>(relatedCuisUnique));
 
-			Map<String, List<UmlsConcept>> hyponyms = new TreeMap<>();
+			Map<String, List<UmlsConcept>> related = new TreeMap<>();
 			for (String cui : cuis)
-				if (hyponymCuis.containsKey(cui)) {
-					List<UmlsConcept> concepts = new LinkedList<>();
-					for (String hyponym : hyponymCuis.get(cui))
-						concepts.add(new UmlsConcept(hyponym, names.get(hyponym)));
-					hyponyms.put(cui, concepts);
+				if (relatedCuis.containsKey(cui)) {
+					related.put(cui, new LinkedList<UmlsConcept>());
+					for (String relatedCui : relatedCuis.get(cui))
+						related.get(cui).add(new UmlsConcept(relatedCui, names.get(relatedCui)));
 				}
-			return hyponyms;
+			return related;
 		} catch (SQLException e) {
 			throw new CodeMapperException(e);
 		}
@@ -283,24 +284,51 @@ public class UmlsApiDatabase implements UmlsApi {
 
 		cuis = new LinkedList<>(new TreeSet<>(cuis)); // unique CUIs
 
-		Map<String, UmlsConcept> concepts = getConceptsWithTerms(cuis, vocabularies);
-		System.out.println("Found concepts " + concepts.size());
+        Map<String, List<SourceConcept>> sourceConcepts = getSourceConcepts(cuis, vocabularies);
+        Map<String, String> preferredNames = getPreferredNames(cuis);
+        Map<String, List<UmlsConcept>> hyponyms = getRelated(cuis, true);
+        Map<String, List<UmlsConcept>> hypernyms = getRelated(cuis, false);
+        Map<String, String> definitions = getDefinitions(cuis);
 
-		Map<String, String> preferredNames = getPreferredNames(cuis);
-		for (String cui : cuis)
-			if (concepts.keySet().contains(cui) && preferredNames.containsKey(cui))
-				concepts.get(cui).setPreferredName(preferredNames.get(cui));
+        List<UmlsConcept> concepts = new LinkedList<>();
+        for (String cui : cuis) {
+        	UmlsConcept concept = new UmlsConcept();
+        	concept.setCui(cui);
+        	concept.setDefinition(definitions.get(cui));
+        	concept.setPreferredName(preferredNames.get(cui));
+            List<SourceConcept> sourceConcept = sourceConcepts.get(cui);
+            if (sourceConcept != null)
+            	concept.setSourceConcepts(sourceConcept);
+            List<UmlsConcept> hypernym = hypernyms.get(cui);
+            if (hypernym != null)
+            	concept.setHypernyms(hypernym);
+            List<UmlsConcept> hyponym = hyponyms.get(cui);
+            if (hyponym != null)
+                concept.setHyponyms(hyponym);
+            concepts.add(concept);
+        }
+        System.out.println("Found source concepts " + concepts.size());
 
-		Map<String, List<UmlsConcept>> hyponyms = getHyponyms(cuis);
-		for (String cui : cuis)
-			if (concepts.keySet().contains(cui) && hyponyms.containsKey(cui))
-				concepts.get(cui).setHyponyms(hyponyms.get(cui));
+        return concepts;
 
-		Map<String, String> definitions = getDefinitions(cuis);
-		for (String cui : cuis)
-			if (concepts.keySet().contains(cui) && definitions.containsKey(cui))
-				concepts.get(cui).setDefinition(definitions.get(cui));
-
-		return new LinkedList<>(concepts.values());
+//		Map<String, UmlsConcept> concepts = getSourceConcepts(cuis, vocabularies);
+//		System.out.println("Found concepts " + concepts.size());
+//
+//		Map<String, String> preferredNames = getPreferredNames(cuis);
+//		for (String cui : cuis)
+//			if (concepts.keySet().contains(cui) && preferredNames.containsKey(cui))
+//				concepts.get(cui).setPreferredName(preferredNames.get(cui));
+//
+//		Map<String, List<UmlsConcept>> hyponyms = getHyponyms(cuis);
+//		for (String cui : cuis)
+//			if (concepts.keySet().contains(cui) && hyponyms.containsKey(cui))
+//				concepts.get(cui).setHyponyms(hyponyms.get(cui));
+//
+//		Map<String, String> definitions = getDefinitions(cuis);
+//		for (String cui : cuis)
+//			if (concepts.keySet().contains(cui) && definitions.containsKey(cui))
+//				concepts.get(cui).setDefinition(definitions.get(cui));
+//
+//		return new LinkedList<>(concepts.values());
 	}
 }

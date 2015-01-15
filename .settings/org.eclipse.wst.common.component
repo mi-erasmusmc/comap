@@ -7,6 +7,6 @@
         <wb-resource deploy-path="/" source-path="/target/m2e-wtp/web-resources"/>
         <wb-resource deploy-path="/" source-path="/src/main/webapp" tag="defaultRootSource"/>
         <property name="context-root" value="AdvanceCodeMapper"/>
-        <property name="java-output-path" value="/CodeMapper/target/classes"/>
+        <property name="java-output-path" value="/AdvanceCodeMapper/target/classes"/>
     </wb-module>
 </project-modules>

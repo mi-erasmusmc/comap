@@ -98,14 +98,16 @@
               <th>Name</th>
               <th>Spans</th>
               <th>Definition</th>
-              <th>Expand</th>
+              <th>Hypernyms</th>
+              <th>Hyponyms</th>
+              <!--th>Synonyms</th-->
               <th ng-repeat="voc in vocabularies | filter: { keep: true }" data-field={{voc}}>{{voc.abbreviation}}</th>
             </tr>
           </thead>
           <tbody>
             <tr ng-repeat="concept in concepts">
               <td><button ng-click="deleteConcept(concept.cui)" class="btn btn-default btn-sm">Delete</button></td>
-              <td>{{concept.cui}}</td>
+              <td>{{concept.cui}}<span ng-if="concept.sourceConcepts.length == 0">*</span></td>
               <td>{{concept.preferredName}}</td>
               <td>
                 <span ng-if="concept.spans != undefined" ng-repeat="span in concept.spans" class="span">
@@ -114,6 +116,14 @@
               </td>
               <td>
                 <div ng-bind-html="trustDefinition(concept.definition)"></div>
+              </td>
+              <td>
+                <button ng-repeat="hypernym in concept.hypernyms" ng-click="expandConcepts(concept, [hypernym])"  class="btn btn-default btn-sm">
+                  {{hypernym.preferredName || hypernym.cui}}
+                </button>
+                <button ng-if="concept.hypernyms" ng-click="expandConcepts(concept, concept.hypernyms)"  class="btn btn-default btn-sm">
+                  Expand all {{concept.hypernyms.length}}
+                </button>
               </td>
               <td>
                 <button ng-repeat="hyponym in concept.hyponyms" ng-click="expandConcepts(concept, [hyponym])"  class="btn btn-default btn-sm">

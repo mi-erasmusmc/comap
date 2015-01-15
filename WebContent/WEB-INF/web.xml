@@ -50,7 +50,7 @@
 		<param-name>log4j.rootLogger</param-name>
 		<param-value>DEBUG</param-value>
 	</context-param>
-    <welcome-file-list>
-        <welcome-file>index.html</welcome-file>
-    </welcome-file-list>
+  <welcome-file-list>
+      <welcome-file>index.html</welcome-file>
+  </welcome-file-list>
 </web-app>

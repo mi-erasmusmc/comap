@@ -145,7 +145,7 @@ public class UmlsApiUtf implements UmlsApi {
 				for (Map<String, SourceConcept> m : sourceConceptsByVocabulary.values())
 					sourceConcepts.addAll(m.values());
 				UmlsConcept umlsConcept = new UmlsConcept(cui, preferredName, definition, semanticTypes,
-						sourceConcepts, hyponyms);
+						sourceConcepts, null, hyponyms);
 				result.add(umlsConcept);
 			} catch (UtsFault_Exception e) {
 				throw new CodeMapperException("Couldn't retrieve concept of CUI " + cui, e);

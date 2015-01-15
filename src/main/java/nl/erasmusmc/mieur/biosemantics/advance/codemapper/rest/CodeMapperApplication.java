@@ -25,7 +25,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	}
 
 	public CodeMapperApplication(@Context ServletContext context) {
-		// packages("nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest");
+	    packages("nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest");
 		List<String> availableVocabularies = Arrays.asList(context.getInitParameter("available-vocabularies")
 				.split(",\\s*"));
 		List<String> vocabulariesWithDefinition = Arrays.asList(context.getInitParameter(

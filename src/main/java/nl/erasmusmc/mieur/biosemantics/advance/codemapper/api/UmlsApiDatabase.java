@@ -66,7 +66,7 @@ public class UmlsApiDatabase implements UmlsApi {
 	@Override
 	public List<CodingSystem> getCodingSystems() throws CodeMapperException {
 
-		String query = "SELECT DISTINCT rsab, son, sf FROM MRSAB";
+		String query = "SELECT DISTINCT rsab, son, sf FROM MRSAB WHERE CURVER = 'Y'";
 		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 			ResultSet result = statement.executeQuery();
 			List<CodingSystem> codingSystems = new LinkedList<>();

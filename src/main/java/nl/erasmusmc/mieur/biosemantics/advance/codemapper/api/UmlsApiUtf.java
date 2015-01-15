@@ -84,7 +84,7 @@ public class UmlsApiUtf implements UmlsApi {
 	 * getUmlsConcepts(java.util.List, java.util.List, java.util.List)
 	 */
 	@Override
-	public List<UmlsConcept> getConcepts(List<String> cuis, List<String> vocabularies, List<String> expand)
+	public List<UmlsConcept> getConcepts(List<String> cuis, List<String> vocabularies)
 			throws CodeMapperException {
 		Psf psf = new Psf();
 		psf.getIncludedSources().addAll(vocabularies);
@@ -147,7 +147,6 @@ public class UmlsApiUtf implements UmlsApi {
 				UmlsConcept umlsConcept = new UmlsConcept(cui, preferredName, definition, semanticTypes,
 						sourceConcepts, hyponyms);
 				result.add(umlsConcept);
-				// TODO expand concept `cui` if `cui` in `expand`
 			} catch (UtsFault_Exception e) {
 				throw new CodeMapperException("Couldn't retrieve concept of CUI " + cui, e);
 			}

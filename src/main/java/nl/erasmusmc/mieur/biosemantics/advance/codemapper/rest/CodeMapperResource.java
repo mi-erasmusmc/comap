@@ -48,10 +48,10 @@ public class CodeMapperResource {
 	@Path("umls-concepts")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<UmlsConcept> getUmlsConcepts(@FormParam("cuis") List<String> cuis,
-			@FormParam("vocabularies") List<String> vocabularies, @FormParam("expand") List<String> expand) {
+			@FormParam("vocabularies") List<String> vocabularies) {
 		try {
 			UmlsApi api = CodeMapperApplication.getApi();
-			return api.getConcepts(cuis, vocabularies, expand);
+			return api.getConcepts(cuis, vocabularies);
 		} catch (CodeMapperException e) {
 			logger.error(e);
 			e.printStackTrace();

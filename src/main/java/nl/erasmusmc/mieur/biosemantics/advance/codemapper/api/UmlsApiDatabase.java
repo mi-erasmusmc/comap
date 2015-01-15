@@ -28,7 +28,6 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsConcept;
  */
 public class UmlsApiDatabase implements UmlsApi {
 
-	private final List<String> languages = null;
 	private Connection connection;
 	private String uri;
 	private Properties connectionProperties;
@@ -136,15 +135,9 @@ public class UmlsApiDatabase implements UmlsApi {
 		else
 			sabPlaceholders = "";
 
-		String latPlaceholders;
-		if (languages != null)
-			latPlaceholders = String.format("AND lat IN (%s)", placeholders(languages.size()));
-		else
-			latPlaceholders = "";
-
 		String queryFmt = "SELECT DISTINCT cui, sab, code, str, tty FROM MRCONSO "
-				+ "WHERE cui IN (%s) %s %s ORDER BY cui, sab, code, str";
-		String query = String.format(queryFmt, cuisPlaceholders, sabPlaceholders, latPlaceholders);
+				+ "WHERE cui IN (%s) %s ORDER BY cui, sab, code, str";
+		String query = String.format(queryFmt, cuisPlaceholders, sabPlaceholders);
 
 		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 
@@ -154,9 +147,6 @@ public class UmlsApiDatabase implements UmlsApi {
 			if (vocabularies != null)
 				for (int ix = 0; ix < vocabularies.size(); ix++, offset++)
 					statement.setString(offset, vocabularies.get(ix));
-			if (languages != null)
-				for (int ix = 0; ix < languages.size(); ix++, offset++)
-					statement.setString(offset, languages.get(ix));
 
 			System.out.println(statement);
 			ResultSet result = statement.executeQuery();
@@ -207,7 +197,7 @@ public class UmlsApiDatabase implements UmlsApi {
 				+ "FROM MRREL "
 				+ "WHERE rel in ('RN', 'CHD') "
 				+ "AND cui1 IN (%s) "
-				+ "AND cui1 != cui2"
+				+ "AND cui1 != cui2 "
 				+ "AND (rela IS NULL OR rela = 'isa')";
 		String query = String.format(queryFmt, placeholders(cuis.size()));
 
@@ -249,7 +239,7 @@ public class UmlsApiDatabase implements UmlsApi {
 	}
 
 	private Map<String, String> getDefinitions(List<String> cuis) throws CodeMapperException {
-		String queryFmt = "SELECT DISTINCT　cui, sab, def " + "FROM MRDEF " + "WHERE cui IN (%s)";
+		String queryFmt = "SELECT DISTINCT cui, sab, def FROM MRDEF WHERE cui IN (%s)";
 		String query = String.format(queryFmt, placeholders(cuis.size()));
 		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 
@@ -288,8 +278,10 @@ public class UmlsApiDatabase implements UmlsApi {
 	}
 
 	@Override
-	public List<UmlsConcept> getConcepts(List<String> cuis, List<String> vocabularies, List<String> expand)
+	public List<UmlsConcept> getConcepts(List<String> cuis, List<String> vocabularies)
 			throws CodeMapperException {
+
+		cuis = new LinkedList<>(new TreeSet<>(cuis)); // unique CUIs
 
 		Map<String, UmlsConcept> concepts = getConceptsWithTerms(cuis, vocabularies);
 		System.out.println("Found concepts " + concepts.size());

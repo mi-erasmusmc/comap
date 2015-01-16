@@ -1,6 +1,8 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest;
 
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.FormParam;
@@ -9,6 +11,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodingSystem;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsConcept;
@@ -57,5 +60,14 @@ public class CodeMapperResource {
 			e.printStackTrace();
 			throw new BadRequestException(e);
 		}
+	}
+
+	@GET
+	@Path("config")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getConfig() {
+		Map<String, String> config = new TreeMap<>();
+		config.put("peregrineResourceUrl", CodeMapperApplication.getPeregrineResourceUrl());
+		return Response.ok(config).build();
 	}
 }

@@ -118,7 +118,7 @@
                 <span ng-bind="concept.cui"></span><span ng-if="concept.sourceConcepts.length == 0">*</span>
               </td>
               <td>
-                <a href='#' tooltip-html-unsafe='{{concept.definition}}' ng-bind='concept.preferredName'></a>
+                <span tooltip-html-unsafe='{{concept.definition}}' ng-bind='concept.preferredName'></span>
               </td>
               <td>
                 <span class="span" ng-if="concept.spans != undefined" ng-repeat="span in concept.spans" ng-bind="span.text"></span>

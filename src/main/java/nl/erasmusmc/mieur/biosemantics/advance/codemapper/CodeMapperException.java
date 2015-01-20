@@ -1,4 +1,4 @@
-package nl.erasmusmc.mieur.biosemantics.advance.codemapper.api;
+package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
 
 import java.sql.SQLException;
 

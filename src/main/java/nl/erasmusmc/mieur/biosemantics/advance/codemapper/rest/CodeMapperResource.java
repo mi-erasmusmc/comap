@@ -13,10 +13,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodingSystem;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsConcept;
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.api.CodeMapperException;
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.api.UmlsApi;
 
 import org.apache.log4j.Logger;
 

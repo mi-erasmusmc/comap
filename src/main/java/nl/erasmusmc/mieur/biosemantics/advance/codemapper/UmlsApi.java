@@ -1,4 +1,4 @@
-package nl.erasmusmc.mieur.biosemantics.advance.codemapper.api;
+package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -16,10 +16,6 @@ import java.util.TreeSet;
 
 import org.apache.log4j.Logger;
 
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodingSystem;
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.SourceConcept;
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsConcept;
-
 /**
  * Database based implementation of the UMLS API used for the code mapper.
  *
@@ -30,7 +26,7 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsConcept;
  * @author benus
  *
  */
-public class UmlsApiDatabase implements UmlsApi {
+public class UmlsApi  {
 
 	private Connection connection;
 	private String uri;
@@ -39,7 +35,7 @@ public class UmlsApiDatabase implements UmlsApi {
 	private List<String> vocabulariesWithDefinition;
 	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
 
-	public UmlsApiDatabase(String uri, Properties connectionProperties, List<String> availableVocabularies,
+	public UmlsApi(String uri, Properties connectionProperties, List<String> availableVocabularies,
 			List<String> vocabulariesWithDefinition) {
 		this.uri = uri;
 		this.connectionProperties = connectionProperties;
@@ -63,7 +59,6 @@ public class UmlsApiDatabase implements UmlsApi {
 		return sb.toString();
 	}
 
-	@Override
 	public List<CodingSystem> getCodingSystems() throws CodeMapperException {
 
 		String query = "SELECT DISTINCT rsab, son, sf FROM MRSAB WHERE CURVER = 'Y'";
@@ -296,7 +291,6 @@ public class UmlsApiDatabase implements UmlsApi {
 		}
 	}
 
-	@Override
 	public List<UmlsConcept> getConcepts(List<String> cuis, List<String> vocabularies)
 			throws CodeMapperException {
 

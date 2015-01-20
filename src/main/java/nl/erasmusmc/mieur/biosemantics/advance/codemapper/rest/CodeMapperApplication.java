@@ -1,6 +1,8 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 
@@ -18,6 +20,7 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.api.UmlsApiUtf;
 @ApplicationPath("resource")
 public class CodeMapperApplication extends ResourceConfig {
 
+	private static final String CODE_MAPPER_PROPERTIES = "/WEB-INF/code-mapper.properties";
 	private static final boolean UTF_NOT_DATABASE = false;
 	private static UmlsApi api = null;
 	private static String peregrineResourceUrl = null;
@@ -28,38 +31,40 @@ public class CodeMapperApplication extends ResourceConfig {
 
 	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
 
-	public CodeMapperApplication(@Context ServletContext context) {
-	    packages("nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest");
-        register(CodeMapperResource.class);
+	public CodeMapperApplication(@Context ServletContext context) throws IOException {
+		packages("nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest");
+		register(CodeMapperResource.class);
 
-		List<String> availableVocabularies = Arrays.asList(context.getInitParameter("available-vocabularies")
-				.split(",\\s*"));
-		List<String> vocabulariesWithDefinition = Arrays.asList(context.getInitParameter(
-				"vocabularies-with-definition").split(",\\s*"));
-		System.out.println("VOCS: " + availableVocabularies.size());
+		Properties properties = new Properties();
+		properties.load(context.getResourceAsStream(CODE_MAPPER_PROPERTIES));
 
-		peregrineResourceUrl = context.getInitParameter("peregrine-resource-url");
+		List<String> availableVocabularies = Arrays.asList(
+			properties.getProperty("available-vocabularies").split(",\\s*"));
+		List<String> vocabulariesWithDefinition = Arrays.asList(
+			properties.getProperty("vocabularies-with-definition").split(",\\s*"));
+
+		peregrineResourceUrl = properties.getProperty("peregrine-resource-url");
 
 		if (UTF_NOT_DATABASE) {
-			String serviceName = context.getInitParameter("utf-service-name");
-			String version = context.getInitParameter("utf-version");
-			String username = context.getInitParameter("utf-username");
-			String password = context.getInitParameter("utf-password");
+			String serviceName = properties.getProperty("utf-service-name");
+			String version = properties.getProperty("utf-version");
+			String username = properties.getProperty("utf-username");
+			String password = properties.getProperty("utf-password");
 			api = new UmlsApiUtf(serviceName, version, username, password, availableVocabularies,
 					vocabulariesWithDefinition);
 		} else {
-            try {
-	            Class.forName("com.mysql.jdbc.Driver");
-	            String uri = context.getInitParameter("umls-db-uri");
-	            String username = context.getInitParameter("umls-db-username");
-	            String password = context.getInitParameter("umls-db-password");
-	            Properties connectionProperties = new Properties();
-	            connectionProperties.setProperty("user", username);
-	            connectionProperties.setProperty("password", password);
-	            api = new UmlsApiDatabase(uri, connectionProperties, availableVocabularies, vocabulariesWithDefinition);
-            } catch (Exception e) {
-            	logger.error("Couldn't load MYSQL JDBC driver");
-            }
+			try {
+				Class.forName("com.mysql.jdbc.Driver");
+				String uri = properties.getProperty("umls-db-uri");
+				String username = properties.getProperty("umls-db-username");
+				String password = properties.getProperty("umls-db-password");
+				Properties connectionProperties = new Properties();
+				connectionProperties.setProperty("user", username);
+				connectionProperties.setProperty("password", password);
+				api = new UmlsApiDatabase(uri, connectionProperties, availableVocabularies, vocabulariesWithDefinition);
+			} catch (Exception e) {
+				logger.error("Couldn't load MYSQL JDBC driver");
+			}
 		}
 	}
 

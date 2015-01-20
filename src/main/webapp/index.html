@@ -56,7 +56,8 @@
         <div><image src="images/200709mslogo_erasmus_mc.jpg" height="100px" /></div>
       </div>
     </div>
-    <div><span class="flag glyphicon glyphicon-chevron-right" aria-hidden="true"></span>{{message}}</div>
+    <div>
+    <span class="flag glyphicon glyphicon-chevron-right" aria-hidden="true"></span>{{message}}</div>
     <tabset>
       <tab id="coding-systems-tab" heading="Vocabularies">
       <div>
@@ -96,7 +97,6 @@
               <th>CUI</th>
               <th>Name</th>
               <th>Spans</th>
-              <th>Definition</th>
               <th>Hypernyms</th>
               <th>Hyponyms</th>
               <!--th>Synonyms</th-->
@@ -106,13 +106,14 @@
           <tbody>
             <tr ng-repeat="concept in concepts">
               <td><button ng-click="deleteConcept(concept.cui)" class="btn btn-default btn-sm">Delete</button></td>
-              <td ng-bind="concept.cui"><span ng-if="concept.sourceConcepts.length == 0">*</span></td>
-              <td ng-bind="concept.preferredName"></td>
               <td>
-                <span class="span" ng-if="concept.spans != undefined" ng-repeat="span in concept.spans" ng-bind="span.text"></span>
+                <span ng-bind="concept.cui"></span><span ng-if="concept.sourceConcepts.length == 0">*</span>
               </td>
               <td>
-                <div ng-bind-html="trustDefinition(concept.definition)"></div>
+                <a href='#' tooltip-html-unsafe='{{concept.definition}}' ng-bind='concept.preferredName'></a>
+              </td>
+              <td>
+                <span class="span" ng-if="concept.spans != undefined" ng-repeat="span in concept.spans" ng-bind="span.text"></span>
               </td>
               <td>
                 <button ng-repeat="hypernym in concept.hypernyms" ng-click="expandConcepts(concept, [hypernym])"  class="btn btn-default btn-sm">
@@ -139,7 +140,19 @@
         </table>
       </tab>
     </tabset>
-    <div id="mask" ng-show="isBlocked">
-    </div>
+    <div id="mask" ng-show="isBlocked"></div>
+    
+    <script type="text/ng-template" id="myModalContent.html">
+                <div class="modal-header">
+                    <h3 class="modal-title" ng-bind="title"></h3>
+                </div>
+                <div class="modal-body">
+                    <div ng-bind-html="trustDefinition(content)"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" ng-click="ok()">OK</button>
+                    <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+                </div>
+    </script>
   </body>
 </html>

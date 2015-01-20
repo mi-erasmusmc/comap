@@ -3,6 +3,8 @@ var CODE_MAPPER_API_URL = 'resource/code-mapper';
 var CONFIG_URL =  CODE_MAPPER_API_URL + "/config";
 var CODING_SYSTEMS_URL = CODE_MAPPER_API_URL + '/coding-systems';
 var UMLS_CONCEPTS_API_URL = CODE_MAPPER_API_URL + '/umls-concepts';
+var RELATED_CONCEPTS_API_URL = CODE_MAPPER_API_URL + '/related';
+
 var DEFAULT_CODING_SYSTEMS = [ 'MSH', 'ICD10', 'ICPC', 'MDR', 'MEDLINEPLUS', 'RCD' ];
 
 // AngularJS sends data for HTTP POST JSON -- this header encodes it as form data.
@@ -50,10 +52,10 @@ function filterRelated(related, cuis) {
 
 var codeMapperApp = angular.module('codeMapperApp', [ 'ui.bootstrap', 'smart-table', 'ngSanitize' ]);
 
-codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sce) {
+codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sce, $modal) {
 
 	$scope.vocabularies = [];
-	$scope.caseDefinition = "deafness";
+	$scope.caseDefinition = "deafness and fever and code";
 	$scope.concepts = [];
 
 	$scope.message = "";
@@ -161,8 +163,6 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 								.filter(function(span) {
 									return cuiOfId(span.id) == concept.cui;
 								});
-							concept.hypernyms = filterRelated(concept.hypernyms, cuis);
-							concept.hyponyms = filterRelated(concept.hyponyms, cuis);
 						});
 						$scope.concepts = concepts;
 						$timeout(function() {
@@ -201,43 +201,43 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 		return $sce.trustAsHtml(definition);
 	};
 
-	$scope.expandConcepts = function(concept, preRelated) {
-		var preRelatedCuis = preRelated.map(getCui);
-		$scope.block("Search " + preRelated.length + " hyonyms ...");
-		var data = {
-			cuis : preRelatedCuis,
-			vocabularies : $scope.getSelectedVocabularies()
-		};
-		$http.post(UMLS_CONCEPTS_API_URL, data, FORM_ENCODED_POST)
-			.error(function(err) {
-				var msg = "ERROR: Couldn't lookup concepts "
-						+ preRelatedCuis.join(", ");
-				alert(msg, err);
-				$scope.unblock(msg);
-			})
-			.success(function(relateds) {
-				
-				var conceptOffset;
-				$scope.concepts.forEach(function(c, cIx) {
-					if (c.cui == concept.cui) {
-						conceptOffset = cIx;
-					}
-				});
-
-				// Insert each related concept in list of concepts!
-				relateds.forEach(function(related, ix) {
-					$scope.concepts.splice(conceptOffset + ix + 1, 0, related);
-				});
-				
-				var cuis = $scope.concepts.map(getCui);
-				$scope.concepts.forEach(function(concept) {
-					concept.hypernyms = filterRelated(concept.hypernyms, cuis);
-					concept.hyponyms = filterRelated(concept.hyponyms, cuis);
-				});
-				
-				$scope.unblock("Found " + relateds.length + " relateds");
-			});
-	};
+//	$scope.expandConcepts = function(concept, preRelated) {
+//		var preRelatedCuis = preRelated.map(getCui);
+//		$scope.block("Search " + preRelated.length + " hyonyms ...");
+//		var data = {
+//			cuis : preRelatedCuis,
+//			vocabularies : $scope.getSelectedVocabularies()
+//		};
+//		$http.post(UMLS_CONCEPTS_API_URL, data, FORM_ENCODED_POST)
+//			.error(function(err) {
+//				var msg = "ERROR: Couldn't lookup concepts "
+//						+ preRelatedCuis.join(", ");
+//				alert(msg, err);
+//				$scope.unblock(msg);
+//			})
+//			.success(function(relateds) {
+//				
+//				var conceptOffset;
+//				$scope.concepts.forEach(function(c, cIx) {
+//					if (c.cui == concept.cui) {
+//						conceptOffset = cIx;
+//					}
+//				});
+//
+//				// Insert each related concept in list of concepts!
+//				relateds.forEach(function(related, ix) {
+//					$scope.concepts.splice(conceptOffset + ix + 1, 0, related);
+//				});
+//				
+//				var cuis = $scope.concepts.map(getCui);
+//				$scope.concepts.forEach(function(concept) {
+//					concept.hypernyms = filterRelated(concept.hypernyms, cuis);
+//					concept.hyponyms = filterRelated(concept.hyponyms, cuis);
+//				});
+//				
+//				$scope.unblock("Found " + relateds.length + " relateds");
+//			});
+//	};
 
 	$scope.downloadConcepts = function() {
 		console.log("Download concepts");
@@ -287,6 +287,103 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 		a.download = 'case_definition.csv';
 		document.body.appendChild(a);
 		a.click();
+	};
+	
+    $scope.expandRelated = function(hyponymsNotHypernyms, concept) {
+    	
+    	var selectedVocabularyAbbreviations = $scope.vocabularies
+    		.filter(function(voc) {
+    			return voc.keep;
+    		})
+    		.map(function(voc) {
+    			return voc.abbreviation;
+    		});
+    	
+    	$scope.block("Looking up " + (hyponymsNotHypernyms ? "hyponyms" : "hypernyms"));
+    	var data = {
+    			cuis: [ concept.cui ],
+    			hyponymsNotHypernyms: hyponymsNotHypernyms,
+    			vocabularies: selectedVocabularyAbbreviations
+    		};
+    	$http.post(RELATED_CONCEPTS_API_URL, data, FORM_ENCODED_POST)
+    		.error(function(err) {
+    			var msg = "ERROR: Couldn't lookup related concepts";
+    			alert(msg, err);
+    			$scope.unblock(msg)
+    		})
+    		.success(function(relatedConcepts) {
+    			$scope.unblock("Received related ", relatedConcepts);
+    	        
+    	        var modalInstance = $modal.open({
+    	          templateUrl: 'expandRelatedConcepts.html',
+    	          controller: 'ExpandRelatedCtrl',
+    	          size: 'lg',
+    	          resolve: {
+    	        	hyponymsNotHypernyms: function() { return hyponymsNotHypernyms; },
+    	        	concept: function() { return concept; },
+    	        	selectedVocabularies: function() { return $scope.vocabularies.filter(function (voc) { return voc.keep; }); },
+    	        	relatedConcepts: function() {
+    	        		return relatedConcepts[concept.cui]
+	        				.map(function(concept) {
+	        					return {
+	        						keep: concept.sourceConcepts.length > 0,
+	        						concept: concept
+	        					};
+	        				});
+	        		},
+    	          }
+    	        });
+
+    	        modalInstance.result
+    		        .then(function (selectedRelated) {
+    					var conceptOffset;
+    					$scope.concepts.forEach(function(c, cIx) {
+    						if (c.cui == concept.cui) {
+    							conceptOffset = cIx;
+    						}
+    					});
+
+    					// Insert each related concept in list of concepts!
+    					selectedRelated.forEach(function(related, ix) {
+    						$scope.concepts.splice(conceptOffset + ix + 1, 0, related);
+    					});
+    		        }, function () {
+    		        	console.log('Modal dismissed at: ' + new Date());
+    		        });
+    		});        
+    };
+});
+
+codeMapperApp.controller('ExpandRelatedCtrl', function ($scope, $http, $modalInstance, hyponymsNotHypernyms, concept, relatedConcepts, selectedVocabularies) {
+	
+	$scope.concept = concept;
+	$scope.name = hyponymsNotHypernyms ? "hyponyms" : "hypernyms";
+	$scope.relatedConcepts = relatedConcepts;
+	$scope.selectedVocabularies = selectedVocabularies;
+
+	$scope.ok = function () {
+		var selectedRelated = $scope.relatedConcepts
+			.filter(function(r) {
+				return r.keep;
+			})
+			.map(function(r) {
+				return r.concept;
+			});
+		$modalInstance.close(selectedRelated);
+	};
+
+	$scope.cancel = function () {
+		$modalInstance.dismiss('cancel');
+	};
+
+	$scope.codesInVocabulary = function(concept, vocabularyAbbreviation) {
+		return concept.sourceConcepts
+			.filter(function(sourceConcept) {
+				return sourceConcept.vocabulary == vocabularyAbbreviation;
+			})
+			.map(function(sourceConcept) {
+				return sourceConcept.id;
+			});
 	};
 });
 

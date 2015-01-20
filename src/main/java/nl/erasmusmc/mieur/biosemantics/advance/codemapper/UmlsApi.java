@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +81,7 @@ public class UmlsApi  {
 		}
 	}
 
-	public Map<String, String> getPreferredNames(List<String> cuis) throws CodeMapperException {
+	public Map<String, String> getPreferredNames(Collection<String> cuis) throws CodeMapperException {
 
 		if (cuis.isEmpty())
 			return new TreeMap<>();
@@ -98,8 +99,8 @@ public class UmlsApi  {
 			try (PreparedStatement statement = connection.prepareStatement(query)) {
 
 				int offset = 1;
-				for (int ix = 0; ix < cuis.size(); ix++, offset++)
-					statement.setString(offset, cuis.get(ix));
+				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
+					statement.setString(offset, iter.next());
 
 				logger.debug(statement);
 				ResultSet result = statement.executeQuery();
@@ -122,21 +123,16 @@ public class UmlsApi  {
 		}
 	}
 
-	public Map<String, List<SourceConcept>> getSourceConcepts(List<String> cuis, List<String> vocabularies)
+	public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> vocabularies)
 			throws CodeMapperException {
 
 		if (cuis.isEmpty())
 			return new TreeMap<>();
 		else {
 
-			if (vocabularies == null)
-				vocabularies = availableVocabularies;
-
-			String sabPlaceholders;
-			if (vocabularies != null)
+			String sabPlaceholders = "";
+			if (!vocabularies.isEmpty())
 				sabPlaceholders = String.format("AND sab IN (%s)", placeholders(vocabularies.size()));
-			else
-				sabPlaceholders = "";
 
 			String queryFmt = "SELECT DISTINCT cui, sab, code, str, tty FROM MRCONSO "
 					+ "WHERE cui IN (%s) %s ORDER BY cui, sab, code, str";
@@ -145,13 +141,15 @@ public class UmlsApi  {
 			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 
 				int offset = 1;
-				for (int ix = 0; ix < cuis.size(); ix++, offset++)
-					statement.setString(offset, cuis.get(ix));
-				if (vocabularies != null)
-					for (int ix = 0; ix < vocabularies.size(); ix++, offset++)
-						statement.setString(offset, vocabularies.get(ix));
 
-				logger.debug(statement);
+				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
+					statement.setString(offset, iter.next());
+
+				if (vocabularies != null)
+					for (Iterator<String> iter = vocabularies.iterator(); iter.hasNext(); offset++)
+						statement.setString(offset, iter.next());
+
+                logger.debug(statement);
 				ResultSet result = statement.executeQuery();
 
 				Map<String, List<SourceConcept>> sourceConcepts = new TreeMap<>();
@@ -192,7 +190,7 @@ public class UmlsApi  {
 		}
 	}
 
-	private Map<String, List<UmlsConcept>> getRelated(List<String> cuis, boolean hyponymsNotHypernyms) throws CodeMapperException {
+	public Map<String, List<UmlsConcept>> getRelated(List<String> cuis, List<String> vocabularies, boolean hyponymsNotHypernyms) throws CodeMapperException {
 
 		if (cuis.isEmpty())
 			return new TreeMap<>();
@@ -217,35 +215,37 @@ public class UmlsApi  {
 				logger.debug(statement);
 				ResultSet result = statement.executeQuery();
 
-				Map<String, Set<String>> relatedCuis = new TreeMap<>();
+				Map<String, Set<String>> related = new TreeMap<>();
 				while (result.next()) {
 					String cui = result.getString(1);
 					String relatedCui = result.getString(2);
-					if (!relatedCuis.containsKey(cui))
-						relatedCuis.put(cui, new TreeSet<String>());
-					relatedCuis.get(cui).add(relatedCui);
+					if (!related.containsKey(cui))
+						related.put(cui, new TreeSet<String>());
+					related.get(cui).add(relatedCui);
 				}
 
-				Set<String> relatedCuisUnique = new TreeSet<>();
-				for (Collection<String> cs : relatedCuis.values())
-					relatedCuisUnique.addAll(cs);
-				Map<String, String> names = getPreferredNames(new LinkedList<>(relatedCuisUnique));
+				Set<String> relatedCuis = new TreeSet<>();
+				for (Collection<String> cs : related.values())
+					relatedCuis.addAll(cs);
 
-				Map<String, List<UmlsConcept>> related = new TreeMap<>();
-				for (String cui : cuis)
-					if (relatedCuis.containsKey(cui)) {
-						related.put(cui, new LinkedList<UmlsConcept>());
-						for (String relatedCui : relatedCuis.get(cui))
-							related.get(cui).add(new UmlsConcept(relatedCui, names.get(relatedCui)));
-					}
-				return related;
+				Map<String, UmlsConcept> relatedConcepts = getConcepts(relatedCuis, vocabularies);
+
+				Map<String, List<UmlsConcept>> relatedByReference = new TreeMap<>();
+				for (String cui: cuis) {
+					List<UmlsConcept> concepts = new LinkedList<>();
+					for (String relatedCui: related.get(cui))
+						if (relatedConcepts.containsKey(relatedCui))
+							concepts.add(relatedConcepts.get(relatedCui));
+					relatedByReference.put(cui, concepts);
+				}
+				return relatedByReference;
 			} catch (SQLException e) {
 				throw new CodeMapperException(e);
 			}
 		}
 	}
 
-	private Map<String, String> getDefinitions(List<String> cuis) throws CodeMapperException {
+	private Map<String, String> getDefinitions(Collection<String> cuis) throws CodeMapperException {
 
 		if (cuis.isEmpty())
 			return new TreeMap<>();
@@ -257,8 +257,8 @@ public class UmlsApi  {
 			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 
 				int offset = 1;
-				for (int ix = 0; ix < cuis.size(); ix++, offset++)
-					statement.setString(offset, cuis.get(ix));
+				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
+					statement.setString(offset, iter.next());
 
 				logger.debug(statement);
 				ResultSet result = statement.executeQuery();
@@ -291,22 +291,19 @@ public class UmlsApi  {
 		}
 	}
 
-	public List<UmlsConcept> getConcepts(List<String> cuis, List<String> vocabularies)
+	public Map<String, UmlsConcept> getConcepts(Collection<String> cuis, Collection<String> vocabularies)
 			throws CodeMapperException {
-
 		if (cuis.isEmpty())
-			return new LinkedList<>();
+			return new TreeMap<>();
 		else {
 
 			cuis = new LinkedList<>(new TreeSet<>(cuis)); // unique CUIs
 
 	        Map<String, List<SourceConcept>> sourceConcepts = getSourceConcepts(cuis, vocabularies);
 	        Map<String, String> preferredNames = getPreferredNames(cuis);
-	        Map<String, List<UmlsConcept>> hyponyms = getRelated(cuis, true);
-	        Map<String, List<UmlsConcept>> hypernyms = getRelated(cuis, false);
 	        Map<String, String> definitions = getDefinitions(cuis);
 
-	        List<UmlsConcept> concepts = new LinkedList<>();
+	        Map<String, UmlsConcept> concepts = new TreeMap<>();
 	        for (String cui : cuis) {
 	        	UmlsConcept concept = new UmlsConcept();
 	        	concept.setCui(cui);
@@ -315,13 +312,7 @@ public class UmlsApi  {
 	            List<SourceConcept> sourceConcept = sourceConcepts.get(cui);
 	            if (sourceConcept != null)
 	            	concept.setSourceConcepts(sourceConcept);
-	            List<UmlsConcept> hypernym = hypernyms.get(cui);
-	            if (hypernym != null)
-	            	concept.setHypernyms(hypernym);
-	            List<UmlsConcept> hyponym = hyponyms.get(cui);
-	            if (hyponym != null)
-	                concept.setHyponyms(hyponym);
-	            concepts.add(concept);
+	            concepts.put(cui, concept);
 	        }
 	        logger.debug("Found source concepts " + concepts.size());
 

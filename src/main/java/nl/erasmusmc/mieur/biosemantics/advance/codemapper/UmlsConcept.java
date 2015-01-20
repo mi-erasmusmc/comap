@@ -12,29 +12,18 @@ public class UmlsConcept {
     private String definition = null;
     private List<String> semanticTypes = null;
     private List<SourceConcept> sourceConcepts = new LinkedList<>();;
-    private List<UmlsConcept> hypernyms = new LinkedList<>();
-    private List<UmlsConcept> hyponyms = new LinkedList<>();
 
     public UmlsConcept() {
     }
 
     public UmlsConcept(String cui, String preferredName, String definition, List<String> semanticTypes,
-            List<SourceConcept> sourceConcepts, List<UmlsConcept> hyponyms, List<UmlsConcept> hypernyms) {
+            List<SourceConcept> sourceConcepts) {
         this.cui = cui;
         this.preferredName = preferredName;
         this.definition = definition;
         this.semanticTypes = semanticTypes;
         this.sourceConcepts = sourceConcepts;
-        this.hyponyms = hyponyms;
     }
-
-    public List<UmlsConcept> getHypernyms() {
-		return hypernyms;
-	}
-
-	public void setHypernyms(List<UmlsConcept> hypernyms) {
-		this.hypernyms = hypernyms;
-	}
 
 	public UmlsConcept(String cui, String preferredName) {
         this.cui = cui;
@@ -79,13 +68,5 @@ public class UmlsConcept {
 
     public void setSourceConcepts(List<SourceConcept> sourceConcepts) {
         this.sourceConcepts = sourceConcepts;
-    }
-
-    public List<UmlsConcept> getHyponyms() {
-        return hyponyms;
-    }
-
-    public void setHyponyms(List<UmlsConcept> hyponyms) {
-        this.hyponyms = hyponyms;
     }
 }

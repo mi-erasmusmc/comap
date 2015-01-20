@@ -97,15 +97,23 @@
               <th>CUI</th>
               <th>Name</th>
               <th>Spans</th>
-              <th>Hypernyms</th>
-              <th>Hyponyms</th>
               <!--th>Synonyms</th-->
               <th ng-repeat="voc in vocabularies | filter: { keep: true }" ng-bind="voc.abbreviation"></th>
             </tr>
           </thead>
           <tbody>
             <tr ng-repeat="concept in concepts">
-              <td><button ng-click="deleteConcept(concept.cui)" class="btn btn-default btn-sm">Delete</button></td>
+              <td>
+                <button ng-click="deleteConcept(concept.cui)" class="btn btn-default btn-sm" title="Delete">
+                  <i class="glyphicon glyphicon-remove-circle"></i>
+                </button>
+                <button class="btn btn-default" ng-click="expandRelated(false, concept)" title="Expand Hypernyms">
+                  <i class="glyphicon glyphicon-chevron-up"></i>
+                </button>
+                <button class="btn btn-default" ng-click="expandRelated(true, concept)" title="Expand Hyponyms">
+                  <i class="glyphicon glyphicon-chevron-down"></i>
+                </button>
+              </td>
               <td>
                 <span ng-bind="concept.cui"></span><span ng-if="concept.sourceConcepts.length == 0">*</span>
               </td>
@@ -114,22 +122,6 @@
               </td>
               <td>
                 <span class="span" ng-if="concept.spans != undefined" ng-repeat="span in concept.spans" ng-bind="span.text"></span>
-              </td>
-              <td>
-                <button ng-repeat="hypernym in concept.hypernyms" ng-click="expandConcepts(concept, [hypernym])"  class="btn btn-default btn-sm">
-                  {{hypernym.preferredName || hypernym.cui}}
-                </button>
-                <button ng-if="concept.hypernyms" ng-click="expandConcepts(concept, concept.hypernyms)"  class="btn btn-default btn-sm">
-                  Expand all {{concept.hypernyms.length}}
-                </button>
-              </td>
-              <td>
-                <button ng-repeat="hyponym in concept.hyponyms" ng-click="expandConcepts(concept, [hyponym])"  class="btn btn-default btn-sm">
-                  {{hyponym.preferredName || hyponym.cui}}
-                </button>
-                <button ng-if="concept.hyponyms" ng-click="expandConcepts(concept, concept.hyponyms)"  class="btn btn-default btn-sm">
-                  Expand all {{concept.hyponyms.length}}
-                </button>
               </td>
               <td ng-repeat="voc in vocabularies | filter: { keep: true }"> 
                 <!-- Angular FTW! -->
@@ -142,12 +134,38 @@
     </tabset>
     <div id="mask" ng-show="isBlocked"></div>
     
-    <script type="text/ng-template" id="myModalContent.html">
+    <script type="text/ng-template" id="expandRelatedConcepts.html">
                 <div class="modal-header">
-                    <h3 class="modal-title" ng-bind="title"></h3>
+                    <h3 class="modal-title">Expand <span ng-bind="name"></span>
+                       of {{concept.preferredName}} - {{concept.cui}}</h3>
                 </div>
                 <div class="modal-body">
-                    <div ng-bind-html="trustDefinition(content)"></div>
+                    <table st-table="relatedConcepts" class="table table-striped">
+                      <thead>
+                        <tr>
+                          <th></th>
+                          <th>CUI</th>
+                          <th st-sort="preferredName">Name</th>
+                          <th ng-repeat="voc in selectedVocabularies" ng-bind="voc.abbreviation"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr st-select-row="r" st-select-mode="multiple" ng-repeat="r in relatedConcepts">
+                          <td>
+                            <input type="checkbox" ng-model="r.keep" /></input>
+                          </td>
+                          <td>
+                            <span ng-bind="r.concept.cui"></span><span ng-if="r.concept.sourceConcepts.length == 0">*</span>
+                          </td>
+                          <td>
+                            <a href='#' tooltip-html-unsafe='{{r.concept.definition}}' ng-bind='r.concept.preferredName'></a>
+                          </td>
+                          <td ng-repeat="voc in selectedVocabularies"> 
+                            <span class="code" ng-repeat="code in codesInVocabulary(r.concept, voc.abbreviation)" ng-bind="code"></span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-primary" ng-click="ok()">OK</button>

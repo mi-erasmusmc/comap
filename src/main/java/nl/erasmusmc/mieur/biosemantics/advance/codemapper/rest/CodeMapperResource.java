@@ -1,5 +1,6 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -54,7 +55,8 @@ public class CodeMapperResource {
 			@FormParam("vocabularies") List<String> vocabularies) {
 		try {
 			UmlsApi api = CodeMapperApplication.getApi();
-			return api.getConcepts(cuis, vocabularies);
+			Map<String, UmlsConcept> concepts = api.getConcepts(cuis, vocabularies);
+			return new LinkedList<>(concepts.values());
 		} catch (CodeMapperException e) {
 			logger.error(e);
 			e.printStackTrace();
@@ -69,5 +71,37 @@ public class CodeMapperResource {
 		Map<String, String> config = new TreeMap<>();
 		config.put("peregrineResourceUrl", CodeMapperApplication.getPeregrineResourceUrl());
 		return Response.ok(config).build();
+	}
+
+	@POST
+	@Path("related/hyponyms")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Map<String, List<UmlsConcept>> getHyponyms(@FormParam("cuis") List<String> cuis, @FormParam("vocabularies") List<String> vocabularies) {
+		return getRelated(cuis, vocabularies, true);
+	}
+
+	@POST
+	@Path("related/hypernyms")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Map<String, List<UmlsConcept>> getHypernyms(@FormParam("cuis") List<String> cuis, @FormParam("vocabularies") List<String> vocabularies) {
+		return getRelated(cuis, vocabularies, false);
+	}
+
+	@POST
+	@Path("related")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Map<String, List<UmlsConcept>> getRelated(@FormParam("cuis") List<String> cuis, @FormParam("vocabularies") List<String> vocabularies, @FormParam("hyponymsNotHypernyms") boolean hyponymsNotHypernyms) {
+		if (cuis.isEmpty())
+			return new TreeMap<>();
+		else {
+			UmlsApi api = CodeMapperApplication.getApi();
+			try {
+				return api.getRelated(cuis, vocabularies, hyponymsNotHypernyms);
+			} catch (CodeMapperException e) {
+				logger.error(e);
+				e.printStackTrace();
+				throw new BadRequestException(e);
+			}
+		}
 	}
 }

@@ -51,14 +51,16 @@ function filterRelated(related, cuis) {
 		});
 }
 
-var codeMapperApp = angular.module('codeMapperApp', [ 'ui.bootstrap', 'smart-table', 'ngSanitize' ]);
+var codeMapperApp = angular.module('codeMapperApp',
+		[ 'ui.bootstrap', 'ngSanitize', 'ngGrid' ]);
 
-codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sce, $modal) {
+codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sce, $modal, $timeout) {
 
 	$scope.vocabularies = [];
 	$scope.caseDefinition = "deafness and fever and code";
 	$scope.concepts = [];
-	$scope.semanticTypesGroups = null;
+	$scope.selected = [];
+    $scope.semanticTypesGroups = [];
 
 	$scope.isBlocked = false;
 	$scope.messages = [];
@@ -98,18 +100,91 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 		updateMessages();
 	};
 	
+	/* SEMANTIC TYPES AND GROUPS */
+	
+	$scope.semanticTypesGroupsGridOptions = {
+	     data: "semanticTypesGroups",
+	     rowHeight: 35,
+	     selectedItems: [],
+	     columnDefs: [
+    		 { displayName: 'Type', field: 'type' },
+    		 { displayName: 'Description', field: 'description' },
+    		 { displayName: 'Group', field: 'group'},
+		 ],
+	 };
+	
 	var blockSemanticTypesGroups = $scope.block("Retrieving semantic types and groups... ");
 	$http.get(SEMANTIC_TYPES_GROUPS_URL)
 		.error(function(err) {
-			var msg = "ERROR: Couldn't retrieve semantic types and groups: " + err;
-			console.log(msg);
+			var msg = "ERROR: Couldn't load semantic types and groups";
+			console.log(msg, err);
 			alert(msg);
 			$scope.unblock(blockSemanticTypesGroups, "ERROR");
 		})
 		.success(function(semanticTypesGroups) {
 			$scope.semanticTypesGroups = semanticTypesGroups;
+			$timeout(function() {
+		        $scope.semanticTypesGroups.forEach(function(semanticType, index) {
+					if (semanticType.group == "DISO") {
+		                $scope.semanticTypesGroupsGridOptions.selectItem(index, true);
+					}
+		        });
+			}, 0);
 			$scope.unblock(blockSemanticTypesGroups, "OK");
 		});
+	
+	$scope.selectedSemanticTypesGroups = function() {
+		if ($scope.semanticTypesGroupsGridOptions.$gridScope != undefined) {
+			return $scope.semanticTypesGroupsGridOptions.$gridScope.selectedItems;
+		} else {
+			return [];
+		}
+	};
+    
+    $scope.replaceAndFilterBySemanticTypes = function(concepts) {
+    	var semanticTypesGroups = {};
+    	$scope.semanticTypesGroups.forEach(function(semanticTypeGroup) {
+    		semanticTypesGroups[semanticTypeGroup.type] = semanticTypeGroup;
+    	});
+    	return concepts
+    		.map(function(concept) {
+    		   var result = angular.copy(concept);
+               var typesGroups = concept.semanticTypes
+                       .map(function(type) {
+                               return semanticTypesGroups[type];
+                       });
+               var types = typesGroups
+                       .map(function(typeGroup) {
+                               return typeGroup.description;
+                               })
+                               .filter(function(v, ix, types) {
+                                       return ix == types.indexOf(v);
+                               });
+               var groups = typesGroups
+                               .map(function(typeGroup) {
+                                       return typeGroup.group;
+                               })
+                               .filter(function(v, ix, types) {
+                                       return ix == types.indexOf(v);
+                               });
+    			result.semantic = {
+	    			types: types,
+	    			groups: groups,
+	    		};
+    			return result;
+    		})
+    		.filter(function(concept) {
+    			return concept.semanticTypes
+    				.filter(function(type) {
+    					return $scope.selectedSemanticTypesGroups()
+    						.map(function(t) {
+    							return t.type;
+    						})
+    						.indexOf(type) != -1;
+    				})
+    				.length > 0;
+    		});
+    };
 
 	var blockRetrieveCodingSystems = $scope.block("Retrieving coding systems... ");
 	$http.get(CODING_SYSTEMS_URL)
@@ -179,7 +254,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 				$scope.unblock(blockLookupConcepts, "ERROR");
 			})
 			.success(function(result) {
-				$scope.unblock(blockSearchConcepts, "OK, found ");
+				$scope.unblock(blockSearchConcepts, "OK, found " + result.spans.length);
 				var cuis = [];
 				function cuiOfId(id) {
 					return 'C' + Array(8 - id.length).join('0') + id;
@@ -192,8 +267,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 				});
 				var vocabularies = $scope.getSelectedVocabularies();
 				var blockLookupConcepts = $scope.block("Found " + cuis.length + " CUIs " +
-						"(from " + result.spans.length + " spans " +
-						"with " + cuis.length + " different CUIs) " +
+						"(from " + result.spans.length + " spans) " +
 						"looking up in vocabularies ...");
 				var data = {
 					cuis : cuis,
@@ -212,12 +286,11 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 									return cuiOfId(span.id) == concept.cui;
 								});
 						});
-						$scope.replaceSemanticTypes(concepts);
-						$scope.concepts = concepts;
+						$scope.concepts = $scope.replaceAndFilterBySemanticTypes(concepts);
 						$timeout(function() {
 							$('li#concepts-tab > a').click();
 						});
-						$scope.unblock(blockLookupConcepts, "OK, found " + concepts.length);
+						$scope.unblock(blockLookupConcepts, "OK, found " + concepts.length + ", filtered on semantic types to " + $scope.concepts.length);
 					});
 			});
 	};
@@ -319,7 +392,10 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     			$scope.unblock(blockLookupExpand, "ERROR")
     		})
     		.success(function(relatedConcepts) {
-    			$scope.unblock(blockLookupExpand, "OK");
+    			var filteredRelatedConcepts = $scope.replaceAndFilterBySemanticTypes(relatedConcepts[concept.cui]); 
+    			
+    			$scope.unblock(blockLookupExpand, "OK, found " + relatedConcepts[concept.cui].length
+    					+ " filter on semantic type to " + filteredRelatedConcepts.length);
     	        
     	        var modalInstance = $modal.open({
     	          templateUrl: 'expandRelatedConcepts.html',
@@ -330,9 +406,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     	        	concept: function() { return concept; },
     	        	selectedVocabularies: function() { return $scope.vocabularies.filter(function (voc) { return voc.keep; }); },
     	        	relatedConcepts: function() {
-    	        		relatedConcepts = relatedConcepts[concept.cui];
-    	        		$scope.replaceSemanticTypes(relatedConcepts);
-    	        		return relatedConcepts
+    	        		return filteredRelatedConcepts
 	        				.map(function(concept) {
 	        					return {
 	        						keep: concept.sourceConcepts.length > 0,
@@ -360,32 +434,6 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     		        	console.log('Modal dismissed at: ' + new Date());
     		        });
     		});        
-    };
-    $scope.replaceSemanticTypes = function(concepts) {
-    	concepts.forEach(function(concept) {
-    		var typesGroups = concept.semanticTypes
-	    		.map(function(type) {
-	    			return $scope.semanticTypesGroups[type];
-	    		});
-    		var types = typesGroups
-    			.map(function(typeGroup) {
-    				return typeGroup.description;
-				})
-				.filter(function(v, ix, types) {
-					return ix == types.indexOf(v);
-				});
-    		var groups = typesGroups
-				.map(function(typeGroup) {
-					return typeGroup.group;
-				})
-				.filter(function(v, ix, types) {
-					return ix == types.indexOf(v);
-				});
-    		concept.semantic = {
-    			types: types,
-    			groups: groups,
-    		};
-    	});
     };
 });
 

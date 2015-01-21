@@ -4,62 +4,13 @@
     <title>ADVANCE Code Mapper</title>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.js"></script>
-    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.12.0.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.28/angular-sanitize.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.5.0/bootstrap-table.min.js"></script>
-    <script src="lib/smart-table.min.js"></script>
-    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.5.0/bootstrap-table.min.css">
-    <style type="text/css" title="currentStyle">
-      #search-concepts {
-        display: block;
-      }
-      .flag {
-        padding: 1em;
-      }
-      html, body { height: 100%; }
-      div#mask {
-        cursor: wait;
-        z-index: 999;
-        height: 100%;
-        width: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-      }
-      .span, .code, .vocabulary {
-        display: inline-block;
-        text-align: center;
-        white-space: nowrap;
-        margin: 0.2em;
-        padding: 2px 5px;
-        font-size: 12px;
-      }
-      .code, .vocabulary {
-        background-color: #C9C9C9;
-        border: 1px solid #adadad;
-        border-radius: 3px;
-      }
-      .span {
-        background-color: #FFFCAB;
-      }
-      .icon-list li {
-        padding: 0 0 5px 20px;
-        display: block;
-        position: relative;
-      }
-      .icon-list li:before {
-        font-family: 'Glyphicons Halflings';
-        position: absolute;
-        left: 0px;
-        top:3px;
-        font-size:80%
-      }
-      .messages li:before {
-       content: '\e080';
-      }
-    </style>
-    <script src="advance-code-mapper.js"></script>
+    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.12.0.js"></script>
+    <script src="//angular-ui.github.io/ng-grid/lib/ng-grid.js"></script>
+    <link rel="stylesheet" type="text/css" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="//angular-ui.github.io/ng-grid/css/ng-grid.css" />
+    <script src="app.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
   </head>
   <body ng-controller="codeMapperCtrl">
     <div class="row">
@@ -75,10 +26,11 @@
     <ul class="list-unstyled icon-list messages">
       <li ng-repeat="message in messages | limitTo: -3" ng-bind="message.text"></li>
     </ul>
+    
     <tabset>
       <tab id="coding-systems-tab" heading="Vocabularies">
       <div>
-      Selected vocabularies:
+      Selected:
       <span ng-repeat="voc in vocabularies | filter: { keep: true }" ng-bind="voc.abbreviation" class="vocabulary">
       </span>
       </div> 
@@ -99,12 +51,22 @@
           </tbody>
         </table>
       </tab>
+      
+      <tab id="semantics-tab" heading="Semantics">
+        <div>
+          Selected:
+          <span class="semantic-type" ng-repeat="typeGroups in semanticTypesGroupsGridOptions.$gridScope.selectedItems" ng-bind="typeGroups.description"/>
+        </div>
+        <div ng-grid="semanticTypesGroupsGridOptions" class="grid"></div>
+      </tab>
+      
       <tab id="case-definition-tab" heading="Case definition">
         <textarea rows=20 cols=120 ng-model="caseDefinition"></textarea>
         <button id="search-concepts" class="btn btn-default btn-sm" ng-click="searchConcepts()">
           Search concepts
         </button>
       </tab>
+      
       <tab id="concepts-tab" heading="Concepts">
         <button ng-click="downloadConcepts()"  class="btn btn-default btn-sm">Download {{concepts.length}} concepts as CSV</button>
         <table id="coding-systems" class="table table-striped">
@@ -115,7 +77,6 @@
               <th>Name</th>
               <th>Spans</th>
               <th>Semantic types</th>
-              <th>Semantic groups</th>
               <th ng-repeat="voc in vocabularies | filter: { keep: true }" ng-bind="voc.abbreviation"></th>
             </tr>
           </thead>
@@ -144,9 +105,6 @@
               <td>
                 <span class="semantic-type" ng-repeat="type in concept.semantic.types" ng-bind="type"></span>
               </td>
-              <td>
-                <span class="semantic-group" ng-repeat="group in concept.semantic.groups" ng-bind="group"></span>
-              </td>
               <td ng-repeat="voc in vocabularies | filter: { keep: true }"> 
                 <!-- Angular FTW! -->
                 <span class="code" ng-repeat="code in codesInVocabulary(concept, voc.abbreviation)" ng-bind="code"></span>
@@ -156,6 +114,7 @@
         </table>
       </tab>
     </tabset>
+    
     <div id="mask" ng-show="isBlocked"></div>
     
     <script type="text/ng-template" id="expandRelatedConcepts.html">

@@ -52,10 +52,10 @@
         </table>
       </tab>
       
-      <tab id="semantics-tab" heading="Semantics">
+      <tab id="semantics-tab" heading="Semantic types">
         <div>
           Selected:
-          <span class="semantic-type" ng-repeat="typeGroups in semanticTypesGroupsGridOptions.$gridScope.selectedItems" ng-bind="typeGroups.description"/>
+          <span class="semantic-type" ng-repeat="typeGroups in semanticTypesGroupsGridOptions.$gridScope.selectedItems" ng-bind="typeGroups.description"></span>
         </div>
         <div ng-grid="semanticTypesGroupsGridOptions" class="grid"></div>
       </tab>

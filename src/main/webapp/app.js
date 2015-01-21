@@ -61,6 +61,10 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 	$scope.concepts = [];
 	$scope.selected = [];
     $scope.semanticTypesGroups = [];
+    
+    /*************************/
+    /* BLOCKING AND MESSAGES */
+    /*************************/
 
 	$scope.isBlocked = false;
 	$scope.messages = [];
@@ -100,7 +104,9 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 		updateMessages();
 	};
 	
+	/*****************************/
 	/* SEMANTIC TYPES AND GROUPS */
+	/*****************************/
 	
 	$scope.semanticTypesGroupsGridOptions = {
 	     data: "semanticTypesGroups",
@@ -112,26 +118,6 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     		 { displayName: 'Group', field: 'group'},
 		 ],
 	 };
-	
-	var blockSemanticTypesGroups = $scope.block("Retrieving semantic types and groups... ");
-	$http.get(SEMANTIC_TYPES_GROUPS_URL)
-		.error(function(err) {
-			var msg = "ERROR: Couldn't load semantic types and groups";
-			console.log(msg, err);
-			alert(msg);
-			$scope.unblock(blockSemanticTypesGroups, "ERROR");
-		})
-		.success(function(semanticTypesGroups) {
-			$scope.semanticTypesGroups = semanticTypesGroups;
-			$timeout(function() {
-		        $scope.semanticTypesGroups.forEach(function(semanticType, index) {
-					if (semanticType.group == "DISO") {
-		                $scope.semanticTypesGroupsGridOptions.selectItem(index, true);
-					}
-		        });
-			}, 0);
-			$scope.unblock(blockSemanticTypesGroups, "OK");
-		});
 	
 	$scope.selectedSemanticTypesGroups = function() {
 		if ($scope.semanticTypesGroupsGridOptions.$gridScope != undefined) {
@@ -185,6 +171,30 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     				.length > 0;
     		});
     };
+    
+    /************/
+    /* GET DATA */
+    /************/
+
+	var blockSemanticTypesGroups = $scope.block("Retrieving semantic types and groups... ");
+	$http.get(SEMANTIC_TYPES_GROUPS_URL)
+		.error(function(err) {
+			var msg = "ERROR: Couldn't load semantic types and groups";
+			console.log(msg, err);
+			alert(msg);
+			$scope.unblock(blockSemanticTypesGroups, "ERROR");
+		})
+		.success(function(semanticTypesGroups) {
+			$scope.semanticTypesGroups = semanticTypesGroups;
+			$timeout(function() {
+		        $scope.semanticTypesGroups.forEach(function(semanticType, index) {
+					if (semanticType.group == "DISO") {
+		                $scope.semanticTypesGroupsGridOptions.selectItem(index, true);
+					}
+		        });
+			}, 0);
+			$scope.unblock(blockSemanticTypesGroups, "OK");
+		});
 
 	var blockRetrieveCodingSystems = $scope.block("Retrieving coding systems... ");
 	$http.get(CODING_SYSTEMS_URL)
@@ -239,6 +249,10 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 				return vocabulary.abbreviation;
 			});
 	};
+	
+	/*************/
+	/* FUNCTIONS */
+	/*************/
 
 	$scope.searchConcepts = function() {
 		var caseDefinition = this.caseDefinition;

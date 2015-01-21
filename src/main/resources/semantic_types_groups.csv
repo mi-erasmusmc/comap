@@ -1,0 +1,137 @@
+Type,Description,Group
+T052,Activity,ACTI
+T053,Behavior,ACTI
+T056,Daily or Recreational Activity,ACTI
+T051,Event,ACTI
+T064,Governmental or Regulatory Activity,ACTI
+T055,Individual Behavior,ACTI
+T066,Machine Activity,ACTI
+T057,Occupational Activity,ACTI
+T054,Social Behavior,ACTI
+T017,Anatomical Structure,ANAT
+T029,Body Location or Region,ANAT
+T023,Body Part Organ or Organ Component,ANAT
+T030,Body Space or Junction,ANAT
+T031,Body Substance,ANAT
+T022,Body System,ANAT
+T025,Cell,ANAT
+T026,Cell Component,ANAT
+T018,Embryonic Structure,ANAT
+T021,Fully Formed Anatomical Structure,ANAT
+T024,Tissue,ANAT
+T116,Amino Acid Peptide or Protein,CHEM
+T195,Antibiotic,CHEM
+T123,Biologically Active Substance,CHEM
+T122,Biomedical or Dental Material,CHEM
+T118,Carbohydrate,CHEM
+T103,Chemical,CHEM
+T120,Chemical Viewed Functionally,CHEM
+T104,Chemical Viewed Structurally,CHEM
+T200,Clinical Drug,CHEM
+T111,Eicosanoid,CHEM
+T196,Element Ion or Isotope,CHEM
+T126,Enzyme,CHEM
+T131,Hazardous or Poisonous Substance,CHEM
+T125,Hormone,CHEM
+T129,Immunologic Factor,CHEM
+T130,Indicator Reagent or Diagnostic Aid,CHEM
+T197,Inorganic Chemical,CHEM
+T119,Lipid,CHEM
+T124,Neuroreactive Substance or Biogenic Amine,CHEM
+T114,Nucleic Acid Nucleoside or Nucleotide,CHEM
+T109,Organic Chemical,CHEM
+T115,Organophosphorus Compound,CHEM
+T121,Pharmacologic Substance,CHEM
+T192,Receptor,CHEM
+T110,Steroid,CHEM
+T127,Vitamin,CHEM
+T185,Classification,CONC
+T077,Conceptual Entity,CONC
+T169,Functional Concept,CONC
+T102,Group Attribute,CONC
+T078,Idea or Concept,CONC
+T170,Intellectual Product,CONC
+T171,Language,CONC
+T080,Qualitative Concept,CONC
+T081,Quantitative Concept,CONC
+T089,Regulation or Law,CONC
+T082,Spatial Concept,CONC
+T079,Temporal Concept,CONC
+T203,Drug Delivery Device,DEVI
+T074,Medical Device,DEVI
+T075,Research Device,DEVI
+T020,Acquired Abnormality,DISO
+T190,Anatomical Abnormality,DISO
+T049,Cell or Molecular Dysfunction,DISO
+T019,Congenital Abnormality,DISO
+T047,Disease or Syndrome,DISO
+T050,Experimental Model of Disease,DISO
+T033,Finding,DISO
+T037,Injury or Poisoning,DISO
+T048,Mental or Behavioral Dysfunction,DISO
+T191,Neoplastic Process,DISO
+T046,Pathologic Function,DISO
+T184,Sign or Symptom,DISO
+T087,Amino Acid Sequence,GENE
+T088,Carbohydrate Sequence,GENE
+T028,Gene or Genome,GENE
+T085,Molecular Sequence,GENE
+T086,Nucleotide Sequence,GENE
+T083,Geographic Area,GEOG
+T100,Age Group,LIVB
+T003,Alga,LIVB
+T011,Amphibian,LIVB
+T008,Animal,LIVB
+T194,Archaeon,LIVB
+T007,Bacterium,LIVB
+T012,Bird,LIVB
+T204,Eukaryote,LIVB
+T099,Family Group,LIVB
+T013,Fish,LIVB
+T004,Fungus,LIVB
+T096,Group,LIVB
+T016,Human,LIVB
+T009,Invertebrate,LIVB
+T015,Mammal,LIVB
+T001,Organism,LIVB
+T101,Patient or Disabled Group,LIVB
+T002,Plant,LIVB
+T098,Population Group,LIVB
+T097,Professional or Occupational Group,LIVB
+T014,Reptile,LIVB
+T006,Rickettsia or Chlamydia,LIVB
+T010,Vertebrate,LIVB
+T005,Virus,LIVB
+T071,Entity,OBJC
+T168,Food,OBJC
+T073,Manufactured Object,OBJC
+T072,Physical Object,OBJC
+T167,Substance,OBJC
+T091,Biomedical Occupation or Discipline,OCCU
+T090,Occupation or Discipline,OCCU
+T093,Health Care Related Organization,ORGA
+T092,Organization,ORGA
+T094,Professional Society,ORGA
+T095,Self-help or Relief Organization,ORGA
+T038,Biologic Function,PHEN
+T069,Environmental Effect of Humans,PHEN
+T068,Human-caused Phenomenon or Process,PHEN
+T034,Laboratory or Test Result,PHEN
+T070,Natural Phenomenon or Process,PHEN
+T067,Phenomenon or Process,PHEN
+T043,Cell Function,PHYS
+T201,Clinical Attribute,PHYS
+T045,Genetic Function,PHYS
+T041,Mental Process,PHYS
+T044,Molecular Function,PHYS
+T032,Organism Attribute,PHYS
+T040,Organism Function,PHYS
+T042,Organ or Tissue Function,PHYS
+T039,Physiologic Function,PHYS
+T060,Diagnostic Procedure,PROC
+T065,Educational Activity,PROC
+T058,Health Care Activity,PROC
+T059,Laboratory Procedure,PROC
+T063,Molecular Biology Research Technique,PROC
+T062,Research Activity,PROC
+T061,Therapeutic or Preventive Procedure,PROC

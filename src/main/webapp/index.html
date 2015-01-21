@@ -97,7 +97,8 @@
               <th>CUI</th>
               <th>Name</th>
               <th>Spans</th>
-              <!--th>Synonyms</th-->
+              <th>Semantic types</th>
+              <th>Semantic groups</th>
               <th ng-repeat="voc in vocabularies | filter: { keep: true }" ng-bind="voc.abbreviation"></th>
             </tr>
           </thead>
@@ -122,6 +123,12 @@
               </td>
               <td>
                 <span class="span" ng-if="concept.spans != undefined" ng-repeat="span in concept.spans" ng-bind="span.text"></span>
+              </td>
+              <td>
+                <span class="semantic-type" ng-repeat="type in concept.semantic.types" ng-bind="type"></span>
+              </td>
+              <td>
+                <span class="semantic-group" ng-repeat="group in concept.semantic.groups" ng-bind="group"></span>
               </td>
               <td ng-repeat="voc in vocabularies | filter: { keep: true }"> 
                 <!-- Angular FTW! -->

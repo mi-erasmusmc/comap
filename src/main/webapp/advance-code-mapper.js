@@ -4,6 +4,7 @@ var CONFIG_URL =  CODE_MAPPER_API_URL + "/config";
 var CODING_SYSTEMS_URL = CODE_MAPPER_API_URL + '/coding-systems';
 var UMLS_CONCEPTS_API_URL = CODE_MAPPER_API_URL + '/umls-concepts';
 var RELATED_CONCEPTS_API_URL = CODE_MAPPER_API_URL + '/related';
+var SEMANTIC_TYPES_GROUPS_URL = "data/semantic_types_groups.json";
 
 var DEFAULT_CODING_SYSTEMS = [ 'MSH', 'ICD10', 'ICPC', 'MDR', 'MEDLINEPLUS', 'RCD' ];
 
@@ -57,6 +58,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 	$scope.vocabularies = [];
 	$scope.caseDefinition = "deafness and fever and code";
 	$scope.concepts = [];
+	$scope.semanticTypesGroups = null;
 
 	$scope.message = "";
 	$scope.isBlocked = false;
@@ -71,6 +73,17 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 		$scope.message = message;
 		$scope.isBlocked = false;
 	};
+	
+	$scope.block("Retrieving coding systems ...");
+	$http.get(SEMANTIC_TYPES_GROUPS_URL)
+		.error(function(err) {
+			var msg = "ERROR: Couldn't retrieve semantic types and groups";
+			console.log(msg);
+			alert(msg);
+		})
+		.success(function(semanticTypesGroups) {
+			$scope.semanticTypesGroups = semanticTypesGroups;
+		});
 
 	$scope.getSelectedVocabularies = function() {
 		return $scope.vocabularies
@@ -164,6 +177,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 									return cuiOfId(span.id) == concept.cui;
 								});
 						});
+						$scope.replaceSemanticTypes(concepts);
 						$scope.concepts = concepts;
 						$timeout(function() {
 							$('li#concepts-tab > a').click();
@@ -200,44 +214,6 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 	$scope.trustDefinition = function(definition) {
 		return $sce.trustAsHtml(definition);
 	};
-
-//	$scope.expandConcepts = function(concept, preRelated) {
-//		var preRelatedCuis = preRelated.map(getCui);
-//		$scope.block("Search " + preRelated.length + " hyonyms ...");
-//		var data = {
-//			cuis : preRelatedCuis,
-//			vocabularies : $scope.getSelectedVocabularies()
-//		};
-//		$http.post(UMLS_CONCEPTS_API_URL, data, FORM_ENCODED_POST)
-//			.error(function(err) {
-//				var msg = "ERROR: Couldn't lookup concepts "
-//						+ preRelatedCuis.join(", ");
-//				alert(msg, err);
-//				$scope.unblock(msg);
-//			})
-//			.success(function(relateds) {
-//				
-//				var conceptOffset;
-//				$scope.concepts.forEach(function(c, cIx) {
-//					if (c.cui == concept.cui) {
-//						conceptOffset = cIx;
-//					}
-//				});
-//
-//				// Insert each related concept in list of concepts!
-//				relateds.forEach(function(related, ix) {
-//					$scope.concepts.splice(conceptOffset + ix + 1, 0, related);
-//				});
-//				
-//				var cuis = $scope.concepts.map(getCui);
-//				$scope.concepts.forEach(function(concept) {
-//					concept.hypernyms = filterRelated(concept.hypernyms, cuis);
-//					concept.hyponyms = filterRelated(concept.hyponyms, cuis);
-//				});
-//				
-//				$scope.unblock("Found " + relateds.length + " relateds");
-//			});
-//	};
 
 	$scope.downloadConcepts = function() {
 		console.log("Download concepts");
@@ -319,7 +295,9 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     	        	concept: function() { return concept; },
     	        	selectedVocabularies: function() { return $scope.vocabularies.filter(function (voc) { return voc.keep; }); },
     	        	relatedConcepts: function() {
-    	        		return relatedConcepts[concept.cui]
+    	        		relatedConcepts = relatedConcepts[concept.cui];
+    	        		$scope.replaceSemanticTypes(relatedConcepts);
+    	        		return relatedConcepts
 	        				.map(function(concept) {
 	        					return {
 	        						keep: concept.sourceConcepts.length > 0,
@@ -347,6 +325,32 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     		        	console.log('Modal dismissed at: ' + new Date());
     		        });
     		});        
+    };
+    $scope.replaceSemanticTypes = function(concepts) {
+    	concepts.forEach(function(concept) {
+    		var typesGroups = concept.semanticTypes
+	    		.map(function(type) {
+	    			return $scope.semanticTypesGroups[type];
+	    		});
+    		var types = typesGroups
+    			.map(function(typeGroup) {
+    				return typeGroup.description;
+				})
+				.filter(function(v, ix, types) {
+					return ix == types.indexOf(v);
+				});
+    		var groups = typesGroups
+				.map(function(typeGroup) {
+					return typeGroup.group;
+				})
+				.filter(function(v, ix, types) {
+					return ix == types.indexOf(v);
+				});
+    		concept.semantic = {
+    			types: types,
+    			groups: groups,
+    		};
+    	});
     };
 });
 

@@ -10,8 +10,8 @@ public class UmlsConcept {
     private String cui = null;
     private String preferredName = null;
     private String definition = null;
-    private List<String> semanticTypes = null;
     private List<SourceConcept> sourceConcepts = new LinkedList<>();;
+    private List<String> semanticTypes = new LinkedList<>();
 
     public UmlsConcept() {
     }

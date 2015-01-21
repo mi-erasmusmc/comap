@@ -123,6 +123,42 @@ public class UmlsApi  {
 		}
 	}
 
+	private Map<String, List<String>> getSemanticTypes(Collection<String> cuis) throws CodeMapperException {
+		if (cuis.isEmpty())
+			return new TreeMap<>();
+		else {
+			String queryFmt =
+					"SELECT DISTINCT cui, tui "
+					+ "FROM MRSTY "
+					+ "WHERE cui in (%s) "
+					+ "ORDER BY cui, tui";
+			String query = String.format(queryFmt, placeholders(cuis.size()));
+
+			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+
+				int offset = 1;
+
+				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
+					statement.setString(offset, iter.next());
+
+                logger.debug(statement);
+				ResultSet result = statement.executeQuery();
+
+				Map<String, List<String>> semanticTypes = new TreeMap<>();
+				while (result.next()) {
+					String cui = result.getString(1);
+					String tui = result.getString(2);
+					if (!semanticTypes.containsKey(cui))
+						semanticTypes.put(cui, new LinkedList<String>());
+					semanticTypes.get(cui).add(tui);
+				}
+				return semanticTypes;
+			} catch (SQLException e) {
+				throw new CodeMapperException(e);
+			}
+		}
+	}
+
 	public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> vocabularies)
 			throws CodeMapperException {
 
@@ -134,7 +170,9 @@ public class UmlsApi  {
 			if (!vocabularies.isEmpty())
 				sabPlaceholders = String.format("AND sab IN (%s)", placeholders(vocabularies.size()));
 
-			String queryFmt = "SELECT DISTINCT cui, sab, code, str, tty FROM MRCONSO "
+			String queryFmt =
+				  	"SELECT DISTINCT cui, sab, code, str, tty "
+					+ "FROM MRCONSO "
 					+ "WHERE cui IN (%s) %s ORDER BY cui, sab, code, str";
 			String query = String.format(queryFmt, placeholders(cuis.size()), sabPlaceholders);
 
@@ -196,7 +234,8 @@ public class UmlsApi  {
 			return new TreeMap<>();
 		else {
 
-			String queryFmt = "SELECT DISTINCT %s "
+			String queryFmt =
+					   "SELECT DISTINCT %s "
 					+ "FROM MRREL "
 					+ "WHERE rel in ('RN', 'CHD') "
 					+ "AND %s IN (%s) "
@@ -302,6 +341,7 @@ public class UmlsApi  {
 	        Map<String, List<SourceConcept>> sourceConcepts = getSourceConcepts(cuis, vocabularies);
 	        Map<String, String> preferredNames = getPreferredNames(cuis);
 	        Map<String, String> definitions = getDefinitions(cuis);
+	        Map<String, List<String>> semanticTypes = getSemanticTypes(cuis);
 
 	        Map<String, UmlsConcept> concepts = new TreeMap<>();
 	        for (String cui : cuis) {
@@ -309,9 +349,10 @@ public class UmlsApi  {
 	        	concept.setCui(cui);
 	        	concept.setDefinition(definitions.get(cui));
 	        	concept.setPreferredName(preferredNames.get(cui));
-	            List<SourceConcept> sourceConcept = sourceConcepts.get(cui);
-	            if (sourceConcept != null)
-	            	concept.setSourceConcepts(sourceConcept);
+	            if (sourceConcepts.containsKey(cui))
+	            	concept.setSourceConcepts(sourceConcepts.get(cui));
+	            if (semanticTypes.containsKey(cui))
+	            	concept.setSemanticTypes(semanticTypes.get(cui));
 	            concepts.put(cui, concept);
 	        }
 	        logger.debug("Found source concepts " + concepts.size());

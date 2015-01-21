@@ -97,7 +97,7 @@
                 <span ng-bind="concept.cui"></span><span ng-if="concept.sourceConcepts.length == 0">*</span>
               </td>
               <td>
-                <span tooltip-html-unsafe='{{concept.definition}}' ng-bind='concept.preferredName'></span>
+                <span tooltip-html-unsafe='{{concept.definition}}' ng-bind='concept.preferredName' class="concept-name"></span>
               </td>
               <td>
                 <span class="span" ng-if="concept.spans != undefined" ng-repeat="span in concept.spans" ng-bind="span.text"></span>
@@ -141,7 +141,7 @@
                             <span ng-bind="r.concept.cui"></span><span ng-if="r.concept.sourceConcepts.length == 0">*</span>
                           </td>
                           <td>
-                            <a href='#' tooltip-html-unsafe='{{r.concept.definition}}' ng-bind='r.concept.preferredName'></a>
+                            <a href='#' tooltip-html-unsafe='{{r.concept.definition}}' ng-bind='r.concept.preferredName' class="concept-name"></a>
                           </td>
                           <td ng-repeat="voc in selectedVocabularies"> 
                             <span class="code" ng-repeat="code in codesInVocabulary(r.concept, voc.abbreviation)" ng-bind="code"></span>

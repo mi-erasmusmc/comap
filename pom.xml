@@ -35,56 +35,6 @@
 				<artifactId>maven-war-plugin</artifactId>
 				<version>2.3</version>
 			</plugin>
-			<plugin>
-				<groupId>org.jvnet.jax-ws-commons</groupId>
-				<artifactId>jaxws-maven-plugin</artifactId>
-				<version>2.1</version>
-				<!-- version 2.2 produces code that requires webservicefeature class -->
-				<executions>
-					<execution>
-						<id>wsimport-generate-utsapi20</id>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>wsimport</goal>
-						</goals>
-						<configuration>
-							<wsdlLocation>https://uts-ws.nlm.nih.gov/services/*</wsdlLocation>
-							<wsdlUrls>
-								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsContent?wsdl</wsdlUrl>
-								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsSecurity?wsdl</wsdlUrl>
-								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsMetadata?wsdl</wsdlUrl>
-								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsFinder?wsdl</wsdlUrl>
-								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsHistory?wsdl</wsdlUrl>
-								<wsdlUrl>https://uts-ws.nlm.nih.gov/services/nwsSemanticNetwork?wsdl</wsdlUrl>
-							</wsdlUrls>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.eclipse.m2e</groupId>
-				<artifactId>lifecycle-mapping</artifactId>
-				<version>1.0.0</version>
-				<configuration>
-					<lifecycleMappingMetadata>
-						<pluginExecutions>
-							<pluginExecution>
-								<pluginExecutionFilter>
-									<groupId>org.jvnet.jax-ws-commons</groupId>
-									<artifactId>jaxws-maven-plugin</artifactId>
-									<versionRange>[2.2,)</versionRange>
-									<goals>
-										<goal>wsimport</goal>
-									</goals>
-								</pluginExecutionFilter>
-								<action>
-									<ignore />
-								</action>
-							</pluginExecution>
-						</pluginExecutions>
-					</lifecycleMappingMetadata>
-				</configuration>
-			</plugin>
 		</plugins>
 	</build>
 	<dependencies>

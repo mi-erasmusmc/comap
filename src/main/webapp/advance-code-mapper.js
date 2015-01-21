@@ -60,45 +60,62 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 	$scope.concepts = [];
 	$scope.semanticTypesGroups = null;
 
-	$scope.message = "";
 	$scope.isBlocked = false;
+	$scope.messages = [];
+	var blocks = [];
+	var blocksCounter = 0;
+	var messages = {};
+	var updateMessages = function() {
+		$scope.messages = [];
+		for (var key in messages) {
+			if (messages.hasOwnProperty(key) && messages[key] != undefined) {
+				$scope.messages.push({
+					ix: key,
+					text: messages[key]
+				});
+			}
+		}
+		$('#mask').height($(document).height());
+		$scope.isBlocked = blocks.length > 0;
+		console.log($scope.messages);
+	};
+	$scope.message = function(message) {
+		messages[blocksCounter++] = message;
+		updateMessages();
+	};
 	$scope.block = function(message) {
 		console.log("Block", message);
-		$('#mask').height($(document).height());
-		$scope.isBlocked = true;
-		$scope.message = message;
+		var ix = blocksCounter++;
+		blocks.push(ix);
+		messages[ix] = message;
+		updateMessages();
+		return ix;
 	};
-	$scope.unblock = function(message) {
-		console.log("Unblock", message);
-		$scope.message = message;
-		$scope.isBlocked = false;
+	$scope.unblock = function(ix, suffix, keepBlocked) {
+		console.log("Unblock", ix, suffix);
+		blocks = blocks.filter(function(ix2) { return ix != ix2; });
+		messages[ix] = messages[ix] + suffix;
+		updateMessages();
 	};
 	
-	$scope.block("Retrieving coding systems ...");
+	var blockSemanticTypesGroups = $scope.block("Retrieving semantic types and groups... ");
 	$http.get(SEMANTIC_TYPES_GROUPS_URL)
 		.error(function(err) {
-			var msg = "ERROR: Couldn't retrieve semantic types and groups";
+			var msg = "ERROR: Couldn't retrieve semantic types and groups: " + err;
 			console.log(msg);
 			alert(msg);
+			$scope.unblock(blockSemanticTypesGroups, "ERROR");
 		})
 		.success(function(semanticTypesGroups) {
 			$scope.semanticTypesGroups = semanticTypesGroups;
+			$scope.unblock(blockSemanticTypesGroups, "OK");
 		});
 
-	$scope.getSelectedVocabularies = function() {
-		return $scope.vocabularies
-			.filter(function(vocabulary) {
-				return vocabulary.keep;
-			})
-			.map(function(vocabulary) {
-				return vocabulary.abbreviation;
-			});
-	};
-
-	$scope.block("Retrieving coding systems ...");
+	var blockRetrieveCodingSystems = $scope.block("Retrieving coding systems... ");
 	$http.get(CODING_SYSTEMS_URL)
 		.error(function(err) {
 			alert("ERROR: Couldn't retrieve vocabularies", err);
+			$scope.unblock(blockRetrieveCodingSystems, "ERROR");
 		})
 		.success(function(vocabularies) {
 			$scope.vocabularies = vocabularies
@@ -120,31 +137,49 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 						abbreviation : abbreviation
 					};
 				});
-			$scope.unblock("Retrieved " + vocabularies.length + " coding systems");
+			$scope.unblock(blockRetrieveCodingSystems, "OK, retrieved " + vocabularies.length);
 		});
 
 	// Retrieve the URL of Peregrine
-	$http
-		.get(CONFIG_URL)
+	var blockRetrievePeregrineUrl = $scope.block("Retrieve Peregrine URL... ");
+	$http.get(CONFIG_URL)
+		.error(function(err) {
+			var msg = "Couldn't retrieve peregrine URL";
+			console.log(msg, err);
+			alert(msg);
+			$scope.unblock(blockRetrievePeregrineUrl, "ERROR");
+		})
 		.success(function (config) {
 			$scope.peregrineResourceUrl = config.peregrineResourceUrl;
 			console.log("Found config", config, $scope.peregrineResourceUrl);
-	    })
-	    .error(function() {
-	    	alert("Couldn't retrieve peregrine URL");
+			$scope.unblock(blockRetrievePeregrineUrl, "OK");
 	    });
+
+	$scope.getSelectedVocabularies = function() {
+		return $scope.vocabularies
+			.filter(function(vocabulary) {
+				return vocabulary.keep;
+			})
+			.map(function(vocabulary) {
+				return vocabulary.abbreviation;
+			});
+	};
 
 	$scope.searchConcepts = function() {
 		var caseDefinition = this.caseDefinition;
-		$scope.block("Search concepts in case definition ...");
+		var blockSearchConcepts = $scope.block("Search concepts in case definition... ");
 		var data = {
 			text : caseDefinition
 		};
 		$http.post($scope.peregrineResourceUrl + "/rest/index", data, FORM_ENCODED_POST)
 			.error(function(err) {
-				alert("ERROR: Couldn't search concepts in case definition", err);
+				var msg = "ERROR: Couldn't search concepts in case definition";
+				console.log(msg, err);
+				alert(msg);
+				$scope.unblock(blockLookupConcepts, "ERROR");
 			})
 			.success(function(result) {
+				$scope.unblock(blockSearchConcepts, "OK, found ");
 				var cuis = [];
 				function cuiOfId(id) {
 					return 'C' + Array(8 - id.length).join('0') + id;
@@ -156,7 +191,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 					}
 				});
 				var vocabularies = $scope.getSelectedVocabularies();
-				$scope.block("Found " + cuis.length + " CUIs " +
+				var blockLookupConcepts = $scope.block("Found " + cuis.length + " CUIs " +
 						"(from " + result.spans.length + " spans " +
 						"with " + cuis.length + " different CUIs) " +
 						"looking up in vocabularies ...");
@@ -167,7 +202,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 				$http.post(UMLS_CONCEPTS_API_URL, data, FORM_ENCODED_POST)
 					.error(function(err) {
 						var msg = "ERROR: Couldn't lookup concepts";
-						$scope.unblock(msg)
+						$scope.unblock(blockLookupConcepts, "ERROR");
 						alert(msg, err);
 					})
 					.success(function(concepts) {
@@ -182,8 +217,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 						$timeout(function() {
 							$('li#concepts-tab > a').click();
 						});
-						$scope.unblock("Found " + concepts.length
-								+ " concepts");
+						$scope.unblock(blockLookupConcepts, "OK, found " + concepts.length);
 					});
 			});
 	};
@@ -198,7 +232,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 				}
 				return true;
 			});
-		$scope.unblock("Deleted concepts " + deleted.join(", "));
+		$scope.message("Deleted concepts " + deleted.join(", "));
 	};
 
 	$scope.codesInVocabulary = function(concept, vocabularyAbbreviation) {
@@ -271,7 +305,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     			return voc.abbreviation;
     		});
     	
-    	$scope.block("Looking up " + (hyponymsNotHypernyms ? "hyponyms" : "hypernyms"));
+    	var blockLookupExpand = $scope.block("Looking up " + (hyponymsNotHypernyms ? "hyponyms" : "hypernyms"));
     	var data = {
     			cuis: [ concept.cui ],
     			hyponymsNotHypernyms: hyponymsNotHypernyms,
@@ -280,11 +314,12 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     	$http.post(RELATED_CONCEPTS_API_URL, data, FORM_ENCODED_POST)
     		.error(function(err) {
     			var msg = "ERROR: Couldn't lookup related concepts";
-    			alert(msg, err);
-    			$scope.unblock(msg)
+    			alert(msg);
+    			console.log(msg, err);
+    			$scope.unblock(blockLookupExpand, "ERROR")
     		})
     		.success(function(relatedConcepts) {
-    			$scope.unblock("Received related ", relatedConcepts);
+    			$scope.unblock(blockLookupExpand, "OK");
     	        
     	        var modalInstance = $modal.open({
     	          templateUrl: 'expandRelatedConcepts.html',

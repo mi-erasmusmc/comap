@@ -57,7 +57,9 @@
       </div>
     </div>
     <div>
-    <span class="flag glyphicon glyphicon-chevron-right" aria-hidden="true"></span>{{message}}</div>
+    <ul>
+      <li ng-repeat="message in messages | limitTo: -3" ng-bind="message.text"></li>
+    </ul>
     <tabset>
       <tab id="coding-systems-tab" heading="Vocabularies">
       <div>

@@ -29,27 +29,12 @@
     
     <tabset>
       <tab id="coding-systems-tab" heading="Vocabularies">
-      <div>
-      Selected:
-      <span ng-repeat="voc in vocabularies | filter: { keep: true }" ng-bind="voc.abbreviation" class="vocabulary">
-      </span>
-      </div> 
-        <table id="vocabularies" class="table table-striped">
-          <thead>
-            <tr>
-              <th>Keep</th>
-              <th>Name</th>
-              <th>Abbreviation</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr ng-repeat="voc in vocabularies">
-              <td><input type="checkbox" ng-model="voc.keep" /></td>
-              <td ng-bind="voc.name"></td>
-              <td ng-bind="voc.abbreviation"></td>
-            </tr>
-          </tbody>
-        </table>
+        <div>
+          Selected:
+          <span ng-repeat="voc in vocabulariesGridOptions.$gridScope.selectedItems" ng-bind="voc.abbreviation" class="vocabulary">
+          </span>
+        </div>
+        <div ng-grid="vocabulariesGridOptions" class="grid"></div>
       </tab>
       
       <tab id="semantics-tab" heading="Semantic types">
@@ -77,7 +62,7 @@
               <th>Name</th>
               <th>Spans</th>
               <th>Semantic types</th>
-              <th ng-repeat="voc in vocabularies | filter: { keep: true }" ng-bind="voc.abbreviation"></th>
+              <th ng-repeat="voc in vocabulariesGridOptions.$gridScope.selectedItems" ng-bind="voc.abbreviation"></th>
             </tr>
           </thead>
           <tbody>
@@ -105,9 +90,9 @@
               <td>
                 <span class="semantic-type" ng-repeat="type in concept.semantic.types" ng-bind="type"></span>
               </td>
-              <td ng-repeat="voc in vocabularies | filter: { keep: true }"> 
-                <!-- Angular FTW! -->
-                <span class="code" ng-repeat="code in codesInVocabulary(concept, voc.abbreviation)" ng-bind="code"></span>
+              <td ng-repeat="voc in vocabulariesGridOptions.$gridScope.selectedItems"> 
+                 <!-- Angular FTW! -->
+                 <span class="code" ng-repeat="code in codesInVocabulary(concept, voc.abbreviation)" ng-bind="code"></span>
               </td>
             </tr>
           </tbody>

@@ -43,6 +43,21 @@
       .span {
         background-color: #FFFCAB;
       }
+      .icon-list li {
+        padding: 0 0 5px 20px;
+        display: block;
+        position: relative;
+      }
+      .icon-list li:before {
+        font-family: 'Glyphicons Halflings';
+        position: absolute;
+        left: 0px;
+        top:3px;
+        font-size:80%
+      }
+      .messages li:before {
+       content: '\e080';
+      }
     </style>
     <script src="advance-code-mapper.js"></script>
   </head>
@@ -57,7 +72,7 @@
       </div>
     </div>
     <div>
-    <ul>
+    <ul class="list-unstyled icon-list messages">
       <li ng-repeat="message in messages | limitTo: -3" ng-bind="message.text"></li>
     </ul>
     <tabset>

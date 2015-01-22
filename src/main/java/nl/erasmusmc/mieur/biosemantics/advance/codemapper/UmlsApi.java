@@ -272,9 +272,10 @@ public class UmlsApi  {
 				Map<String, List<UmlsConcept>> relatedByReference = new TreeMap<>();
 				for (String cui: cuis) {
 					List<UmlsConcept> concepts = new LinkedList<>();
-					for (String relatedCui: related.get(cui))
-						if (relatedConcepts.containsKey(relatedCui))
-							concepts.add(relatedConcepts.get(relatedCui));
+					if (related.containsKey(cui))
+						for (String relatedCui: related.get(cui))
+							if (relatedConcepts.containsKey(relatedCui))
+								concepts.add(relatedConcepts.get(relatedCui));
 					relatedByReference.put(cui, concepts);
 				}
 				return relatedByReference;

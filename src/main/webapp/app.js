@@ -6,7 +6,8 @@ var UMLS_CONCEPTS_API_URL = CODE_MAPPER_API_URL + '/umls-concepts';
 var RELATED_CONCEPTS_API_URL = CODE_MAPPER_API_URL + '/related';
 var SEMANTIC_TYPES_GROUPS_URL = "data/semantic_types_groups.json";
 
-var DEFAULT_CODING_SYSTEMS = [ 'MSH', 'ICD10', 'ICPC', 'MDR', 'MEDLINEPLUS', 'RCD' ];
+var DEFAULT_CODING_SYSTEMS = [ "RCD", "ICD10CM", "ICD9CM", "ICPC2P", "ICPC2EENG", "ICD10", "ICD10AE" ]; // 'MSH', 'ICD10', 'ICPC', 'MDR', 'MEDLINEPLUS', 'RCD'
+var DEFAULT_SEMANTIC_TYPES = [ "T020", "T190", "T049", "T019", "T047", "T050", "T037", "T033", "T048", "T191", "T046", "T184" ];
 
 // AngularJS sends data for HTTP POST JSON -- this header encodes it as form data.
 var FORM_ENCODED_POST = {
@@ -110,12 +111,20 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 	$scope.vocabulariesGridOptions = {
 		data: "vocabularies",
 		rowHeight: 35,
-		showFilter: true,
-	    filterOptions: {filterText: '', useExternalFilter: false},
+	    filterOptions: { filterText: '' },
+	    showFilter: true,
 		columnDefs: [
    		  { displayName: 'Name', field: 'name' },
 		  { displayName: 'Abbreviation', field: 'abbreviation' },
         ]
+	};
+	
+	$scope.unselectVocabulary = function(voc) {
+		$scope.vocabularies.forEach(function(voc1, index) {
+			if (voc.abbreviation == voc1.abbreviation) {
+				$scope.vocabulariesGridOptions.selectItem(index, false);
+			}
+		});
 	};
 	
 	/*****************************/
@@ -125,14 +134,23 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 	$scope.semanticTypesGroupsGridOptions = {
 	     data: "semanticTypesGroups",
 	     rowHeight: 35,
-		 showFilter: true,
-	     filterOptions: {filterText: '', useExternalFilter: false},
+	     filterOptions: { filterText: '' },
+	     showFilter: true,
 	     columnDefs: [
     		 { displayName: 'Type', field: 'type' },
     		 { displayName: 'Description', field: 'description' },
     		 { displayName: 'Group', field: 'group'},
 		 ],
 	 };
+	
+	$scope.unselectSemanticTypeGroup = function(semanticTypeGroup) {
+		console.log("Unselect", semanticTypeGroup);
+		$scope.semanticTypesGroups.forEach(function(semanticTypeGroup1, index) {
+			if (semanticTypeGroup.type == semanticTypeGroup1.type) {
+				$scope.semanticTypesGroupsGridOptions.selectItem(index, false);
+			}
+		});
+	};
 	
     $scope.replaceAndFilterBySemanticTypes = function(concepts) {
     	var semanticTypesGroups = {};
@@ -141,30 +159,26 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     	});
     	return concepts
     		.map(function(concept) {
-    		   var result = angular.copy(concept);
-               var typesGroups = concept.semanticTypes
+               var types = concept.semanticTypes
                        .map(function(type) {
-                               return semanticTypesGroups[type];
+                               return semanticTypesGroups[type].description;
+                       })
+                       .filter(function(v, ix, arr) {
+                               return ix == arr.indexOf(v);
                        });
-               var types = typesGroups
-                       .map(function(typeGroup) {
-                               return typeGroup.description;
-                               })
-                               .filter(function(v, ix, types) {
-                                       return ix == types.indexOf(v);
-                               });
-               var groups = typesGroups
-                               .map(function(typeGroup) {
-                                       return typeGroup.group;
-                               })
-                               .filter(function(v, ix, types) {
-                                       return ix == types.indexOf(v);
-                               });
-    			result.semantic = {
-	    			types: types,
-	    			groups: groups,
-	    		};
-    			return result;
+               var groups = concept.semanticTypes
+                       .map(function(type) {
+                               return semanticTypesGroups[type].group;
+                       })
+                       .filter(function(v, ix, arr) {
+                               return ix == arr.indexOf(v);
+                       });
+    		   var result = angular.copy(concept);
+    		   result.semantic = {
+    				   types: types,
+    				   groups: groups,
+    		   };
+    		   return result;
     		})
     		.filter(function(concept) {
     			return concept.semanticTypes
@@ -183,6 +197,20 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     /* GET DATA */
     /************/
 
+	var blockRetrievePeregrineUrl = $scope.block("Retrieve Peregrine URL... ");
+	$http.get(CONFIG_URL)
+		.error(function(err) {
+			var msg = "Couldn't retrieve peregrine URL";
+			console.log(msg, err);
+			alert(msg);
+			$scope.unblock(blockRetrievePeregrineUrl, "ERROR");
+		})
+		.success(function (config) {
+			$scope.peregrineResourceUrl = config.peregrineResourceUrl;
+			console.log("Found config", config, $scope.peregrineResourceUrl);
+			$scope.unblock(blockRetrievePeregrineUrl, "OK");
+	    });
+
 	var blockSemanticTypesGroups = $scope.block("Retrieving semantic types and groups... ");
 	$http.get(SEMANTIC_TYPES_GROUPS_URL)
 		.error(function(err) {
@@ -195,7 +223,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 			$scope.semanticTypesGroups = semanticTypesGroups;
 			$timeout(function() {
 		        $scope.semanticTypesGroups.forEach(function(semanticType, index) {
-					if (semanticType.group == "DISO") {
+		        	if (DEFAULT_SEMANTIC_TYPES.indexOf(semanticType.type) != -1) {
 		                $scope.semanticTypesGroupsGridOptions.selectItem(index, true);
 					}
 		        });
@@ -230,21 +258,6 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 			}, 0);
 			$scope.unblock(blockRetrieveCodingSystems, "OK, retrieved " + vocabularies.length);
 		});
-
-	// Retrieve the URL of Peregrine
-	var blockRetrievePeregrineUrl = $scope.block("Retrieve Peregrine URL... ");
-	$http.get(CONFIG_URL)
-		.error(function(err) {
-			var msg = "Couldn't retrieve peregrine URL";
-			console.log(msg, err);
-			alert(msg);
-			$scope.unblock(blockRetrievePeregrineUrl, "ERROR");
-		})
-		.success(function (config) {
-			$scope.peregrineResourceUrl = config.peregrineResourceUrl;
-			console.log("Found config", config, $scope.peregrineResourceUrl);
-			$scope.unblock(blockRetrievePeregrineUrl, "OK");
-	    });
 
 	/*************/
 	/* FUNCTIONS */
@@ -300,7 +313,10 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 									return cuiOfId(span.id) == concept.cui;
 								});
 						});
-						$scope.concepts = $scope.replaceAndFilterBySemanticTypes(concepts);
+						$scope.concepts = $scope.replaceAndFilterBySemanticTypes(concepts)
+							.sort(function(c1, c2) {
+		    					return c2.sourceConcepts.length - c1.sourceConcepts.length;
+		    				});
 						$timeout(function() {
 							$('li#concepts-tab > a').click();
 						});
@@ -392,7 +408,7 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     			return voc.abbreviation;
     		});
     	
-    	var blockLookupExpand = $scope.block("Looking up " + (hyponymsNotHypernyms ? "hyponyms" : "hypernyms"));
+    	var blockLookupExpand = $scope.block("Looking up " + (hyponymsNotHypernyms ? "hyponyms" : "hypernyms") + "... ");
     	var data = {
     			cuis: [ concept.cui ],
     			hyponymsNotHypernyms: hyponymsNotHypernyms,
@@ -406,7 +422,10 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
     			$scope.unblock(blockLookupExpand, "ERROR")
     		})
     		.success(function(relatedConcepts) {
-    			var filteredRelatedConcepts = $scope.replaceAndFilterBySemanticTypes(relatedConcepts[concept.cui]); 
+    			var filteredRelatedConcepts = $scope.replaceAndFilterBySemanticTypes(relatedConcepts[concept.cui])
+    				.sort(function(c1, c2) {
+    					return c2.sourceConcepts.length - c1.sourceConcepts.length;
+    				});
     			
     			$scope.unblock(blockLookupExpand, "OK, found " + relatedConcepts[concept.cui].length
     					+ " filter on semantic type to " + filteredRelatedConcepts.length);

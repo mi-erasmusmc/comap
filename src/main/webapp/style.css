@@ -16,10 +16,14 @@ div#mask {
   top: 0;
   left: 0;
 }
-.span, .code, .vocabulary, .semantic-type {
+.strong {
+	font-weight: bold;
+}
+.spans {
+	max-width: 15em;
+}
+.span, .code, .vocabulary, .semantic-type, .semantic-group {
   display: inline-block;
-  text-align: center;
-  white-space: nowrap;
   margin: 0.2em;
   padding: 2px 5px;
   font-size: 12px;
@@ -36,6 +40,7 @@ div#mask {
 }
 .span {
   background-color: #FFFCAB;
+  max-width: 15em;
 }
 .icon-list li {
   padding: 0 0 5px 20px;
@@ -52,11 +57,32 @@ div#mask {
 .messages li:before {
  content: '\e080';
 }
+.messages {
+  font-size: smaller;
+}
 .grid {
-/*   width: 100%; */
   height: 400px;
+  padding-top: 1em;
 }
 .concept-name {
 	max-width: 20em;
 	display: block;
+}
+
+.tooltip-inner {
+  text-align: left;
+}
+.tooltip-inner a {
+  color: white;
+}
+.noselect {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+.modal-dialog {
+	width: 80%;
 }

@@ -55,6 +55,24 @@ function filterRelated(related, cuis) {
 var codeMapperApp = angular.module('codeMapperApp',
 		[ 'ui.bootstrap', 'ngSanitize', 'ngGrid' ]);
 
+
+
+codeMapperApp.directive('ngConfirmClick', [
+    function(){
+        return {
+            link: function (scope, element, attr) {
+                var msg = attr.ngConfirmClick || "Are you sure?";
+                var clickAction = attr.confirmedClick;
+                element.bind('click', function (event) {
+                    if (window.confirm(msg)) {
+                        scope.$eval(clickAction)
+                    }
+                });
+            }
+        };
+}])
+
+
 codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sce, $modal, $timeout) {
 
 	$scope.vocabularies = [];
@@ -262,8 +280,16 @@ codeMapperApp.controller('codeMapperCtrl', function($scope, $http, $timeout, $sc
 	/*************/
 	/* FUNCTIONS */
 	/*************/
-
-	$scope.searchConcepts = function() {
+	
+	$scope.askAndGenerateConcepts = function() {
+		bootbox.confirm("(Re-)generate concepts?", function(result) {
+			if (result) {
+				$scope.generateConcepts();
+			}
+		});
+	};
+	
+	$scope.generateConcepts = function() {
 		var caseDefinition = this.caseDefinition;
 		var blockSearchConcepts = $scope.block("Search concepts in case definition... ");
 		var data = {

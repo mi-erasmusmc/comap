@@ -5,12 +5,13 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.28/angular-sanitize.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
     <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.12.0.js"></script>
     <script src="//angular-ui.github.io/ng-grid/lib/ng-grid.js"></script>
-    <link rel="stylesheet" type="text/css" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" />
-    <link rel="stylesheet" type="text/css" href="//angular-ui.github.io/ng-grid/css/ng-grid.css" />
+    <link rel='stylesheet' type="text/css" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" />
+    <link rel='stylesheet' type="text/css" href="//angular-ui.github.io/ng-grid/css/ng-grid.css" />
+    <link rel='stylesheet' type="text/css" href="style.css" />
     <script src="app.js"></script>
-    <link rel="stylesheet" type="text/css" href="style.css" />
   </head>
   <body ng-controller="codeMapperCtrl">
     <div class="row">
@@ -46,13 +47,13 @@
       
       <tab id="case-definition-tab" heading="3. Case definition">
         <textarea rows=20 cols=120 ng-model="caseDefinition"></textarea>
-        <button id="search-concepts" class="btn btn-default btn-sm" ng-click="searchConcepts()">
-          Search concepts
-        </button>
       </tab>
       
       <tab id="concepts-tab" heading="4. Concepts">
-        <button ng-click="downloadConcepts()"  class="btn btn-default btn-sm">Download {{concepts.length}} concepts as CSV</button>
+        <button id="search-concepts" class="btn btn-default btn-sm" confirmed-click="generateConcepts()" ng-confirm-click="Really (re-)generate concepts?">
+          Generate concepts
+        </button>
+        <button ng-click="downloadConcepts()" class="btn btn-default btn-sm">Download {{concepts.length}} concepts as CSV</button>
         <table id="coding-systems" class="table table-striped">
           <thead>
             <tr>

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html ng-app="codeMapperApp">
   <head>
+    <meta charset="utf-8">
     <title>ADVANCE Code Mapper</title>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.js"></script>
@@ -14,6 +15,7 @@
     <script src="app.js"></script>
   </head>
   <body ng-controller="codeMapperCtrl">
+  
     <div class="row">
       <div class="col-md-10">
         <h1>ADVANCE Code Mapper</h1>
@@ -23,86 +25,57 @@
         <div><image src="images/200709mslogo_erasmus_mc.jpg" height="100px" /></div>
       </div>
     </div>
-    <div>
+    
     <ul class="list-unstyled icon-list messages">
       <li ng-repeat="message in messages | limitTo: -1" ng-bind="message.text"></li>
     </ul>
     
     <tabset>
       <tab id="coding-systems-tab" heading="1. Vocabularies">
-        <div class="strong">Selected:</div>
-        <span ng-repeat="voc in vocabulariesGridOptions.$gridScope.selectedItems" ng-bind="voc.abbreviation" ng-dblclick="unselectVocabulary(voc)" class="vocabulary noselect"></span>
-        <div class="strong">Filter:</div>
-        <input type="text" ng-model="vocabulariesGridOptions.filterOptions.filterText" />
+        <label for='selectedVocabulariesList'>Selected:</label>
+        <div id='selectedVocabulariesList'>
+          <span ng-repeat="voc in vocabulariesGridOptions.$gridScope.selectedItems" ng-bind="voc.abbreviation" ng-dblclick="unselectVocabulary(voc)" class="vocabulary noselect"></span>
+        </div>
+        <label for='vocabulariesFilter'>Filter:</label>
+        <input id='vocabulariesFilter' type="text" ng-model="vocabulariesGridOptions.filterOptions.filterText" />
         <div ng-grid="vocabulariesGridOptions" class="grid"></div>
       </tab>
       
       <tab id="semantics-tab" heading="2. Semantic types">
-        <div class="strong">Selected:</div>
-        <span ng-repeat="typeGroups in semanticTypesGroupsGridOptions.$gridScope.selectedItems" ng-bind="typeGroups.description" ng-dblclick="unselectSemanticTypeGroup(typeGroups)" class="semantic-type noselect" ></span>
-        <div class="strong">Filter:</div>
-        <input type="text" ng-model="semanticTypesGroupsGridOptions.filterOptions.filterText" />
+        <label for='selectedsemanticTypesList'>Selected:</label>
+        <span id='selectedsemanticTypesList' ng-repeat="typeGroups in semanticTypesGroupsGridOptions.$gridScope.selectedItems" ng-bind="typeGroups.description" ng-dblclick="unselectSemanticTypeGroup(typeGroups)" class="semantic-type noselect" ></span>
+        <label for='samanticTypesFilter'>Filter:</label>
+        <input id='samanticTypesFilter' type="text" ng-model="semanticTypesGroupsGridOptions.filterOptions.filterText" />
         <div ng-grid="semanticTypesGroupsGridOptions" class="grid"></div>
       </tab>
       
       <tab id="case-definition-tab" heading="3. Case definition">
-        <textarea rows=20 cols=120 ng-model="caseDefinition"></textarea>
+         <label for='caseDefinitionName'>Name:</label>
+         <input id="caseDefinitionName" type="text" ng-model="$parent.caseDefinitionName" />
+         <label for='caseDefinition'>Clinical definition:</label>
+         <textarea rows=35 cols=200 id="caseDefinition" ng-model="$parent.caseDefinition"></textarea>
       </tab>
       
       <tab id="concepts-tab" heading="4. Concepts">
-        <button id="search-concepts" class="btn btn-default btn-sm" confirmed-click="generateConcepts()" ng-confirm-click="Really (re-)generate concepts?">
-          Generate concepts
-        </button>
-        <button ng-click="downloadConcepts()" class="btn btn-default btn-sm">Download {{concepts.length}} concepts as CSV</button>
-        <table id="coding-systems" class="table table-striped">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Spans</th>
-              <th>CUI</th>
-              <th>Name</th>
-              <th>Semantic types</th>
-              <th>Semantic groups</th>
-              <th ng-repeat="voc in vocabulariesGridOptions.$gridScope.selectedItems" ng-bind="voc.abbreviation"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr ng-repeat="concept in concepts">
-              <td>
-                <button ng-click="deleteConcept(concept.cui)" class="btn btn-default btn-sm" title="Delete">
-                  <i class="glyphicon glyphicon-remove-circle"></i>
-                </button>
-                <button class="btn btn-default" ng-click="expandRelated(false, concept)" title="Expand Hypernyms">
-                  <i class="glyphicon glyphicon-chevron-up"></i>
-                </button>
-                <button class="btn btn-default" ng-click="expandRelated(true, concept)" title="Expand Hyponyms">
-                  <i class="glyphicon glyphicon-chevron-down"></i>
-                </button>
-              </td>
-              <td>
-                <div class="spans">
-                  <span class="span" ng-if="concept.spans != undefined" ng-repeat="span in concept.spans" ng-bind="span.text"></span>
-                </div>
-              </td>
-              <td>
-                <span ng-bind="concept.cui"></span><span ng-if="concept.sourceConcepts.length == 0">*</span>
-              </td>
-              <td>
-                <span tooltip-html-unsafe='{{concept.definition || "(no definition available)"}}' tooltip-placement="right" ng-bind='concept.preferredName' class="concept-name"></span>
-              </td>
-              <td>
-                <span class="semantic-type" ng-repeat="type in concept.semantic.types" ng-bind="type"></span>
-              </td>
-              <td>
-                <span class="semantic-group" ng-repeat="group in concept.semantic.groups" ng-bind="group"></span>
-              </td>
-              <td ng-repeat="voc in vocabulariesGridOptions.$gridScope.selectedItems"> 
-                 <!-- Angular FTW! -->
-                 <span class="code" ng-repeat="code in codesInVocabulary(concept, voc.abbreviation)" ng-bind="code"></span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div id="concept-buttons">
+          <div>
+            Case definition
+            <span class='emphasize' ng-bind='config.CaseDefinitionName'></span>
+            with {{concepts.length}} concepts
+          </div>
+          <button id="search-concepts" class="btn btn-default btn-sm"
+              confirmed-click="generateConcepts()"
+              ng-confirm-click="Really (re-)generate concepts?"
+              ng-dont-confirm="{{concepts.length == 0}}">
+            <i class="glyphicon glyphicon-refresh"></i>
+            Generate concepts
+          </button>
+          <button ng-click="downloadConcepts()" class="btn btn-default btn-sm">
+            <i class="glyphicon glyphicon-download"></i>
+            Download case definition as CSV
+          </button>
+        </div>
+        <div ng-grid="conceptsGridOptions" class="grid"></div>
       </tab>
     </tabset>
     
@@ -116,40 +89,7 @@
                     </h3>
                 </div>
                 <div class="modal-body">
-                    <table st-table="relatedConcepts" class="table table-striped">
-                      <thead>
-                        <tr>
-                          <th></th>
-                          <th>CUI</th>
-                          <th>Name</th>
-                          <th>Semantic types</th>
-                          <th>Semantic groups</th>
-                          <th ng-repeat="voc in selectedVocabularies" ng-bind="voc.abbreviation"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr st-select-row="r" st-select-mode="multiple" ng-repeat="r in relatedConcepts">
-                          <td>
-                            <input type="checkbox" ng-model="r.keep" /></input>
-                          </td>
-                          <td>
-                            <span ng-bind="r.concept.cui"></span><span ng-if="r.concept.sourceConcepts.length == 0">*</span>
-                          </td>
-                          <td>
-                            <span tooltip-html-unsafe='{{r.concept.definition || "(no definition available)"}}' tooltip-placement="right" ng-bind='r.concept.preferredName' class="concept-name"></span>
-                          </td>
-                          <td>
-                            <span class="semantic-type" ng-repeat="type in r.concept.semantic.types" ng-bind="type"></span>
-                          </td>
-                          <td>
-                            <span class="semantic-group" ng-repeat="group in r.concept.semantic.groups" ng-bind="group"></span>
-                          </td>
-                          <td ng-repeat="voc in selectedVocabularies"> 
-                            <span class="code" ng-repeat="code in codesInVocabulary(r.concept, voc.abbreviation)" ng-bind="code"></span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                  <div ng-grid="relatedConceptsGridOptions" class="grid"></div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-primary" ng-click="ok()">OK</button>

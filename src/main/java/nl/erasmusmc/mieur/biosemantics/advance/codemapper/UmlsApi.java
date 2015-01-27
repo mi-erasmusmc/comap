@@ -32,12 +32,11 @@ public class UmlsApi  {
 	private Connection connection;
 	private String uri;
 	private Properties connectionProperties;
-	private List<String> availableVocabularies;
 	private List<String> vocabulariesWithDefinition;
+	private List<String> availableVocabularies;
 	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
 
-	public UmlsApi(String uri, Properties connectionProperties, List<String> availableVocabularies,
-			List<String> vocabulariesWithDefinition) {
+	public UmlsApi(String uri, Properties connectionProperties, List<String> availableVocabularies, List<String> vocabulariesWithDefinition) {
 		this.uri = uri;
 		this.connectionProperties = connectionProperties;
 		this.availableVocabularies = availableVocabularies;
@@ -67,11 +66,11 @@ public class UmlsApi  {
 			ResultSet result = statement.executeQuery();
 			List<CodingSystem> codingSystems = new LinkedList<>();
 			while (result.next()) {
-				String sab = result.getString(1);
+				String rsab = result.getString(1);
 				String name = result.getString(2);
 				String family = result.getString(2);
-				if (availableVocabularies == null || availableVocabularies.contains(sab)) {
-					CodingSystem codingSystem = new CodingSystem(sab, name, family);
+				if (availableVocabularies == null || availableVocabularies.contains(rsab)) {
+					CodingSystem codingSystem = new CodingSystem(rsab, name, family);
 					codingSystems.add(codingSystem);
 				}
 			}

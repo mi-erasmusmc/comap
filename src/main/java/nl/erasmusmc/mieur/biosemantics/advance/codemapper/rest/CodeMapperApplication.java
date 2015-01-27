@@ -37,6 +37,8 @@ public class CodeMapperApplication extends ResourceConfig {
 
 		List<String> availableVocabularies = Arrays.asList(
 			properties.getProperty("available-vocabularies").split(",\\s*"));
+
+
 		List<String> vocabulariesWithDefinition = Arrays.asList(
 			properties.getProperty("vocabularies-with-definition").split(",\\s*"));
 

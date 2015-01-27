@@ -4,6 +4,9 @@
   padding: 1em;
 }
 html, body { height: 100%; }
+body {
+	margin: 1em;
+}
 div#mask {
   cursor: wait;
   z-index: 999;
@@ -18,6 +21,13 @@ div#mask {
 }
 .spans {
 	max-width: 15em;
+}
+.concept-buttons {
+	max-width: 10em;
+	white-space: nowrap;
+}
+.concept-buttons * {
+	display: inline;
 }
 .span, .code, .vocabulary, .semantic-type, .semantic-group {
   display: inline-block;
@@ -58,7 +68,7 @@ div#mask {
   font-size: smaller;
 }
 .grid {
-  height: 400px;
+  height: 700px;
   padding-top: 1em;
 }
 .concept-name {
@@ -66,11 +76,28 @@ div#mask {
 	display: block;
 }
 
+.cellToolTip {
+  overflow: visible;
+}
+
+.tooltip {
+  top: 0 !important;
+  width: 40em;
+}
+
 .tooltip-inner {
   text-align: left;
 }
+
 .tooltip-inner a {
   color: white;
+}
+
+.ngRow.selected.even {
+  background-color: #C4E0E6;
+}
+.ngRow.selected.odd {
+	background-color: #D1E9EE;
 }
 .noselect {
     -webkit-touch-callout: none;
@@ -82,4 +109,23 @@ div#mask {
 }
 .modal-dialog {
 	width: 80%;
+}
+#concept-buttons {
+	text-align: center;
+}
+#caseDefinition {
+	margin-top: 0.5em;
+}
+#caseDefinitionName {
+	display: block;
+}
+.emphasize {
+	font-style: italic;
+}
+label {
+	display: block;
+}
+.ngCell.scroll-y {
+	overflow-y: scroll;
+  overflow: -moz-scrollbars-none;
 }

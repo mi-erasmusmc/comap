@@ -1,20 +1,24 @@
 <!DOCTYPE html>
-<html ng-app="codeMapperApp">
+<html ng-app="CodeMapperApp">
   <head>
     <meta charset="utf-8">
     <title>ADVANCE Code Mapper</title>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.js"></script>
-    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.28/angular-sanitize.js"></script>
-    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
-    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.12.0.js"></script>
-    <script src="//angular-ui.github.io/ng-grid/lib/ng-grid.js"></script>
-    <link rel='stylesheet' type="text/css" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" />
-    <link rel='stylesheet' type="text/css" href="//angular-ui.github.io/ng-grid/css/ng-grid.css" />
+    
+    <link rel="stylesheet" href="lib/bootstrap-theme.min.css">
+    <link rel='stylesheet' type="text/css" href="lib/bootstrap.min.css" />
+    <link rel='stylesheet' type="text/css" href="lib/ng-grid.css" />
+    
+    <script src="lib/jquery.min.js"></script>
+    <script src="lib/angular.js"></script>
+    <script src="lib/angular-sanitize.js"></script>
+    <script src="lib/bootstrap.min.js"></script>
+    <script src="lib/ui-bootstrap-tpls-0.12.0.js"></script>
+    <script src="lib/ng-grid-2.0.14.debug.js"></script>
+    
     <link rel='stylesheet' type="text/css" href="style.css" />
     <script src="app.js"></script>
   </head>
-  <body ng-controller="codeMapperCtrl">
+  <body ng-controller="CodeMapperCtrl">
   
     <div class="row">
       <div class="col-md-10">
@@ -34,7 +38,7 @@
       <tab id="coding-systems-tab" heading="1. Vocabularies">
         <label for='selectedVocabulariesList'>Selected:</label>
         <div id='selectedVocabulariesList'>
-          <span ng-repeat="voc in vocabulariesGridOptions.$gridScope.selectedItems" ng-bind="voc.abbreviation" ng-dblclick="unselectVocabulary(voc)" class="vocabulary noselect"></span>
+          <span ng-repeat="voc in selectedVocabularies" ng-bind="voc.abbreviation" ng-dblclick="unselectVocabulary(voc)" class="vocabulary noselect"></span>
         </div>
         <label for='vocabulariesFilter'>Filter:</label>
         <input id='vocabulariesFilter' type="text" ng-model="vocabulariesGridOptions.filterOptions.filterText" />
@@ -60,41 +64,42 @@
         <div id="concept-buttons">
           <div>
             Case definition
-            <span class='emphasize' ng-bind='config.CaseDefinitionName'></span>
+            <span class='emphasize' ng-bind='config.caseDefinitionName'></span>
             with {{concepts.length}} concepts
           </div>
           <button id="search-concepts" class="btn btn-default btn-sm"
-              confirmed-click="generateConcepts()"
+              confirmed-click="searchConcepts()"
               ng-confirm-click="Really (re-)generate concepts?"
               ng-dont-confirm="{{concepts.length == 0}}">
             <i class="glyphicon glyphicon-refresh"></i>
-            Generate concepts
+            <span ng-show='concepts.length > 0'>Reg</span><span ng-show='concepts.length == 0'>G</span>enerate concepts
           </button>
           <button ng-click="downloadConcepts()" class="btn btn-default btn-sm">
             <i class="glyphicon glyphicon-download"></i>
-            Download case definition as CSV
+            Download (CSV)
           </button>
         </div>
+        <label for='conceptsFilter'>Filter:</label>
+        <input id='conceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
         <div ng-grid="conceptsGridOptions" class="grid"></div>
       </tab>
     </tabset>
     
     <div id="mask" ng-show="isBlocked"></div>
     
-    <script type="text/ng-template" id="expandRelatedConcepts.html">
-                <div class="modal-header">
-                    <h3 class="modal-title">
-                       Expand <span ng-bind="name"></span>
-                       of {{concept.preferredName}} - {{concept.cui}}
-                    </h3>
-                </div>
-                <div class="modal-body">
-                  <div ng-grid="relatedConceptsGridOptions" class="grid"></div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-primary" ng-click="ok()">OK</button>
-                    <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
-                </div>
+    <script type="text/ng-template" id="ShowConcepts.html">
+       <div class="modal-header">
+         <h3 class="modal-title">{{title}} ({{concepts.length}} concepts)</h3>
+       </div>
+       <div class="modal-body">
+         <label for='dialogConceptsFilter'>Filter:</label>
+         <input id='dialogConceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
+         <div ng-grid="conceptsGridOptions" class="grid"></div>
+       </div>
+       <div class="modal-footer">
+         <button class="btn btn-primary" ng-click="ok()">OK</button>
+         <button class="btn btn-warning" ng-if="selectable" ng-click="cancel()">Cancel</button>
+       </div>
     </script>
   </body>
 </html>

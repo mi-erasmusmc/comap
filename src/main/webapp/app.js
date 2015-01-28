@@ -46,8 +46,8 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 
 	$scope.semanticTypesGroups = [];
 	$scope.vocabularies = [];
-	$scope.caseDefinition = "deafness and fever and code";
-	$scope.caseDefinitionName = "Test";
+	$scope.caseDefinition = "";
+	$scope.caseDefinitionName = "";
 	$scope.concepts = [];
 	$scope.selected = [];
     $scope.config = {}; // Configuration that was last used to generate $scope.concepts 
@@ -280,7 +280,7 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 			semanticTypes: angular.copy($scope.selectedSemanticTypes),
 			history: []
 		};
-		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.selectedVocabularies);
+		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.config.vocabularies);
 		var data = {
 			text : $scope.config.caseDefinition
 		};
@@ -339,14 +339,18 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 						});
 						var r = filterAndPatch(concepts, $scope.config, semanticTypesGroupsByType);
 						r.droppedBySemanticType.forEach(function(concept) {
-							console.log(concept.cui, concept.preferredName, concept.semantic.types.join(", "));
+							console.log("Dropped", concept.cui, concept.preferredName, concept.semantic.types.join(", "));
 						});
 						// Display relevant concepts
 						$scope.concepts = r.concepts;
+						$scope.conceptsGridOptions.sortInfo = { field: ["sourceConceptsCount", "preferredName"], direction: "desc" };
+//				        $scope.conceptsGridOptions.sortBy(function(c1, c2) {
+//				        	return c2.sourceConcepts.length - c1.sourceConcepts.length;
+//				        });
 						// Record history
 						$scope.historyStep("vocabularies", $scope.config.vocabularies.map(function(voc) { return voc.abbreviation; }));
 						$scope.historyStep("semantic types", $scope.config.semanticTypes.map(function(t) { return t.type; }));
-						$scope.historyStep("initial cuis", concepts.map(getCui));
+						$scope.historyStep("initially retrieved cuis", concepts.map(getCui));
 						$scope.unblock(blockLookupConcepts, "OK, found " + concepts.length + ", filtered on semantic types to " + $scope.concepts.length);
 					});
 			});
@@ -395,12 +399,12 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
     				var r = filterAndPatch(relatedConcepts0[concept.cui], $scope.config, semanticTypesGroupsByType, $scope.concepts);
 	    			var relatedConcepts = r.concepts;
 					r.droppedBySemanticType.forEach(function(concept) {
-						console.log(concept.cui, concept.preferredName, concept.semantic.types.join(", "));
+						console.log("Dropped", concept.cui, concept.preferredName, concept.semantic.types.join(", "));
 					});
 		    			
 	    			$scope.unblock(blockLookupExpand, "OK, found " + relatedConcepts0[concept.cui].length
 	    					+ " filter to " + relatedConcepts.length);
-	    	        
+	    	        var name = hyponymsNotHypernyms ? "hyponyms" : "hypernyms";
 	    			// Display retrieved concepts in a dialog
 	    	        var modalInstance = $modal.open({
 	    	          templateUrl: 'ShowConcepts.html',
@@ -409,7 +413,8 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 	    	          resolve: {
 	    	        	vocabularies: function() { return $scope.config.vocabularies; },
 	    	        	concepts: function() { return relatedConcepts; },
-	    	        	title: function() { return "Select " + (hyponymsNotHypernyms ? "hyponyms" : "hypernyms"); },
+	    	        	title: function() { return "Select " + name
+	    	        		+ " of " + concept.cui + "/" + concept.preferredName; },
 	    	        	selectable: function() { return true; }
 	    	          }
 	    	        });
@@ -427,7 +432,7 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 	    					selectedRelated.forEach(function(related, ix) {
 	    						$scope.concepts.splice(conceptOffset + ix + 1, 0, related);
 	    					});
-	    					$scope.historyStep("expand concept", [concept.cui].concat(selectedRelated.map(getCui)));
+	    					$scope.historyStep("expand " + name + " of " + concept.cui, selectedRelated.map(getCui));
 	    		        }, function () {
 	    		        	console.log('Modal dismissed at: ' + new Date());
 	    		        });
@@ -539,10 +544,6 @@ function filterAndPatch(concepts, config, semanticTypesGroupsByType, currentConc
     	.filter(function(concept) {
     		return knownCuis.indexOf(concept.cui) == -1;
     	})
-    	// Sort by the number of available source concepts
-    	.sort(function(c1, c2) {
-    		return c2.sourceConcepts.length - c1.sourceConcepts.length;
-    	})
     	// Patch: adapt concepts for application
     	.map(function(concept0) {
     		var concept = angular.copy(concept0);
@@ -557,6 +558,7 @@ function filterAndPatch(concepts, config, semanticTypesGroupsByType, currentConc
     					return sourceConcept.id;
     				});
     		});
+    		concept.sourceConceptsCount = concept.sourceConcepts.length; 
     		// Enrich information about semantic types by descriptions and groups.
             var types = concept.semanticTypes
                     .map(function(type) {

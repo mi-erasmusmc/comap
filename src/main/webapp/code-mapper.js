@@ -403,7 +403,7 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 	$scope.resetConcepts = function() {
 		$scope.concepts = [];
 		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, []);
-		inputBlockUi.start("Reset concepts to edit!");
+		inputBlockUi.reset();
 	};
 	
 	/** Delete a concepts from $scope.concepts by its cui. */

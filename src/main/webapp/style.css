@@ -7,15 +7,6 @@ html, body { height: 100%; }
 body {
 	margin: 1em;
 }
-div#mask {
-  cursor: wait;
-  z-index: 999;
-  height: 100%;
-  width: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-}
 .strong {
 	font-weight: bold;
 }
@@ -128,4 +119,8 @@ label {
 .ngCell.scroll-y {
 	overflow-y: scroll;
   overflow: -moz-scrollbars-none;
+}
+
+div[block-ui=inputBlockUi] .block-ui-container {
+	cursor: not-allowed;
 }

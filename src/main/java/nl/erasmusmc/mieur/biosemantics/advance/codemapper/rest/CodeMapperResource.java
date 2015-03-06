@@ -39,7 +39,7 @@ public class CodeMapperResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<CodingSystem> getCodingSystems() {
 		try {
-			UmlsApi api = CodeMapperApplication.getApi();
+			UmlsApi api = CodeMapperApplication.getUmlsApi();
 			return api.getCodingSystems();
 		} catch (CodeMapperException e) {
 			e.printStackTrace();
@@ -54,7 +54,7 @@ public class CodeMapperResource {
 	public List<UmlsConcept> getUmlsConcepts(@FormParam("cuis") List<String> cuis,
 			@FormParam("vocabularies") List<String> vocabularies) {
 		try {
-			UmlsApi api = CodeMapperApplication.getApi();
+			UmlsApi api = CodeMapperApplication.getUmlsApi();
 			Map<String, UmlsConcept> concepts = api.getConcepts(cuis, vocabularies);
 			return new LinkedList<>(concepts.values());
 		} catch (CodeMapperException e) {
@@ -94,7 +94,7 @@ public class CodeMapperResource {
 		if (cuis.isEmpty())
 			return new TreeMap<>();
 		else {
-			UmlsApi api = CodeMapperApplication.getApi();
+			UmlsApi api = CodeMapperApplication.getUmlsApi();
 			try {
 				return api.getRelated(cuis, vocabularies, hyponymsNotHypernyms);
 			} catch (CodeMapperException e) {

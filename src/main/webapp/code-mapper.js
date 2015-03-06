@@ -1,27 +1,51 @@
 
 var CODE_MAPPER_API_URL = 'resource/code-mapper';
-//var CODE_MAPPER_API_URL = 'mockup'
-var CONFIG_URL =  CODE_MAPPER_API_URL + "/config";
 var CODING_SYSTEMS_URL = CODE_MAPPER_API_URL + '/coding-systems';
 var UMLS_CONCEPTS_API_URL = CODE_MAPPER_API_URL + '/umls-concepts';
 var RELATED_CONCEPTS_API_URL = CODE_MAPPER_API_URL + '/related';
+
+var PERSISTENCY_API_URL = 'resource/persistency';
+var CASE_DEFINITION_URL = PERSISTENCY_API_URL + '/case-definition';
+
 var SEMANTIC_TYPES_GROUPS_URL = "data/semantic_types_groups.json";
 var STOPWORDS_URL = "data/stopwords.json";
 
-//var DEFAULT_CODING_SYSTEMS = [ "RCD", "ICD10CM", "ICD9CM", "ICPC2P", "ICPC2EENG", "ICD10", "ICD10AE" ]; // 'MSH', 'ICD10', 'ICPC', 'MDR', 'MEDLINEPLUS', 'RCD'
-var DEFAULT_CODING_SYSTEMS = [ "ICD10CM", "ICD9CM", "ICPC2P", "RCD" ];
-
-var DEFAULT_SEMANTIC_TYPES =
-	[ "T020", "T190", "T049", "T019", "T047", "T050", "T037", "T048", "T191", "T046", "T184", "T033" ] // Group "DISO" ("Findings": T033)
- + [ "T005", "T004", "T204", "T007" ]; // Some from group "LIVB"
-
+var INITIAL_STATE = {
+	caseDefinition: "headache and fever",
+	history: [],
+	concepts: [],
+	vocabularies: [ "ICD10CM", "ICD9CM", "ICPC2P", "RCD" ],
+	semanticTypes:
+		[ "T020", "T190", "T049", "T019", "T047", "T050", "T037", "T048", "T191", "T046", "T184", "T033" ] // Group "DISO" ("Findings": T033)
+	 + [ "T005", "T004", "T204", "T007" ] // Some from group "LIVB",
+};
 
 // Concepts found by Peregrine are filtered by a stopword list and
 // by a regex for three-digit numbers and two-digit words.
 var FILTER_SPANS_REGEX = /^(\d{1,3}|\S{1,2})$/;
 var STOPWORDS = null;
 
-var CodeMapperApp = angular.module('CodeMapperApp', [ 'ui.bootstrap', 'ngSanitize', 'ngGrid' ]);
+function error(msg, consoleArgs) {
+	msg = "ERROR: " + msg;
+	console.log(msg, consoleArgs);
+	alert(msg);
+}
+
+// Must be declared in-line in index.jsp
+if (!peregrineResourceUrl) {
+	error("Peregrine resource URL unknown", peregrineResourceUrl);
+}
+//Must be declared in-line in index.jsp
+if (!caseDefinitionName) {
+	error("Case definition name unknown", caseDefinitionName);
+}
+
+var CodeMapperApp = angular.module('CodeMapperApp', [ 'ui.bootstrap', 'ngSanitize', 'ngGrid', 'blockUI' ]);
+
+CodeMapperApp.config(function(blockUIConfig) {
+	  // Change the default overlay message
+	  blockUIConfig.message = 'Loading...';
+});
 
 var ngConfirmClick = CodeMapperApp.directive('ngConfirmClick', [
     function(){
@@ -38,7 +62,7 @@ var ngConfirmClick = CodeMapperApp.directive('ngConfirmClick', [
         };
 }])
 
-var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope, $http, $timeout, $sce, $modal, $timeout) {
+var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope, $http, $timeout, $sce, $modal, $timeout, $q, blockUI) {
 	
 	/*******************/
 	/* SCOPE VARIABLES */
@@ -46,11 +70,10 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 
 	$scope.semanticTypesGroups = [];
 	$scope.vocabularies = [];
-	$scope.caseDefinition = "";
-	$scope.caseDefinitionName = "";
+	$scope.caseDefinition = null;
 	$scope.concepts = [];
 	$scope.selected = [];
-    $scope.config = {}; // Configuration that was last used to generate $scope.concepts 
+    $scope.state = {}; // State of the current case definition 
     
     /****************************/
     /* UI BLOCKING AND MESSAGES */
@@ -61,6 +84,7 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 	var blocks = [];
 	var blocksCounter = 0;
 	var messages = {};
+	var inputBlockUi = blockUI.instances.get('inputBlockUi');
 	var updateMessages = function() {
 		$scope.messages = [];
 		for (var key in messages) {
@@ -71,7 +95,6 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 				});
 			}
 		}
-		$('#mask').height($(document).height());
 		$scope.isBlocked = blocks.length > 0;
 	};
 	$scope.message = function(message) {
@@ -95,7 +118,8 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
     
 	/** Create a history step for $scope.history */
 	$scope.historyStep = function(name, args) {
-		$scope.config.history.push({
+		$scope.state.history.push({
+			date: new Date().toString(),
 			name: name,
 			args: args
 		});
@@ -115,6 +139,18 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 	    filterOptions: { filterText: '' },
 //		pinSelectionCheckbox: true,
 //		enableColumnResize: true, // Bugs the grid: it is not updated anymore when $scope.concepts changes
+	};
+	
+	$scope.historyGridOptions = {
+		data: "state.history",
+		columnDefs: [
+		   { field: "date", displayName: "Date" },
+		   { field: "name", displayName: "Step" },
+		   { field: "args", displayName: "Arguments",
+			 cellTemplate: "<div>{{row.entity[col.field].join(', ')}}</div>" }
+	   ],
+		enableRowSelection: false,
+		enableCellSelection: true
 	};
 
 	/****************/
@@ -188,7 +224,7 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 	/*****************/
 	
 	var blockRetrieveStopwords = $scope.block("Retriveve stopwords... ");
-	$http.get(STOPWORDS_URL)
+	var retrieveStopwords = $http.get(STOPWORDS_URL)
 		.error(function(err) {
 			var msg = "ERROR: Couldn't retrieve stopwords from " + STOPWORDS_URL;
 			console.log(msg, err);
@@ -200,22 +236,8 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 			$scope.unblock(blockRetrieveStopwords, "OK, found " + STOPWORDS.length);
 		});
 
-	var blockRetrievePeregrineUrl = $scope.block("Retrieve Peregrine URL... ");
-	$http.get(CONFIG_URL)
-		.error(function(err) {
-			var msg = "ERROR: Couldn't retrieve peregrine URL";
-			console.log(msg, err);
-			alert(msg);
-			$scope.unblock(blockRetrievePeregrineUrl, "ERROR");
-		})
-		.success(function (config) {
-			$scope.peregrineResourceUrl = config.peregrineResourceUrl;
-			console.log("Found config", config);
-			$scope.unblock(blockRetrievePeregrineUrl, "OK");
-	    });
-
 	var blockSemanticTypesGroups = $scope.block("Retrieving semantic types and groups... ");
-	$http.get(SEMANTIC_TYPES_GROUPS_URL)
+	var retrieveSemanticTypesGroups = $http.get(SEMANTIC_TYPES_GROUPS_URL)
 		.error(function(err) {
 			var msg = "ERROR: Couldn't load semantic types and groups";
 			console.log(msg, err);
@@ -224,18 +246,11 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 		})
 		.success(function(semanticTypesGroups) {
 			$scope.semanticTypesGroups = semanticTypesGroups;
-			$timeout(function() {
-		        $scope.semanticTypesGroups.forEach(function(semanticType, index) {
-		        	if (DEFAULT_SEMANTIC_TYPES.indexOf(semanticType.type) != -1) {
-		                $scope.semanticTypesGroupsGridOptions.selectItem(index, true);
-					}
-		        });
-			}, 0);
 			$scope.unblock(blockSemanticTypesGroups, "OK, retrieved " + $scope.semanticTypesGroups.length);
 		});
 
 	var blockRetrieveCodingSystems = $scope.block("Retrieving vocabularies... ");
-	$http.get(CODING_SYSTEMS_URL)
+	var retrieveCodingSystems = $http.get(CODING_SYSTEMS_URL)
 		.error(function(err) {
 			var msg = "ERROR: Couldn't retrieve vocabularies";
 			console.log(msg, err);
@@ -253,15 +268,44 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 					}
 					return 0;
 				});
-			$timeout(function() {
-				$scope.vocabularies.forEach(function(voc, ix) {
-					if (0 <= DEFAULT_CODING_SYSTEMS.indexOf(voc.abbreviation)) {
-						$scope.vocabulariesGridOptions.selectItem(ix, true);
-					}
-				});
-			}, 0);
 			$scope.unblock(blockRetrieveCodingSystems, "OK, retrieved " + $scope.vocabularies.length);
 		});
+	
+	$q.all([retrieveStopwords, retrieveSemanticTypesGroups, retrieveCodingSystems]).then(function() {
+		var blockInitialState = $scope.block("Retrieve state... ");
+		$http.get(CASE_DEFINITION_URL + '/' + encodeURIComponent(caseDefinitionName))
+			.error(function(err) {
+				$scope.unblock(blockInitialState, "not found, created.");
+				$scope.state = angular.copy(INITIAL_STATE);
+			})
+			.success(function(state) {
+				$scope.unblock(blockInitialState, "LOADED.");
+				console.log(state);
+				$scope.state = state;
+			})
+			.finally(function() {
+				$scope.caseDefinition = $scope.state.caseDefinition;
+				console.log($scope.state.semanticTypes, $scope.state.vocabularies);
+				$timeout(function() {
+			        $scope.semanticTypesGroups.forEach(function(semanticType, index) {
+			        	if ($scope.state.semanticTypes.indexOf(semanticType.type) != -1) {
+			                $scope.semanticTypesGroupsGridOptions.selectItem(index, true);
+						}
+			        });
+					$scope.vocabularies.forEach(function(voc, ix) {
+						if (0 <= $scope.state.vocabularies.indexOf(voc.abbreviation)) {
+							$scope.vocabulariesGridOptions.selectItem(ix, true);
+						}
+					});
+					$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.state.vocabularies);
+					$scope.concepts = $scope.state.concepts;
+					if ($scope.concepts) {
+						inputBlockUi.start("Reset concepts to edit!");
+						$('#concepts-tab > a').click();
+					}
+				}, 0);
+			});
+	});
 
 	/*************/
 	/* FUNCTIONS */
@@ -272,21 +316,23 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 	 */ 
 	$scope.searchConcepts = function() {
 		var blockSearchConcepts = $scope.block("Search concepts in case definition... ");
+		
 		$scope.concepts = [];
-		$scope.config = {
+		$scope.state = {
 			caseDefinition: $scope.caseDefinition,
-			caseDefinitionName: $scope.caseDefinitionName,
-			vocabularies: angular.copy($scope.selectedVocabularies),
-			semanticTypes: angular.copy($scope.selectedSemanticTypes),
+			vocabularies: $scope.selectedVocabularies.map(function(v) { return v.abbreviation; }),
+			semanticTypes: $scope.selectedSemanticTypes.map(function(t) { return t.type; }),
+			initialCuis: null,
 			history: []
 		};
-		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.config.vocabularies);
+		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.state.vocabularies);
+		console.log($scope.caseDefinition, $scope.state.caseDefinition);
 		var data = {
-			text : $scope.config.caseDefinition
+			text: $scope.caseDefinition
 		};
-		console.log("Peregrine", $scope.peregrineResourceUrl);
+		console.log("Peregrine", peregrineResourceUrl);
 		// Index case definition with peregrine
-		$http.post($scope.peregrineResourceUrl + "/index", data, FORM_ENCODED_POST)
+		$http.post(peregrineResourceUrl + "/index", data, FORM_ENCODED_POST)
 			.error(function(err) {
 				var msg = "ERROR: Couldn't search concepts in case definition";
 				console.log(msg, err);
@@ -313,16 +359,12 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 						cuis.push(cui);
 					}
 				});
-				var selectedVocabularyAbbreviations =
-					$scope.config.vocabularies.map(function(voc) {
-						return voc.abbreviation;
-					});
 				var blockLookupConcepts = $scope.block("Found " + cuis.length + " CUIs " +
 						"(from " + spans.length + " spans) " +
 						"looking up in vocabularies ...");
 				var data = {
 					cuis : cuis,
-					vocabularies : selectedVocabularyAbbreviations
+					vocabularies : $scope.state.vocabularies
 				};
 				// Retrieve information with this application's API
 				$http.post(UMLS_CONCEPTS_API_URL, data, FORM_ENCODED_POST)
@@ -337,7 +379,7 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 								return cuiOfId(span.id) == concept.cui;
 							});
 						});
-						var r = filterAndPatch(concepts, $scope.config, semanticTypesGroupsByType);
+						var r = filterAndPatch(concepts, $scope.state, semanticTypesGroupsByType);
 						r.droppedBySemanticType.forEach(function(concept) {
 							console.log("Dropped", concept.cui, concept.preferredName, concept.semantic.types.join(", "));
 						});
@@ -347,13 +389,21 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 //				        $scope.conceptsGridOptions.sortBy(function(c1, c2) {
 //				        	return c2.sourceConcepts.length - c1.sourceConcepts.length;
 //				        });
-						// Record history
-						$scope.historyStep("vocabularies", $scope.config.vocabularies.map(function(voc) { return voc.abbreviation; }));
-						$scope.historyStep("semantic types", $scope.config.semanticTypes.map(function(t) { return t.type; }));
-						$scope.historyStep("initially retrieved cuis", concepts.map(getCui));
+						$scope.state.initialCuis = concepts.map(getCui);
+						$scope.historyStep("Search concepts")
 						$scope.unblock(blockLookupConcepts, "OK, found " + concepts.length + ", filtered on semantic types to " + $scope.concepts.length);
+
+						if ($scope.concepts) {
+							inputBlockUi.start("Reset concepts to edit!");
+						}
 					});
 			});
+	};
+	
+	$scope.resetConcepts = function() {
+		$scope.concepts = [];
+		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, []);
+		inputBlockUi.start("Reset concepts to edit!");
 	};
 	
 	/** Delete a concepts from $scope.concepts by its cui. */
@@ -377,14 +427,10 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
     $scope.expandRelated = function(hyponymsNotHypernyms, concept) {
     	var blockLookupExpand = $scope.block("Looking up " + (hyponymsNotHypernyms ? "hyponyms" : "hypernyms") + "... ");
     	
-    	var selectedVocabularyAbbreviations = $scope.config.vocabularies
-    		.map(function(voc) {
-    			return voc.abbreviation;
-    		});
     	var data = {
 			cuis: [ concept.cui ],
 			hyponymsNotHypernyms: hyponymsNotHypernyms,
-			vocabularies: selectedVocabularyAbbreviations
+			vocabularies: $scope.state.vocabularies
 		};
     	// Retrieve related concepts from the API
     	$http.post(RELATED_CONCEPTS_API_URL, data, FORM_ENCODED_POST)
@@ -396,7 +442,7 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
     		})
     		.success(function(relatedConcepts0) {
     			if (relatedConcepts0.hasOwnProperty(concept.cui)) {
-    				var r = filterAndPatch(relatedConcepts0[concept.cui], $scope.config, semanticTypesGroupsByType, $scope.concepts);
+    				var r = filterAndPatch(relatedConcepts0[concept.cui], $scope.state, semanticTypesGroupsByType, $scope.concepts);
 	    			var relatedConcepts = r.concepts;
 					r.droppedBySemanticType.forEach(function(concept) {
 						console.log("Dropped", concept.cui, concept.preferredName, concept.semantic.types.join(", "));
@@ -411,7 +457,7 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 	    	          controller: 'ShowConceptsCtrl',
 	    	          size: 'lg',
 	    	          resolve: {
-	    	        	vocabularies: function() { return $scope.config.vocabularies; },
+	    	        	vocabularies: function() { return $scope.state.vocabularies; },
 	    	        	concepts: function() { return relatedConcepts; },
 	    	        	title: function() { return "Select " + name
 	    	        		+ " of " + concept.cui + "/" + concept.preferredName; },
@@ -432,7 +478,7 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 	    					selectedRelated.forEach(function(related, ix) {
 	    						$scope.concepts.splice(conceptOffset + ix + 1, 0, related);
 	    					});
-	    					$scope.historyStep("expand " + name + " of " + concept.cui, selectedRelated.map(getCui));
+	    					$scope.historyStep("expand " + name + " of " + concept.cui + " (" + concept.preferredName + ")", selectedRelated.map(getCui));
 	    		        }, function () {
 	    		        	console.log('Modal dismissed at: ' + new Date());
 	    		        });
@@ -452,21 +498,12 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 		
 		var data = [];
 		
-		[ [$scope.config.caseDefinitionName],
+		[ [caseDefinitionName],
           ["Generated by ADVANCE Code Mapper"]
         ].forEach(function(row) { data.push(row); });
 		
 		[ [],
-          ["History"],
-          ["Step", "Arguments"]
-        ].forEach(function(row) { data.push(row); });
-		
-		$scope.config.history.forEach(function(step) {
-			data.push([step.name].concat(step.args));
-		});
-		
-		[ [],
-		  ["Concepts"],
+		  ["CONCEPTS"],
 		  ["Name", "CUI", "Vocabulary", "Code"]
         ].forEach(function(row) { data.push(row); });
 		selectedVocabularyAbbreviations.forEach(function(vocabulary) {
@@ -478,9 +515,24 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 		});
 		
 		[ [],
-		  ["Case definition"]
+		  ["INITIAL CUIS"],
+		  $scope.state.initialCuis
 		].forEach(function(row) { data.push(row); });
-		$scope.config.caseDefinition.split("\n").forEach(function(line) {
+		
+		[ [],
+          ["HISTORY"],
+          ["Date", "Step", "Arguments"]
+        ].forEach(function(row) { data.push(row); });
+		if ($scope.state.history) {
+			$scope.state.history.forEach(function(step) {
+				data.push([step.date, step.name].concat(step.args));
+			});
+		}
+		
+		[ [],
+		  ["CASE DEFINITION"]
+		].forEach(function(row) { data.push(row); });
+		$scope.state.caseDefinition.split("\n").forEach(function(line) {
 			data.push([line]);
 		});
 		
@@ -493,9 +545,26 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 		var a = document.createElement('a');
 		a.href = fileURL;
 		a.target = '_blank';
-		a.download = 'case_definition_' + $scope.config.caseDefinitionName + '.csv';
+		a.download = 'case_definition_' + caseDefinitionName + '.csv';
 		document.body.appendChild(a);
 		a.click();
+	};
+	
+	$scope.saveCaseDefinition = function() {
+		var state = angular.copy($scope.state);
+		state.concepts = $scope.concepts;
+		var data = {
+			state: JSON.stringify(state)
+		};
+		var saveCaseDefinitionBlock = $scope.block("Save case definition... "); 
+		$http.post(CASE_DEFINITION_URL + '/' + encodeURIComponent(caseDefinitionName), data, FORM_ENCODED_POST)
+			.error(function(e) {
+				$scope.unblock(saveCaseDefinitionBlock, "ERROR");
+				console.log(e);
+			})
+			.success(function() {
+				$scope.unblock(saveCaseDefinitionBlock, "OK");
+			});
 	};
 	
 	$scope.showDroppedConcepts = function(concepts) {
@@ -529,14 +598,10 @@ var CodeMapperCtrl = CodeMapperApp.controller('CodeMapperCtrl', function($scope,
 });
 
 /** Filters the list of `concepts` and adapts the data for the application. */
-function filterAndPatch(concepts, config, semanticTypesGroupsByType, currentConcepts) {
+function filterAndPatch(concepts, state, semanticTypesGroupsByType, currentConcepts) {
 	
 	var knownCuis = currentConcepts ? currentConcepts.map(getCui) : [];
 	
-    var selectedTypes = config.semanticTypes
-		.map(function(t) {
-			return t.type;
-		});
     // Record concepts that are not yet available but filtered out due to its semantic type
     var droppedBySemanticType = [];
 	var result = concepts
@@ -549,10 +614,10 @@ function filterAndPatch(concepts, config, semanticTypesGroupsByType, currentConc
     		var concept = angular.copy(concept0);
     		// Add field `codes` that is a mapping from vocabularies to source concepts
     		concept.codes = {};
-    		config.vocabularies.forEach(function(voc) {
-    			concept.codes[voc.abbreviation] = concept.sourceConcepts
+    		state.vocabularies.forEach(function(voc) {
+    			concept.codes[voc] = concept.sourceConcepts
     				.filter(function(sourceConcept) {
-    					return sourceConcept.vocabulary == voc.abbreviation;
+    					return sourceConcept.vocabulary == voc;
     				})
     				.map(function(sourceConcept) {
     					return sourceConcept.id;
@@ -585,7 +650,7 @@ function filterAndPatch(concepts, config, semanticTypesGroupsByType, currentConc
     		var matchesSemanticTypes =
     			concept.semanticTypes
 					.filter(function(type) {
-						return selectedTypes.indexOf(type) != -1;
+						return state.semanticTypes.indexOf(type) != -1;
 					})
 					.length > 0;
 			if (!matchesSemanticTypes) {
@@ -692,8 +757,8 @@ function createConceptsColumnDefs(showCommands, showSpans, vocabularies) {
 	var vocabulariesColumnDefs = 
 		vocabularies.map(function(voc) {
 	    	return {
-	    		displayName: voc.abbreviation,
-	    		field: "codes." + voc.abbreviation,
+	    		displayName: voc,
+	    		field: "codes." + voc,
 	 		    cellClass: 'scroll-y',
 	    		cellTemplate: "<span class='code' ng-repeat='code in row.getProperty(col.field)' ng-bind='code'></span>",
 	    		sortFn: function(cs1, cs2) {

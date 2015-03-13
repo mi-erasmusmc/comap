@@ -52,10 +52,10 @@ public class CodeMapperResource {
 	@Path("umls-concepts")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<UmlsConcept> getUmlsConcepts(@FormParam("cuis") List<String> cuis,
-			@FormParam("vocabularies") List<String> vocabularies) {
+			@FormParam("codingSystems") List<String> codingSystems) {
 		try {
 			UmlsApi api = CodeMapperApplication.getUmlsApi();
-			Map<String, UmlsConcept> concepts = api.getConcepts(cuis, vocabularies);
+			Map<String, UmlsConcept> concepts = api.getConcepts(cuis, codingSystems);
 			return new LinkedList<>(concepts.values());
 		} catch (CodeMapperException e) {
 			logger.error(e);
@@ -76,27 +76,27 @@ public class CodeMapperResource {
 	@POST
 	@Path("related/hyponyms")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Map<String, List<UmlsConcept>> getHyponyms(@FormParam("cuis") List<String> cuis, @FormParam("vocabularies") List<String> vocabularies) {
-		return getRelated(cuis, vocabularies, true);
+	public Map<String, List<UmlsConcept>> getHyponyms(@FormParam("cuis") List<String> cuis, @FormParam("codingSystems") List<String> codingSystems) {
+		return getRelated(cuis, codingSystems, true);
 	}
 
 	@POST
 	@Path("related/hypernyms")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Map<String, List<UmlsConcept>> getHypernyms(@FormParam("cuis") List<String> cuis, @FormParam("vocabularies") List<String> vocabularies) {
-		return getRelated(cuis, vocabularies, false);
+	public Map<String, List<UmlsConcept>> getHypernyms(@FormParam("cuis") List<String> cuis, @FormParam("codingSystems") List<String> codingSystems) {
+		return getRelated(cuis, codingSystems, false);
 	}
 
 	@POST
 	@Path("related")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Map<String, List<UmlsConcept>> getRelated(@FormParam("cuis") List<String> cuis, @FormParam("vocabularies") List<String> vocabularies, @FormParam("hyponymsNotHypernyms") boolean hyponymsNotHypernyms) {
+	public Map<String, List<UmlsConcept>> getRelated(@FormParam("cuis") List<String> cuis, @FormParam("codingSystems") List<String> codingSystems, @FormParam("hyponymsNotHypernyms") boolean hyponymsNotHypernyms) {
 		if (cuis.isEmpty())
 			return new TreeMap<>();
 		else {
 			UmlsApi api = CodeMapperApplication.getUmlsApi();
 			try {
-				return api.getRelated(cuis, vocabularies, hyponymsNotHypernyms);
+				return api.getRelated(cuis, codingSystems, hyponymsNotHypernyms);
 			} catch (CodeMapperException e) {
 				logger.error(e);
 				e.printStackTrace();

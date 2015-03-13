@@ -330,7 +330,7 @@ public class UmlsApi  {
 		}
 	}
 
-	public Map<String, UmlsConcept> getConcepts(Collection<String> cuis, Collection<String> vocabularies)
+	public Map<String, UmlsConcept> getConcepts(Collection<String> cuis, Collection<String> codingSystems)
 			throws CodeMapperException {
 		if (cuis.isEmpty())
 			return new TreeMap<>();
@@ -338,7 +338,7 @@ public class UmlsApi  {
 
 			cuis = new LinkedList<>(new TreeSet<>(cuis)); // unique CUIs
 
-	        Map<String, List<SourceConcept>> sourceConcepts = getSourceConcepts(cuis, vocabularies);
+	        Map<String, List<SourceConcept>> sourceConcepts = getSourceConcepts(cuis, codingSystems);
 	        Map<String, String> preferredNames = getPreferredNames(cuis);
 	        Map<String, String> definitions = getDefinitions(cuis);
 	        Map<String, List<String>> semanticTypes = getSemanticTypes(cuis);

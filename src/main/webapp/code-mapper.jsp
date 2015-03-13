@@ -1,7 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <!DOCTYPE html>
-<html ng-app="CodeMapperApp">
+<html ng-app="codeMapperApp">
   <head>
     <meta charset="utf-8">
     <title>ADVANCE Code Mapper</title>
@@ -21,12 +21,14 @@
     
     <link rel='stylesheet' type="text/css" href="style.css" />
     <script type=text/javascript>
-      var peregrineResourceUrl = '${peregrineResourceUrl}';
-      var caseDefinitionName = '${caseDefinitionName}';
+      var PEREGRINE_RESOURCE_URL = '${peregrineResourceUrl}';
+      var CASE_DEFINITION_NAME = '${caseDefinitionName}';
     </script>
     <script src="code-mapper.js"></script>
+    <script src="code-mapper-app.js"></script>
   </head>
-  <body ng-controller="CodeMapperCtrl">
+  
+  <body ng-controller="CodeMapperCtrl as codeMapperCtrl" ng-keydown="onKeydown($event)" tabindex="0">
   
     <div class="row">
       <div class="col-md-10">
@@ -40,54 +42,54 @@
     </div>
     
     <ul class="list-unstyled icon-list messages">
-      <li ng-repeat="message in messages | limitTo: -1" ng-bind="message.text"></li>
+      <li ng-repeat="message in messages | limitTo: -3" ng-bind="message.text"></li>
     </ul>
     
     <tabset>
-      <tab id="coding-systems-tab" heading="1. Vocabularies">
+      <tab id="coding-systems-tab" heading="1. Coding systems" ng-controller="CodingSystemsCtrl">
         <div block-ui="inputBlockUi">
           <label for='selectedVocabulariesList'>Selected:</label>
           <div id='selectedVocabulariesList'>
-            <span ng-repeat="voc in selectedVocabularies" ng-bind="voc.abbreviation" ng-dblclick="unselectVocabulary(voc)" class="vocabulary noselect"></span>
+            <span ng-repeat="voc in selected.codingSystems" ng-bind="voc.abbreviation" ng-dblclick="unselect(voc.abbreviation)" class="vocabulary noselect"></span>
           </div>
           <label for='vocabulariesFilter'>Filter:</label>
-          <input id='vocabulariesFilter' type="text" ng-model="vocabulariesGridOptions.filterOptions.filterText" />
-          <div ng-grid="vocabulariesGridOptions" class="grid"></div>
+          <input id='vocabulariesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
+          <div ng-grid="gridOptions" class="grid"></div>
         </div>
       </tab>
       
-      <tab id="semantics-tab" heading="2. Semantic types">
+      <tab id="semantics-tab" heading="2. Semantic types" ng-controller="SemanticTypesCtrl">
         <div block-ui="inputBlockUi">
           <label for='selectedsemanticTypesList'>Selected:</label>
-          <span id='selectedsemanticTypesList' ng-repeat="typeGroups in semanticTypesGroupsGridOptions.$gridScope.selectedItems" ng-bind="typeGroups.description" ng-dblclick="unselectSemanticTypeGroup(typeGroups)" class="semantic-type noselect" ></span>
+          <span ng-repeat="type in selected.semanticTypes" ng-bind="type.description" ng-dblclick="unselect(type)" class="semantic-type noselect" id='selectedsemanticTypesList'></span>
           <label for='samanticTypesFilter'>Filter:</label>
-          <input id='samanticTypesFilter' type="text" ng-model="semanticTypesGroupsGridOptions.filterOptions.filterText" />
-          <div ng-grid="semanticTypesGroupsGridOptions" class="grid"></div>
+          <input id='samanticTypesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
+          <div ng-grid="gridOptions" class="grid"></div>
         </div>
       </tab>
       
-      <tab id="case-definition-tab" heading="3. Case definition" block-ui="inputBlockUi">
+      <tab id="case-definition-tab" heading="3. Case definition">
         <div block-ui="inputBlockUi">
-          <textarea rows=35 cols=200 ng-model="$parent.caseDefinition"></textarea>
+          <textarea rows=35 cols=200 ng-model="$parent.$parent.caseDefinition"></textarea>
         </div>
       </tab>
       
       <tab id="concepts-tab" heading="4. Concepts">
         <div id="concept-buttons">
-          <div>{{concepts.length}} concepts</div>
-          <button id="search-concepts" ng-if="concepts.length == 0" ng-click="searchConcepts()" class="btn btn-default btn-sm">
+          <div ng-show="state">{{state.concepts.length}} concepts</div>
+          <button ng-click="searchConcepts()" ng-if="state == null" class="btn btn-default btn-sm" id="search-concepts">
             <i class="glyphicon glyphicon-refresh"></i>
-            Generate concepts
+            Generate
           </button>
-          <button id="reset-concepts" ng-if="concepts.length > 0" ng-click="resetConcepts()" ng-confirm-click="Really reset concepts?" class="btn btn-default btn-sm">
+          <button ng-click="resetConcepts()" confirm-click="Really reset all translations?" ng-if="state" class="btn btn-default btn-sm" id="reset-concepts">
             <i class="glyphicon glyphicon-flash"></i>
-            Reset concepts
+            Reset
           </button>
-          <button ng-click="saveCaseDefinition()" class="btn btn-default btn-sm">
+          <button ng-click="saveTranslations()" ng-if="state" class="btn btn-default btn-sm">
             <i class="glyphicon glyphicon-cloud-upload"></i>
             Save
           </button>
-          <button ng-click="downloadConcepts()" class="btn btn-default btn-sm">
+          <button ng-click="downloadConcepts()" ng-if="state" class="btn btn-default btn-sm">
             <i class="glyphicon glyphicon-download"></i>
             Download (CSV)
           </button>
@@ -97,7 +99,7 @@
         <div ng-grid="conceptsGridOptions" class="grid"></div>
       </tab>
       
-      <tab id="history-tab" heading="History">
+      <tab id="history-tab" heading="5. History">
         <div ng-grid="historyGridOptions" class="grid"></div>
       </tab>
     </tabset>

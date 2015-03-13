@@ -20,11 +20,16 @@ body {
 .concept-buttons * {
 	display: inline;
 }
-.span, .code, .vocabulary, .semantic-type, .semantic-group {
+.span, .code, .cui, .vocabulary, .semantic-type, .semantic-group {
   display: inline-block;
   margin: 0.2em;
   padding: 2px 5px;
   font-size: 12px;
+}
+.cui {
+  background-color: #deff71;
+  border: 1px solid #adadad;
+  border-radius: 3px;
 }
 .code, .vocabulary {
   background-color: #ECECEC;

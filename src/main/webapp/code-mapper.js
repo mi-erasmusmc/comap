@@ -18,10 +18,10 @@ var INITIAL = {
 };
 
 /**
- * Concepts found by Peregrine are filtered by a stopword list and by a regex
- * for three-digit numbers and two-digit words.
+ * Concepts found by Peregrine are filtered by a stopword list and by the following regex
+ * matching three-digit numbers and two-letter words.
  */
-var FILTER_SPANS_REGEX = /^(\d{1,3}|\S{1,2})$/;
+var STOPWORDS_REGEX = /^(\d{1,3}|\S{1,2})$/;
 
 function error(msg, consoleArgs) {
 	msg = "ERROR: " + msg;
@@ -352,7 +352,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, blo
 			.success(function(result) { 
 				spans = result.spans.filter(function(span) {
 					var isStopword = dataService.stopwords.indexOf(span.text.toUpperCase()) != -1;
-					var isFiltered = FILTER_SPANS_REGEX.test(span.text);
+					var isFiltered = STOPWORDS_REGEX.test(span.text);
 					if (isStopword || isFiltered) {
 						console.log("Filter span", span.text, isStopword ? "as stopword" : "", isFiltered ? "as regex" : "");
 					}
@@ -386,11 +386,15 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, blo
 					.success(function(concepts) {
 						// Adapt spans of concepts
 						concepts.forEach(function(concept) {
-							concept.spans = spans.filter(function(span) {
-								return cuiOfId(span.id) == concept.cui;
-							});
+							concept.origin = {
+								type: "spans",
+								data: spans.filter(function(span) {
+									return cuiOfId(span.id) == concept.cui;
+								})
+							};
 						});
-						var r = filterAndPatch(concepts, $scope.selected.codingSystems, $scope.selected.semanticTypes, dataService.semanticTypesByType);
+						var r = filterAndPatch(concepts, $scope.selected.codingSystems.map(getAbbreviation),
+								$scope.selected.semanticTypes.map(getType), dataService.semanticTypesByType);
 						r.droppedBySemanticType.forEach(function(concept) {
 							console.log("Dropped", concept.cui, concept.preferredName, concept.semantic.types.join(", "));
 						});
@@ -446,7 +450,8 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, blo
 			error("CodeMapperCtrl.expandRelated called wtihout state");
 			return;
 		}
-    	var lookupExpandMessage = $scope.createMessage("Looking up " + (hyponymsNotHypernyms ? "hyponyms" : "hypernyms") + "... ");
+		var hyponymsOrHypernyms = hyponymsNotHypernyms ? "hyponyms" : "hypernyms";
+    	var lookupExpandMessage = $scope.createMessage("Looking up " + hyponymsOrHypernyms + "... ");
     	
     	var data = {
 			cuis: [ concept.cui ],
@@ -465,13 +470,18 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, blo
     			if (relatedConcepts0.hasOwnProperty(concept.cui)) {
     				var r = filterAndPatch(relatedConcepts0[concept.cui], $scope.state.codingSystems, $scope.state.semanticTypes, dataService.semanticTypesByType, $scope.state.concepts);
 	    			var relatedConcepts = r.concepts;
+	    			relatedConcepts.forEach(function(concept1) {
+	    				concept1.origin = {
+	    					type: hyponymsOrHypernyms,
+	    					data: concept.cui
+	    				}
+	    			});
 					r.droppedBySemanticType.forEach(function(concept) {
 						console.log("Dropped", concept.cui, concept.preferredName, concept.semantic.types.join(", "));
 					});
 		    			
 	    			$scope.suffixMessage(lookupExpandMessage, "OK, found " + relatedConcepts0[concept.cui].length
 	    					+ " filter to " + relatedConcepts.length);
-	    	        var name = hyponymsNotHypernyms ? "hyponyms" : "hypernyms";
 	    			// Display retrieved concepts in a dialog
 	    	        var modalInstance = $modal.open({
 	    	          templateUrl: 'ShowConcepts.html',
@@ -480,7 +490,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, blo
 	    	          resolve: {
 	    	        	codingSystems: function() { return $scope.state.codingSystems; },
 	    	        	concepts: function() { return relatedConcepts; },
-	    	        	title: function() { return "Select " + name
+	    	        	title: function() { return "Select " + hyponymsOrHypernyms
 	    	        		+ " of " + concept.cui + "/" + concept.preferredName; },
 	    	        	selectable: function() { return true; }
 	    	          }
@@ -499,7 +509,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, blo
 	    					selectedRelated.forEach(function(related, ix) {
 	    						$scope.state.concepts.splice(conceptOffset + ix + 1, 0, related);
 	    					});
-	    					$scope.historyStep("expand " + name + " of " + concept.cui + " (" + concept.preferredName + ")", selectedRelated.map(getCui));
+	    					$scope.historyStep("expand " + hyponymsOrHypernyms + " of " + concept.cui + " (" + concept.preferredName + ")", selectedRelated.map(getCui));
 	    		        }, function () {
 	    		        	console.log('Modal dismissed at: ' + new Date());
 	    		        });
@@ -540,9 +550,9 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, blo
 		});
 		
 		[ [],
-		  ["INITIAL CUIS"],
-		  $scope.state.initialCuis
-		].forEach(function(row) { data.push(row); });
+		  ["INITIAL CUIS"]
+		].concat($scope.state.initialCuis.map(function(cui) { return [cui]; }))
+		 .forEach(function(row) { data.push(row); });
 		
 		[ [],
           ["HISTORY"],
@@ -605,21 +615,18 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, blo
 				$scope.caseDefinition = "" + INITIAL.caseDefinition;
 			})
 			.success(function(state) {
-				$scope.suffixMessage(initialStateMessage, "LOADED.");
 				console.log("Loaded", state);
+				$scope.suffixMessage(initialStateMessage, "LOADED.");
 				$scope.state = state;
 				$scope.caseDefinition = "" + state.caseDefinition;
 				$scope.$broadcast("setSelectedSemanticTypes", state.semanticTypes);
 				$scope.$broadcast("setSelectedCodingSystems", state.codingSystems);
 				$scope.activateTab("concepts-tab");
+				inputBlockUi.start("Reset concepts to edit!");
 			})
 			.finally(function() {
 				$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.selected.codingSystems);
 				$timeout(function() {
-					if ($scope.state != null) {
-						inputBlockUi.start("Reset concepts to edit!");
-						$('#concepts-tab > a').click();
-					}
 				}, 0);
 			});
 	};
@@ -657,11 +664,6 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, blo
 
 /** Filters the list of `concepts` and adapts the data for the application. */
 function filterAndPatch(concepts, selectedCodingSystems, selectedSemanticTypes, semanticTypesByType, currentConcepts) {
-	selectedCodingSystems = selectedCodingSystems.map(function(cs) { return cs.abbreviation; });
-	selectedSemanticTypes = selectedSemanticTypes.map(function(st) { return st.type; });
-	
-	console.log("selectedCodingSystems", selectedCodingSystems);
-	
 	var knownCuis = currentConcepts ? currentConcepts.map(getCui) : [];
 	
     // Record concepts that are not yet available but filtered out due to its
@@ -675,14 +677,12 @@ function filterAndPatch(concepts, selectedCodingSystems, selectedSemanticTypes, 
     	// Patch: adapt concepts for application
     	.map(function(concept0) {
     		var concept = angular.copy(concept0);
-    		console.log(concept, concept.sourceConcepts);
     		// Add field `codes` that is a mapping from coding systems to source
 			// concepts
     		concept.codes = {};
     		selectedCodingSystems.forEach(function(codingSystem) {
     			concept.codes[codingSystem] = concept.sourceConcepts
     				.filter(function(sourceConcept) {
-    					console.log(sourceConcept, codingSystem);
     					return sourceConcept.vocabulary == codingSystem;
     				})
     				.map(function(sourceConcept) {
@@ -744,7 +744,7 @@ function ShowConceptsCtrl($scope, $http, $modalInstance, $timeout, concepts, cod
 	    filterOptions: { filterText: '' },
 		showSelectionCheckbox: $scope.selectable,
 		enableRowSelection: $scope.selectable,
-		columnDefs: createConceptsColumnDefs(false, true, codingSystems)
+		columnDefs: createConceptsColumnDefs(false, false, codingSystems)
 	};
 	
 	if ($scope.selectable) {
@@ -787,13 +787,25 @@ var commandsColumnDef = {
         "</div>"
 };
 
-var spansColumnDef = {
-	displayName: 'Spans',
+var originColumnDef = {
+	displayName: 'Origin',
     cellClass: 'scroll-y',
-    field: 'spans',
+    field: 'origin',
     cellTemplate:
-      "<div class='spans'>" +
-        "<span class=span ng-if='row.entity.spans != undefined' ng-repeat='span in row.entity.spans' ng-bind='span.text'></span>" +
+      "<div ng-if='row.entity.origin.type == \"spans\"' class='spans'>" +
+        "<span class=span ng-repeat='span in row.entity.origin.data' ng-bind='span.text'></span>" +
+      "</div>" +
+      "<div ng-if='row.entity.origin.type == \"hyponyms\"'>" +
+        "<span class='cui' title='Hyponym'>" +
+          "<span ng-bind='row.entity.origin.data'></span>" +
+          "<i class='glyphicon glyphicon-chevron-down'></i> " +
+        "</span>" +
+      "</div>" +
+      "<div ng-if='row.entity.origin.type == \"hypernym\"'>" +
+	    "<span class='cui' title='Hypernym'>" +
+	      "<span ng-bind='row.entity.origin.data'></span>" +
+	      "<i class='glyphicon glyphicon-chevron-up'></i> " +
+	    "</span>" +
       "</div>",
 	sortFn: function(ss1, ss2) {
 		ss1 = ss1.map(function(s) { return s.text; });
@@ -809,7 +821,7 @@ var spansColumnDef = {
 };
 
 /** Generate column definitions */
-function createConceptsColumnDefs(showCommands, showSpans, codingSystems) {
+function createConceptsColumnDefs(showCommands, showOrigin, codingSystems) {
 	var mainColumnDefs = [
 	    { displayName: "CUI", field: 'cui' },
 	    { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip',
@@ -842,7 +854,7 @@ function createConceptsColumnDefs(showCommands, showSpans, codingSystems) {
 	console.log(codingSystemsColumnDefs);
 	return [].concat(
 			showCommands ? [commandsColumnDef] : [],
-			showSpans ? [spansColumnDef] : [],
+			showOrigin ? [originColumnDef] : [],
 			mainColumnDefs,
 			codingSystemsColumnDefs);
 }
@@ -874,14 +886,23 @@ var FORM_ENCODED_POST = {
 };
 
 function getCui(concept) {
+	if (concept.cui === undefined) {
+		error("getCui", concept);
+	}
 	return concept.cui;
 }
 
 function getAbbreviation(codingSystem) {
+	if (codingSystem.abbreviation === undefined) {
+		error("getAbbreviation", codingSystem);
+	}
 	return codingSystem.abbreviation;
 }
 
 function getType(semanticType) {
+	if (semanticType.type === undefined) {
+		error("getType", semanticType);
+	}
 	return semanticType.type;
 }
 

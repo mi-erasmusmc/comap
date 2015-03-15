@@ -108,8 +108,10 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
 
 function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $log, $routeParams, blockUI, urls, dataService) {
 
-	$scope.caseDefinition = "";
+	$scope.project = $routeParams.project;
 	$scope.caseDefinitionName = $routeParams.caseDefinitionName;
+	
+	$scope.caseDefinition = "";
 	
 	// Reflects the abbreviations and current selection of coding systems and
 	// semantic types
@@ -240,7 +242,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 	
 	$scope.loadTranslations = function() {
 		var initialStateMessage = $scope.createMessage("Retrieve state... ");
-		$http.get(urls.caseDefinition + '/' + encodeURIComponent($scope.caseDefinitionName))
+		$http.get(urls.caseDefinition($scope.project, $scope.caseDefinitionName))
 			.error(function(err) {
 				$scope.state = null;
 				$scope.suffixMessage(initialStateMessage, "not found, created.");
@@ -273,14 +275,14 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 		var data = {
 			state: JSON.stringify($scope.state)
 		};
-		var saveaseDefinitionMessage = $scope.createMessage("Save case definition... "); 
-		$http.post(urls.caseDefinition + '/' + encodeURIComponent($scope.caseDefinitionName), data, FORM_ENCODED_POST)
+		var saveDefinitionMessage = $scope.createMessage("Save case definition... "); 
+		$http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)
 			.error(function(e) {
-				$scope.suffixMessage(saveaseDefinitionMessage, "ERROR");
+				$scope.suffixMessage(saveDefinitionMessage, "ERROR");
 				console.log(e);
 			})
 			.success(function() {
-				$scope.suffixMessage(saveaseDefinitionMessage, "OK");
+				$scope.suffixMessage(saveDefinitionMessage, "OK");
 			});
 	};
 	
@@ -569,7 +571,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 		var a = document.createElement('a');
 		a.href = fileURL;
 		a.target = '_blank';
-		a.download = 'case_definition_' + encodeURIComponent($scope.caseDefinitionName) + '.csv';
+		a.download = encodeURIComponent($scope.project + '_' + $scope.caseDefinitionName) + '.csv';
 		document.body.appendChild(a);
 		a.click();
 	};

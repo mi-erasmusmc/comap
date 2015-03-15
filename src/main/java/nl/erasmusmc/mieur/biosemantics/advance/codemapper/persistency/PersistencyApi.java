@@ -31,10 +31,24 @@ public class PersistencyApi {
 			Files.createDirectories(caseDefinitionsPath);
 	}
 
-	public List<String> getCaseDefinitionsNames() {
+	public List<String> getProjects() {
 		final List<String> names = new LinkedList<>();
 		try {
 			for (Path path: Files.newDirectoryStream(caseDefinitionsPath))
+				if (Files.isDirectory(path))
+					names.add(path.getFileName().toString().replaceFirst(Pattern.quote(JSON_SUFFIX) + "$", ""));
+			Collections.sort(names);
+			return names;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public List<String> getCaseDefinitionsNames(String project) {
+		final List<String> names = new LinkedList<>();
+		try {
+			for (Path path: Files.newDirectoryStream(caseDefinitionsPath.resolve(project)))
 				names.add(path.getFileName().toString().replaceFirst(Pattern.quote(JSON_SUFFIX) + "$", ""));
 			Collections.sort(names);
 			return names;
@@ -44,8 +58,8 @@ public class PersistencyApi {
 		}
 	}
 
-	public String getCaseDefinition(String name) {
-		Path path = caseDefinitionsPath.resolve(name + JSON_SUFFIX);
+	public String getCaseDefinition(String project, String name) {
+		Path path = caseDefinitionsPath.resolve(project).resolve(name + JSON_SUFFIX);
 		try {
 			byte[] bytes = Files.readAllBytes(path);
 			return new String(bytes, Charset.forName("UTF-8"));
@@ -55,14 +69,14 @@ public class PersistencyApi {
 		}
 	}
 
-	public void setCaseDefinition(String name, String stateJson)  {
+	public void setCaseDefinition(String project, String name, String stateJson)  {
 		System.out.println("Set " + name + " to " + stateJson);
-		Path path = caseDefinitionsPath.resolve(name + JSON_SUFFIX);
+		Path path = caseDefinitionsPath.resolve(project).resolve(name + JSON_SUFFIX);
 		if (Files.exists(path))
 			try {
 				Files.delete(path);
 			} catch (IOException e) {
-				logger.error("Couldn't delet file " + path, e);
+				logger.error("Couldn't delete file " + path, e);
 				e.printStackTrace();
 			}
 		try {

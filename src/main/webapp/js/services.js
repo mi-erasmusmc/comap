@@ -17,14 +17,21 @@ function confirmClickDirective() {
 
 /** Provide the URLs that are called from the application. */
 function UrlsService() {
+	var service = this;
 	
 	this.semanticTypes = "data/semantic_types_groups.json";
 	this.stopwords = "data/stopwords.json";
 
-	var persistencyApi = 'resource/persistency';
-	this.caseDefinition = persistencyApi + '/case-definition';
-
-	var codeMapperApi = 'resource/code-mapper';
+	var persistencyApi = 'rest/persistency';
+	this.projects = persistencyApi + '/projects';
+	this.caseDefinitions = function(project) {
+		return this.projects + '/' + encodeURIComponent(project) + '/case-definitions'; 
+	};
+	this.caseDefinition = function(project, caseDefinitionName) {
+		return this.caseDefinitions(project) + '/' +  encodeURIComponent(caseDefinitionName)
+	};
+	
+	var codeMapperApi = 'rest/code-mapper';
 	this.codingSystems = codeMapperApi + '/coding-systems';
 	this.umlsConcepts = codeMapperApi + '/umls-concepts';
 	this.relatedConcepts = codeMapperApi + '/related';

@@ -11,7 +11,7 @@ var codeMapperApp =
 		    	templateUrl: 'partials/list-case-definitions.html',
 		    	controller: 'ListCaseDefinitionsCtrl'
 		    })
-		    .when('/case-definition/:caseDefinitionName', {
+		    .when('/translate/:project/:caseDefinitionName', {
 		      templateUrl: 'partials/code-mapper.html',
 		      controller: 'CodeMapperCtrl'
 		    })
@@ -22,6 +22,9 @@ var codeMapperApp =
 		.service("urls", UrlsService)
 		.service("dataService", DataService)
 		.directive("confirmClick", confirmClickDirective)
+		.filter('encodeUriComponent', function() {
+		  return window.encodeURIComponent;
+		})
 		.controller("ShowConceptsCtrl", ShowConceptsCtrl)
 		.controller("CodingSystemsCtrl", CodingSystemsCtrl)
 		.controller("SemanticTypesCtrl", SemanticTypesCtrl)

@@ -1,7 +1,7 @@
 
 <div ng-keydown="onKeydown($event)" tabindex="0">
 
-  <h4>Case definition <em>{{caseDefinitionName}}</em></h4>
+  <h4>Case definition <em ng-bind="caseDefinitionName"></em></h4>
 
   <ul class="list-unstyled icon-list messages">
     <li ng-repeat="message in messages | limitTo: -1" ng-bind="message.text"></li>

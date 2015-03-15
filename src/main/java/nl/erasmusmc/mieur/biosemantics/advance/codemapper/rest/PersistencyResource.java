@@ -21,20 +21,28 @@ public class PersistencyResource {
 	private static Logger logger = Logger.getLogger("CodeMapperWebService");
 
 	@GET
-	@Path("case-definition")
+	@Path("projects")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<String> getCaseDefinitionNames() {
 		PersistencyApi api = CodeMapperApplication.getPersistencyApi();
-		return api.getCaseDefinitionsNames();
+		return api.getProjects();
 	}
 
 	@GET
-	@Path("case-definition/{name}")
+	@Path("projects/{project}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getCaseDefinition(@PathParam("name") String name) {
+	public List<String> getCaseDefinitionNames(@PathParam("project") String project) {
+		PersistencyApi api = CodeMapperApplication.getPersistencyApi();
+		return api.getCaseDefinitionsNames(project);
+	}
+
+	@GET
+	@Path("projects/{project}/case-definitions/{name}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getCaseDefinition(@PathParam("project") String project, @PathParam("name") String name) {
 		logger.debug(String.format("Get case definition %s", name));
 		PersistencyApi api = CodeMapperApplication.getPersistencyApi();
-		String stateJson = api.getCaseDefinition(name);
+		String stateJson = api.getCaseDefinition(project, name);
 		if (stateJson != null)
 			return stateJson;
 		else
@@ -42,11 +50,11 @@ public class PersistencyResource {
 	}
 
 	@POST
-	@Path("case-definition/{name}")
+	@Path("projects/{project}/case-definitions/{name}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public void setCaseDefinition(@PathParam("name") String name, @FormParam("state") String stateJson) {
+	public void setCaseDefinition(@PathParam("project") String project, @PathParam("name") String name, @FormParam("state") String stateJson) {
 		logger.debug(String.format("Set case definition %s", name));
 		PersistencyApi api = CodeMapperApplication.getPersistencyApi();
-		api.setCaseDefinition(name, stateJson);
+		api.setCaseDefinition(project, name, stateJson);
 	}
 }

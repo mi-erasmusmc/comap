@@ -16,7 +16,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.PersistencyApi;
 
-@ApplicationPath("resource")
+@ApplicationPath("rest")
 public class CodeMapperApplication extends ResourceConfig {
 
 	private static final String CODE_MAPPER_PROPERTIES = "/WEB-INF/code-mapper.properties";

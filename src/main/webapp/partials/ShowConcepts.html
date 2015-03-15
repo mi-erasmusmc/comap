@@ -1,0 +1,13 @@
+
+<div class="modal-header">
+  <h3 class="modal-title">{{title}} ({{concepts.length}} concepts)</h3>
+</div>
+<div class="modal-body">
+  <label for='dialogConceptsFilter'>Filter:</label>
+  <input id='dialogConceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
+  <div ng-grid="conceptsGridOptions" class="grid"></div>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-primary" ng-click="ok()">OK</button>
+  <button class="btn btn-warning" ng-if="selectable" ng-click="cancel()">Cancel</button>
+</div>

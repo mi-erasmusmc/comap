@@ -18,101 +18,10 @@ var INITIAL = {
 };
 
 /**
- * Concepts found by Peregrine are filtered by a stopword list and by the following regex
- * matching three-digit numbers and two-letter words.
+ * Concepts found by Peregrine are filtered by a stopword list and by the
+ * following regex matching three-digit numbers and two-letter words.
  */
 var STOPWORDS_REGEX = /^(\d{1,3}|\S{1,2})$/;
-
-function error(msg, consoleArgs) {
-	msg = "ERROR: " + msg;
-	console.log(msg, consoleArgs);
-	alert(msg);
-}
-
-function confirmClickDirective() {
-	  return {
-	    priority: 1,
-	    terminal: true,
-	    link: function (scope, element, attr) {
-	      var msg = attr.confirmClick || "Are you sure?";
-	      var clickAction = attr.ngClick;
-	      element.bind('click',function () {
-	        if ( window.confirm(msg) ) {
-	          scope.$eval(clickAction)
-	        }
-	      });
-	    }
-	  }
-};
-
-/** Provide the URLs that are called from the application. */
-function UrlsService(peregrineResourceUrl) {
-	
-	this.peregrineResource = peregrineResourceUrl;
-	
-	this.semanticTypes = "data/semantic_types_groups.json";
-	this.stopwords = "data/stopwords.json";
-
-	var persistencyApi = 'resource/persistency';
-	this.caseDefinition = persistencyApi + '/case-definition';
-
-	var codeMapperApi = 'resource/code-mapper';
-	this.codingSystems = codeMapperApi + '/coding-systems';
-	this.umlsConcepts = codeMapperApi + '/umls-concepts';
-	this.relatedConcepts = codeMapperApi + '/related';
-}
-
-/** Retrieve and provide stopwords, semantic types and coding systems. */
-function DataService($http, $q, urls) {
-	var service = this;
-	this.stopwords = null;
-	this.stopwordsPromise = $http.get(urls.stopwords)
-		.error(function(err) {
-			var msg = "ERROR: Couldn't retrieve stopwords from " + urls.stopwords;
-			console.log(msg, err);
-			alert(msg);
-		})
-		.success(function(stopwords) {
-// console.log("STOPWORDS", stopwords);
-			service.stopwords = stopwords;
-		});
-	this.semanticTypes = null;
-	this.semanticTypesByType = {};
-	this.semanticTypesPromise = $http.get(urls.semanticTypes)
-		.error(function(err) {
-			var msg = "ERROR: Couldn't load semantic types and groups from " + urls.semanticTypes;
-			console.log(msg, err);
-			alert(msg);
-		})
-		.success(function(semanticTypes) {
-// console.log("SEMANTIC TYPES", semanticTypes);
-			service.semanticTypes = semanticTypes;
-			service.semanticTypes.forEach(function(semanticType) {
-				service.semanticTypesByType[semanticType.type] = semanticType;
-		    });
-		});
-	this.codingSystems = null;
-	this.codingSystemsPromise = $http.get(urls.codingSystems)
-		.error(function(err) {
-			var msg = "ERROR: Couldn't retrieve coding systems from " + urls.codingSystems;
-			console.log(msg, err);
-			alert(msg);
-		})
-		.success(function(codingSystems) {
-// console.log("CODING SYSTEMS", codingSystems);
-			service.codingSystems = codingSystems
-				.sort(function(v1, v2) {
-					if (v1.abbreviation < v2.abbreviation) {
-						return -1;
-					}
-					if (v1.abbreviation > v2.abbreviation) {
-						return 1;
-					}
-					return 0;
-				});
-		});
-	this.completed = $q.all([this.stopwordsPromise, this.semanticTypesPromise, this.codingSystemsPromise]);
-}
 
 function CodingSystemsCtrl($scope, $timeout, dataService) {
 	
@@ -196,12 +105,14 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
         });
 	});
 };
- 
 
-function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $log, blockUI, urls, dataService) {
-	
+function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $log, $routeParams, blockUI, urls, dataService) {
+
 	$scope.caseDefinition = "";
-	// Reflects the abbreviations and current selection of coding systems and semantic types
+	$scope.caseDefinitionName = $routeParams.caseDefinitionName;
+	
+	// Reflects the abbreviations and current selection of coding systems and
+	// semantic types
     $scope.selected = {
 		codingSystems: null,
 		semanticTypes: null
@@ -216,6 +127,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
     
     var ctrlKeydownCallbacks = {
     	48 /* 0 */: function() {
+    		console.log("Case definition name", $scope.caseDefinitionName);
     		console.log("Case definition", $scope.caseDefinition);
     		console.log("Selected coding systems", $scope.selected.codingSystems);
     		console.log("Selected semantic types", $scope.selected.semanticTypes);
@@ -249,9 +161,9 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
     	}
     };
     
-    /*******************/
+    /** **************** */
     /* MESSAGES */
-    /*******************/
+    /** **************** */
 
 	$scope.messages = [];
 	
@@ -328,7 +240,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 	
 	$scope.loadTranslations = function() {
 		var initialStateMessage = $scope.createMessage("Retrieve state... ");
-		$http.get(urls.caseDefinition + '/' + encodeURIComponent(CASE_DEFINITION_NAME))
+		$http.get(urls.caseDefinition + '/' + encodeURIComponent($scope.caseDefinitionName))
 			.error(function(err) {
 				$scope.state = null;
 				$scope.suffixMessage(initialStateMessage, "not found, created.");
@@ -362,7 +274,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 			state: JSON.stringify($scope.state)
 		};
 		var saveaseDefinitionMessage = $scope.createMessage("Save case definition... "); 
-		$http.post(urls.caseDefinition + '/' + encodeURIComponent(CASE_DEFINITION_NAME), data, FORM_ENCODED_POST)
+		$http.post(urls.caseDefinition + '/' + encodeURIComponent($scope.caseDefinitionName), data, FORM_ENCODED_POST)
 			.error(function(e) {
 				$scope.suffixMessage(saveaseDefinitionMessage, "ERROR");
 				console.log(e);
@@ -384,9 +296,9 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 		var data = {
 			text: text
 		};
-		$http.post(urls.peregrineResource + "/index", data, FORM_ENCODED_POST)
+		$http.post(dataService.peregrineResource + "/index", data, FORM_ENCODED_POST)
 			.error(function(err) {
-				var msg = "ERROR: Couldn't search concepts in case definition at " + url;
+				var msg = "ERROR: Couldn't search concepts in case definition at " + dataService.peregrineResource;
 				console.log(msg, err);
 				alert(msg);
 				$scope.suffixMessage(searchConceptsMessage, "ERROR");
@@ -430,8 +342,8 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 	};
 	
 	/**
-	 * Index the case definition for concepts, retrieve
-	 * information about those concepts and display.
+	 * Index the case definition for concepts, retrieve information about those
+	 * concepts and display.
 	 */ 
 	$scope.createInitalTranslations = function(caseDefinition) {
 		$log.info("Create initial translations");
@@ -446,7 +358,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 			semanticTypes: $scope.selected.semanticTypes.map(getType),
 			history: []
 		}
-		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.selected.codingSystems);
+		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.state.codingSystems);
 		$scope.searchConcepts(caseDefinition, function(concepts) {
 			concepts.forEach(function(concept) {
 				concept.origin = {
@@ -464,8 +376,10 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 		});
 	};
 	
-	/** Index a given query string for concepts, retrieve information
-	 * and select concepts in a dialog for inclusion. */
+	/**
+	 * Index a given query string for concepts, retrieve information and select
+	 * concepts in a dialog for inclusion.
+	 */
 	$scope.searchAndAddConcepts = function(queryString) {
 		$log.info("Search and add concepts");
 		if ($scope.state == null) {
@@ -491,6 +405,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 	$scope.resetConcepts = function() {
 		$scope.state = null;
 		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, []);
+		$scope.createMessage("Reset translations.");
 		inputBlockUi.reset();
 	};
 	
@@ -510,7 +425,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 				return true;
 			});
 		$scope.historyStep("delete concept", [cui]);
-		$scope.message("Deleted concepts " + deleted.join(", "));
+		$scope.createMessage("Deleted concepts " + deleted.join(", "));
 	};
 	
 	/**
@@ -580,7 +495,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 		
 		// Display retrieved concepts in a dialog
         var modalInstance = $modal.open({
-          templateUrl: 'ShowConcepts.html',
+          templateUrl: 'partials/ShowConcepts.html',
           controller: 'ShowConceptsCtrl',
           size: 'lg',
           resolve: {
@@ -607,7 +522,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 		
 		var data = [];
 		
-		[ [CASE_DEFINITION_NAME],
+		[ [$scope.caseDefinitionName],
           ["Generated by ADVANCE Code Mapper"]
         ].forEach(function(row) { data.push(row); });
 		
@@ -654,32 +569,10 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 		var a = document.createElement('a');
 		a.href = fileURL;
 		a.target = '_blank';
-		a.download = 'case_definition_' + encodeURIComponent(CASE_DEFINITION_NAME) + '.csv';
+		a.download = 'case_definition_' + encodeURIComponent($scope.caseDefinitionName) + '.csv';
 		document.body.appendChild(a);
 		a.click();
 	};
-	
-	/*$scope.showDroppedConcepts = function(concepts) {
-		if (concepts.length > 0) {
-	        var modalInstance = $modal.open({
-  	          templateUrl: 'ShowConcepts.html',
-  	          controller: 'ShowConceptsCtrl',
-  	          size: 'lg',
-  	          resolve: {
-  	        	codingSystems: function() { return []; },// $scope.selected.codingSystems;
-															// },
-  	        	concepts: function() { return concepts; },
-  	        	title: function() { return "Concepts filtered by semantic type"; },
-  	        	selectable: function() { return false; }
-  	          }
-  	        });
-	        return modalInstance.result;
-		} else {
-			return {
-				then: function(k) { return k(); }
-			};
-		}
-	};*/
     
     /** ************ */
     /* AUXILIARIES */
@@ -690,7 +583,8 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 		
 		var currentCuis = $scope.state.concepts.map(getCui);
 		
-	    // Record concepts that are not yet available but filtered out due to its
+	    // Record concepts that are not yet available but filtered out due to
+		// its
 		// semantic type
 	    if (filteredBySemanticType === undefined)
 	    	filteredBySemanticType = [];
@@ -721,7 +615,8 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 	    	// Patch: adapt concepts for the code mapper application
 	    	.map(function(concept0) {
 	    		var concept = angular.copy(concept0);
-	    		// Add field `codes` that is a mapping from coding systems to source
+	    		// Add field `codes` that is a mapping from coding systems to
+				// source
 				// concepts
 	    		concept.codes = {};
 	    		$scope.state.codingSystems.forEach(function(codingSystem) {
@@ -733,7 +628,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 	    					return sourceConcept.id;
 	    				});
 	    		});
-	    		// Add the count of source codes 
+	    		// Add the count of source codes
 	    		concept.sourceConceptsCount = concept.sourceConcepts.length; 
 	    		// Enrich information about semantic types by descriptions and
 				// groups.
@@ -895,79 +790,4 @@ function createConceptsColumnDefs(showCommands, showOrigin, codingSystems) {
 			showOrigin ? [originColumnDef] : [],
 			mainColumnDefs,
 			codingSystemsColumnDefs);
-}
-
-/**
- * AngularJS sends data for HTTP POST JSON - this header is to encode it as FORM
- * data.
- */
-var FORM_ENCODED_POST = {
-	headers : {
-		'Content-Type' : 'application/x-www-form-urlencoded'
-	},
-	transformRequest : function(obj) {
-		var str = [];
-		for ( var key in obj) {
-			if (obj[key] instanceof Array) {
-				for ( var idx in obj[key]) {
-					var subObj = obj[key][idx];
-					str.push(encodeURIComponent(key) + "="
-							+ encodeURIComponent(subObj));
-				}
-			} else {
-				str.push(encodeURIComponent(key) + "="
-						+ encodeURIComponent(obj[key]));
-			}
-		}
-		return str.join("&");
-	}
-};
-
-/** Generate a CUI from a string that represents an integer.
- * cuiOf("123") == "C000123"
- */
-function cuiOfId(id) {
-	return 'C' + Array(8 - id.length).join('0') + id;
-}
-
-function getCui(concept) {
-	if (concept.cui === undefined) {
-		error("getCui", concept);
-	}
-	return concept.cui;
-}
-
-function getAbbreviation(codingSystem) {
-	if (codingSystem.abbreviation === undefined) {
-		error("getAbbreviation", codingSystem);
-	}
-	return codingSystem.abbreviation;
-}
-
-function getType(semanticType) {
-	if (semanticType.type === undefined) {
-		error("getType", semanticType);
-	}
-	return semanticType.type;
-}
-
-/** Encodes an 2-D array of data to CSV. */
-function csvEncode(data) {
-	function escape(field) {
-		if (field == null || field == undefined) {
-			return "";
-		} else {
-			if (typeof field == 'string'
-					&& (field.indexOf('"') != -1 || field.indexOf(',') != -1)) {
-				return '"' + field.replace('"', '""') + '"';
-			} else {
-				return "" + field;
-			}
-		}
-	}
-	var result = "";
-	data.forEach(function(row) {
-		result += row.map(escape).join(', ') + '\n';
-	});
-	return result;
 }

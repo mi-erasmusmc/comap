@@ -77,12 +77,12 @@
       <tab id="concepts-tab" heading="4. Concepts">
         <div id="concept-buttons">
           <div ng-show="state">{{state.concepts.length}} concepts</div>
-          <button ng-click="searchConcepts()" ng-if="state == null" class="btn btn-default btn-sm" id="search-concepts">
+          <button ng-click="createInitalTranslations(caseDefinition)" ng-if="state == null" class="btn btn-default btn-sm" id="search-concepts">
             <i class="glyphicon glyphicon-refresh"></i>
-            Generate
+            Create initial translations
           </button>
           <button ng-click="resetConcepts()" confirm-click="Really reset all translations?" ng-if="state" class="btn btn-default btn-sm" id="reset-concepts">
-            <i class="glyphicon glyphicon-flash"></i>
+            <i class="glyphicon glyphicon-fire"></i>
             Reset
           </button>
           <button ng-click="saveTranslations()" ng-if="state" class="btn btn-default btn-sm">
@@ -93,6 +93,13 @@
             <i class="glyphicon glyphicon-download"></i>
             Download (CSV)
           </button>
+          <div ng-if="state">
+           <input type="text" ng-model="searchQuery" id="searchQuery"></input>
+           <button ng-click="searchAndAddConcepts(searchQuery)" class="btn btn-default btn-sm">
+             <i class="glyphicon glyphicon-search"></i>
+             Search & add concepts
+           </button>
+          </div>
         </div>
         <label for='conceptsFilter'>Filter:</label>
         <input id='conceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
@@ -103,20 +110,5 @@
         <div ng-grid="historyGridOptions" class="grid"></div>
       </tab>
     </tabset>
-    
-    <script type="text/ng-template" id="ShowConcepts.html">
-       <div class="modal-header">
-         <h3 class="modal-title">{{title}} ({{concepts.length}} concepts)</h3>
-       </div>
-       <div class="modal-body">
-         <label for='dialogConceptsFilter'>Filter:</label>
-         <input id='dialogConceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
-         <div ng-grid="conceptsGridOptions" class="grid"></div>
-       </div>
-       <div class="modal-footer">
-         <button class="btn btn-primary" ng-click="ok()">OK</button>
-         <button class="btn btn-warning" ng-if="selectable" ng-click="cancel()">Cancel</button>
-       </div>
-    </script>
   </body>
 </html>

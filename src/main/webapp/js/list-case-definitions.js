@@ -1,8 +1,9 @@
 
-function ListCaseDefinitionsCtrl($scope, $http, $location, urls, userService) {
+function ListCaseDefinitionsCtrl($scope, $http, $location, urls) {
 	
 	$scope.projects = [];
 	$scope.caseDefinitions = {};
+	$scope.newNames = {};
 	
 	$http.get(urls.projects)
 		.error(function(err) {
@@ -12,6 +13,7 @@ function ListCaseDefinitionsCtrl($scope, $http, $location, urls, userService) {
 		.success(function(projects) {
 			$scope.projects = projects;
 			projects.forEach(function(project) {
+				$scope.newNames[project] = "";
 				$http.get(urls.caseDefinitions(project))
 					.error(function(err) {
 						var msg = "Couldn't load case definitions for " + project;
@@ -22,4 +24,14 @@ function ListCaseDefinitionsCtrl($scope, $http, $location, urls, userService) {
 					});
 			});
 		});
+	
+	$scope.validNewName = function(project, name) {
+		console.log(project, name);
+		return name.length > 0 && $scope.caseDefinitions[project].indexOf(name) == -1;
+	}
+	
+	$scope.create = function(project, name) {
+		console.log("CREATE", project, name);
+		$location.path('/projects/' + encodeURIComponent(project) + '/' + encodeURIComponent(name));
+	}
 }

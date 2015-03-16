@@ -106,8 +106,8 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
 	});
 };
 
-function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $timeout, $q, $log, $routeParams, $location, blockUI, urls, dataService, userService) {
-
+function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $timeout, $q, $log, $routeParams, $location, blockUI, urls, dataService) {
+	
 	$scope.project = $routeParams.project;
 	$scope.caseDefinitionName = $routeParams.caseDefinitionName;
 	
@@ -241,16 +241,24 @@ function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $time
 	$scope.loadTranslations = function() {
 		var initialStateMessage = $scope.createMessage("Retrieve state... ");
 		$http.get(urls.caseDefinition($scope.project, $scope.caseDefinitionName))
-			.error(function(err) {
-				$scope.state = null;
-				$scope.suffixMessage(initialStateMessage, "not found, created.");
-				$scope.$broadcast("setSelectedSemanticTypes", INITIAL.semanticTypes);
-		        $scope.$broadcast("setSelectedCodingSystems", INITIAL.codingSystems);
-				$scope.caseDefinition = "" + INITIAL.caseDefinition;
+			.error(function(err, code, a2) {
+				switch (code) {
+					case 401:
+						alert("Not authenticated for project " + $scope.project);
+						$location.path('/projects');
+						break;
+					case 404:
+						$scope.suffixMessage(initialStateMessage, "not found, created.");
+						$scope.state = null;
+						$scope.$broadcast("setSelectedSemanticTypes", INITIAL.semanticTypes);
+				        $scope.$broadcast("setSelectedCodingSystems", INITIAL.codingSystems);
+						$scope.caseDefinition = "" + INITIAL.caseDefinition;
+						break;
+				} 
 			})
 			.success(function(state) {
 				console.log("Loaded", state);
-				$scope.suffixMessage(initialStateMessage, "LOADED.");
+				$scope.suffixMessage(initialStateMessage, "loaded.");
 				$scope.state = state;
 				$scope.caseDefinition = "" + state.caseDefinition;
 				$scope.$broadcast("setSelectedSemanticTypes", state.semanticTypes);
@@ -776,8 +784,8 @@ var originColumnDef = {
 	    "</span>" +
       "</div>" +
       "<div ng-if='row.entity.origin.type == \"search\"'>" +
-	    "<span class='query' title='Search result of \"{{row.entity.origin.data}}'>\"" +
-	      "<span ng-bind='row.entity.origin.data'></span>" +
+	    "<span class='query' title='Search result of \"{{row.entity.origin.data}}\"'>" +
+	      "<span>\"{{row.entity.origin.data}}\"</span>" +
 	      "<i class='glyphicon glyphicon-search'></i> " +
 	    "</span>" +
       "</div>",

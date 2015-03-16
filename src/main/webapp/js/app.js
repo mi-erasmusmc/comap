@@ -1,4 +1,6 @@
 
+var resolveAuthenticated = { user: resolveUser };
+
 var codeMapperApp =
 	angular.module("CodeMapperApp", [ "ui.bootstrap", "ngSanitize", "ngGrid", "ngRoute", "blockUI" ])
 		.config(function ConfigBlockUI(blockUIConfig) {
@@ -10,17 +12,16 @@ var codeMapperApp =
 		    .when('/projects', {
 		    	templateUrl: 'partials/list-case-definitions.html',
 		    	controller: 'ListCaseDefinitionsCtrl',
-		    	restricted: true
+		    	resolve: resolveAuthenticated
 		    })
 		    .when('/projects/:project/:caseDefinitionName', {
 		    	templateUrl: 'partials/code-mapper.html',
 		    	controller: 'CodeMapperCtrl',
-		    	restricted: true
+		    	resolve: resolveAuthenticated
 		    })
 		    .when('/login', {
 		    	templateUrl: 'partials/login.html',
-		    	controller: 'LoginCtrl',
-		    	restricted: false
+		    	controller: 'LoginCtrl'
 		    })
 		    .otherwise({
 		    	redirectTo: '/projects'
@@ -28,7 +29,6 @@ var codeMapperApp =
 		})
 		.service("urls", UrlsService)
 		.service("dataService", DataService)
-		.service("userService", UserService)
 		.directive("confirmClick", confirmClickDirective)
 		.filter('encodeUriComponent', function() {
 		  return window.encodeURIComponent;

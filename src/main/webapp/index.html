@@ -33,7 +33,8 @@
         <h1>ADVANCE Code Mapper</h1>
         <div ng-controller="LoggedInCtrl" ng-if="user">
           Logged in as <span ng-bind="user.username"></span>
-          <button ng-click="logout()">Logout!</button>
+          <button ng-click="logout()">Logout</button>
+          <a href="#/projects">Projects</a>
         </div>
       </div>
       <div class="col-md-2">

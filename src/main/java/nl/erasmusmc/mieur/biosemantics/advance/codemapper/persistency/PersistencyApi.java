@@ -11,18 +11,13 @@ import java.util.Properties;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
 
-import org.apache.log4j.Logger;
-
-public class DatabasePersistencyApi implements PersistencyApi {
-
-	@SuppressWarnings("unused")
-	private static Logger logger = Logger.getLogger("DatabasePersistencyApi");
+public class PersistencyApi {
 
 	private String uri;
 	private Properties connectionProperties;
 	private Connection connection;
 
-	public DatabasePersistencyApi(String uri, Properties connectionProperties) {
+	public PersistencyApi(String uri, Properties connectionProperties) {
 		this.uri = uri;
 		this.connectionProperties = connectionProperties;
 	}
@@ -33,7 +28,6 @@ public class DatabasePersistencyApi implements PersistencyApi {
 		return connection;
 	}
 
-	@Override
 	public List<String> getProjects() throws CodeMapperException {
 		String query = "SELECT name FROM projects";
 		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
@@ -75,7 +69,6 @@ public class DatabasePersistencyApi implements PersistencyApi {
 		}
 	}
 
-	@Override
 	public List<String> getProjects(String username) throws CodeMapperException {
 		String query =
 				"SELECT projects.name FROM projects "
@@ -85,7 +78,6 @@ public class DatabasePersistencyApi implements PersistencyApi {
 		return parameterizedStringListQuery(query, username);
 	}
 
-	@Override
 	public List<String> getCaseDefinitionsNames(String project) throws CodeMapperException {
 		String query =
 				"SELECT case_definitions.name FROM case_definitions "
@@ -94,7 +86,6 @@ public class DatabasePersistencyApi implements PersistencyApi {
 		return parameterizedStringListQuery(query, project);
 	}
 
-	@Override
 	public String getCaseDefinition(String project, String caseDefinitionName) throws CodeMapperException {
 		String query =
 				"SELECT case_definitions.state FROM case_definitions "
@@ -103,7 +94,6 @@ public class DatabasePersistencyApi implements PersistencyApi {
 		return parameterizedStringQuery(query, project, caseDefinitionName);
 	}
 
-	@Override
 	public void setCaseDefinition(String project, String caseDefinitionName, String stateJson) throws CodeMapperException {
 		String query =
 				"INSERT INTO case_definitions (project_id, name, state) "

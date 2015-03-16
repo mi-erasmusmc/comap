@@ -17,7 +17,6 @@ import org.glassfish.jersey.server.ResourceConfig;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.AuthentificationApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.DatabasePersistencyApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.PersistencyApi;
 
 @ApplicationPath("rest")
@@ -83,7 +82,7 @@ public class CodeMapperApplication extends ResourceConfig {
 			codeMapperConnectionProperties.setProperty("user", codeMapperConnectionUsername);
 			codeMapperConnectionProperties.setProperty("password", codeMapperConnectionPassword);
 
-			persistencyApi = new DatabasePersistencyApi(codeMapperDatabaseUri, codeMapperConnectionProperties);
+			persistencyApi = new PersistencyApi(codeMapperDatabaseUri, codeMapperConnectionProperties);
 			authentificationApi = new AuthentificationApi(codeMapperDatabaseUri, codeMapperConnectionProperties);
 		} catch (LinkageError | ClassNotFoundException e) {
 			logger.error("Couldn't load MYSQL JDBC driver");

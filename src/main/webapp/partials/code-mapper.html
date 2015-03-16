@@ -1,5 +1,5 @@
 
-<div ng-keydown="onKeydown($event)" tabindex="0">
+<div>
 
   <h4>Case definition <em ng-bind="caseDefinitionName"></em></h4>
 
@@ -47,7 +47,7 @@
           <i class="glyphicon glyphicon-fire"></i>
           Reset
         </button>
-        <button ng-click="saveTranslations()" ng-if="state" class="btn btn-default btn-sm">
+        <button ng-click="saveTranslations()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-default btn-sm">
           <i class="glyphicon glyphicon-cloud-upload"></i>
           Save
         </button>

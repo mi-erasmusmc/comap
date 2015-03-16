@@ -36,6 +36,11 @@ function UrlsService() {
 	this.umlsConcepts = codeMapperApi + '/umls-concepts';
 	this.relatedConcepts = codeMapperApi + '/related';
 	this.config = codeMapperApi + '/config';
+	
+	var authentificationApi = 'rest/authentification';
+	this.login = authentificationApi + '/login';
+	this.logout = authentificationApi + '/logout';
+	this.user = authentificationApi + '/user';
 }
 
 /** Retrieve and provide stopwords, semantic types and coding systems. */

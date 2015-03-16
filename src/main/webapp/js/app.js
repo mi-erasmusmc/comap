@@ -1,26 +1,34 @@
 
 var codeMapperApp =
-	angular.module("codeMapperApp", [ "ui.bootstrap", "ngSanitize", "ngGrid", "ngRoute", "blockUI" ])
+	angular.module("CodeMapperApp", [ "ui.bootstrap", "ngSanitize", "ngGrid", "ngRoute", "blockUI" ])
 		.config(function ConfigBlockUI(blockUIConfig) {
 			blockUIConfig.message = 'Loading...';
 			blockUIConfig.delay = 0;
 		})
 		.config(function($routeProvider) {
 		  $routeProvider
-		    .when('/', {
+		    .when('/projects', {
 		    	templateUrl: 'partials/list-case-definitions.html',
-		    	controller: 'ListCaseDefinitionsCtrl'
+		    	controller: 'ListCaseDefinitionsCtrl',
+		    	restricted: true
 		    })
-		    .when('/translate/:project/:caseDefinitionName', {
-		      templateUrl: 'partials/code-mapper.html',
-		      controller: 'CodeMapperCtrl'
+		    .when('/projects/:project/:caseDefinitionName', {
+		    	templateUrl: 'partials/code-mapper.html',
+		    	controller: 'CodeMapperCtrl',
+		    	restricted: true
+		    })
+		    .when('/login', {
+		    	templateUrl: 'partials/login.html',
+		    	controller: 'LoginCtrl',
+		    	restricted: false
 		    })
 		    .otherwise({
-		      redirectTo: '/'
+		    	redirectTo: '/projects'
 		    });
 		})
 		.service("urls", UrlsService)
 		.service("dataService", DataService)
+		.service("userService", UserService)
 		.directive("confirmClick", confirmClickDirective)
 		.filter('encodeUriComponent', function() {
 		  return window.encodeURIComponent;
@@ -30,4 +38,6 @@ var codeMapperApp =
 		.controller("SemanticTypesCtrl", SemanticTypesCtrl)
 		.controller("CodeMapperCtrl", CodeMapperCtrl)
 		.controller("ListCaseDefinitionsCtrl", ListCaseDefinitionsCtrl)
+		.controller("LoginCtrl", LoginCtrl)
+		.controller("LoggedInCtrl", LoggedInCtrl)
 		;

@@ -1,0 +1,15 @@
+<div>
+<div>{{user|json}}</div>
+<form ng-if="!user.authentificated" ng-submit="login(username, password)">
+  <label>
+    Username
+    <input type="text" ng-model="username">
+  </label>
+  <label>
+    Password
+    <input type="password" ng-model="password">
+  </label>
+  <input type="submit">
+  <div>{{error|json}}</div>
+</form>
+</div>

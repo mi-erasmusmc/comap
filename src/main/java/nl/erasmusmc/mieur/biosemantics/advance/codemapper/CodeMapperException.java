@@ -1,8 +1,5 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
 
-import java.sql.SQLException;
-
-
 public class CodeMapperException extends Exception {
 
 	public CodeMapperException(String msg) {
@@ -13,7 +10,7 @@ public class CodeMapperException extends Exception {
 		super(msg, e);
 	}
 
-	public CodeMapperException(SQLException e) {
+	public CodeMapperException(Exception e) {
 		super(e);
 	}
 

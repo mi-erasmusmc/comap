@@ -1,0 +1,15 @@
+
+<div class="modal-header">
+  <h3 class="modal-title">Save translations of {{caseDefinitionName}}</h3>
+</div>
+<div class="modal-body">
+  <label>
+    <div>Please summarize your changes:</div>
+    <textarea cols=50 rows=8 ng-model="summary"></textarea>
+  </label>
+  <div ng-grid="changesGridOptions" class="grid"></div>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-primary" ng-click="save(summary)" ng-disabled="summary.length == 0">Save</button>
+  <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+</div>

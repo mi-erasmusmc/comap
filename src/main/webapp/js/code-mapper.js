@@ -106,7 +106,7 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
 	});
 };
 
-function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $log, $routeParams, blockUI, urls, dataService) {
+function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $timeout, $q, $log, $routeParams, $location, blockUI, urls, dataService, userService) {
 
 	$scope.project = $routeParams.project;
 	$scope.caseDefinitionName = $routeParams.caseDefinitionName;
@@ -120,6 +120,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 		semanticTypes: null
     };
     $scope.state = null; // State of the current translations
+	$scope.numberUnsafedChanges = 0; // Changes since last save
     
     $scope.activateTab = function(id) {
     	$timeout(function() {
@@ -152,7 +153,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
     	}  	
     };
     
-    $scope.onKeydown = function(event) {
+    $rootScope.onKeydown = function(event) {
     	if (event.ctrlKey) {
     		var callback = ctrlKeydownCallbacks[event.keyCode];
     		if (callback) {
@@ -200,10 +201,12 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
     
 	/** Create a history step for $scope.history */
 	$scope.historyStep = function(name, args) {
+		$scope.numberUnsafedChanges += 1;
 		$scope.state.history.push({
-			date: new Date().toString(),
+			date: new Date().toJSON(),
 			name: name,
-			args: args
+			args: args,
+			user: $scope.user.username
 		});
 	};
 	
@@ -222,12 +225,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 	
 	$scope.historyGridOptions = {
 		data: "state.history",
-		columnDefs: [
-		   { field: "date", displayName: "Date" },
-		   { field: "name", displayName: "Step" },
-		   { field: "args", displayName: "Arguments",
-			 cellTemplate: "<div>{{row.entity[col.field].join(', ')}}</div>" }
-	   ],
+		columnDefs: historyColumnDefs,
 		enableRowSelection: false,
 		enableCellSelection: true
 	};
@@ -261,6 +259,7 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 				inputBlockUi.start("Reset concepts to edit!");
 			})
 			.finally(function() {
+				$scope.numberUnsafedChanges = 0;
 				$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.state.codingSystems);
 				$timeout(function() {
 				}, 0);
@@ -272,18 +271,35 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 			error("CodeMapperCtrl.expandRelated called without state");
 			return;
 		}
-		var data = {
-			state: JSON.stringify($scope.state)
-		};
-		var saveDefinitionMessage = $scope.createMessage("Save case definition... "); 
-		$http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)
-			.error(function(e) {
-				$scope.suffixMessage(saveDefinitionMessage, "ERROR");
-				console.log(e);
-			})
-			.success(function() {
-				$scope.suffixMessage(saveDefinitionMessage, "OK");
-			});
+        var modalInstance = $modal.open({
+            templateUrl: 'partials/AskChangesSummary.html',
+            controller: 'AskChangesSummaryCtrl',
+            size: 'lg',
+            resolve: {
+            	caseDefinitionName: function() { return $scope.caseDefinitionName; },
+            	changes: function() {
+            		var history = $scope.state.history;
+            		return history.slice(history.length - $scope.numberUnsafedChanges);
+        		},
+            }
+          });       
+        modalInstance.result.then(function(summary) {
+        	console.log("SUMMARY", summary);
+        	$scope.historyStep("Summarize", [summary]);
+			var data = {
+				state: JSON.stringify($scope.state)
+			};
+			var saveDefinitionMessage = $scope.createMessage("Save case definition... "); 
+			$http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)
+				.error(function(e) {
+					$scope.suffixMessage(saveDefinitionMessage, "ERROR");
+					console.log(e);
+				})
+				.success(function() {
+					$scope.numberUnsafedChanges = 0;
+					$scope.suffixMessage(saveDefinitionMessage, "OK");
+				});
+        });
 	};
 	
 	$scope.searchConcepts = function(text, onConcepts) {
@@ -399,12 +415,14 @@ function CodeMapperCtrl($scope, $http, $timeout, $sce, $modal, $timeout, $q, $lo
 					};
 				});
 				$scope.state.concepts = selectedConcepts.concat($scope.state.concepts);
-				$scope.historyStep("Search and add concepts for query \"" + queryString + "\"", selectedConcepts.map(getCui));
+				$scope.historyStep("Search and add \"" + queryString + "\"", selectedConcepts.map(getCui));
 			});
 		});
 	}
 	
 	$scope.resetConcepts = function() {
+		console.log("RESET");
+		$scope.numberUnsafedChanges = 0;
 		$scope.state = null;
 		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, []);
 		$scope.createMessage("Reset translations.");
@@ -698,6 +716,27 @@ function ShowConceptsCtrl($scope, $http, $modalInstance, $timeout, concepts, cod
 	}
 };
 
+function AskChangesSummaryCtrl($scope, $http, $modalInstance, $timeout, caseDefinitionName, changes) {
+	
+	$scope.summary = "";
+	$scope.caseDefinitionName = caseDefinitionName;
+	$scope.changes = changes;
+
+	$scope.changesGridOptions = {
+		data: "changes",
+		enableRowSelection: false,
+		columnDefs: historyColumnDefs
+	};
+
+	$scope.save = function (summary) {
+		$modalInstance.close(summary);
+	};
+	
+	$scope.cancel = function () {
+		$modalInstance.dismiss();
+	};
+}
+
 /** Column definitions only in primary concepts list, not in the dialog. */
 var commandsColumnDef = {
 	displayName: 'Commands',
@@ -737,7 +776,7 @@ var originColumnDef = {
 	    "</span>" +
       "</div>" +
       "<div ng-if='row.entity.origin.type == \"search\"'>" +
-	    "<span class='query' title='Search result of {{row.entity.origin.data}}'>" +
+	    "<span class='query' title='Search result of \"{{row.entity.origin.data}}'>\"" +
 	      "<span ng-bind='row.entity.origin.data'></span>" +
 	      "<i class='glyphicon glyphicon-search'></i> " +
 	    "</span>" +
@@ -793,3 +832,12 @@ function createConceptsColumnDefs(showCommands, showOrigin, codingSystems) {
 			mainColumnDefs,
 			codingSystemsColumnDefs);
 }
+
+
+var historyColumnDefs = [
+   { field: "date", displayName: "Date" },
+   { field: "user", displayName: "User" },
+   { field: "name", displayName: "Step" },
+   { field: "args", displayName: "Arguments",
+	 cellTemplate: "<div>{{row.entity[col.field].join(', ')}}</div>" }
+];

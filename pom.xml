@@ -4,11 +4,12 @@
 	<groupId>nl.erasmusmc.mieur.biosemantics.advance</groupId>
 	<artifactId>AdvanceCodeMapper</artifactId>
 	<packaging>war</packaging>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0-SNAPSHOT</version>
 	<name>ADVANCE Code Mapper</name>
 	<url>http://biosemantics.org</url>
 
 	<build>
+    <finalName>AdvanceCodeMapper</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

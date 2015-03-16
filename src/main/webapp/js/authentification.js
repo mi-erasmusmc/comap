@@ -56,6 +56,11 @@ function resolveUser($rootScope, $q, $http, $location, urls) {
 					$rootScope.$broadcast('login', user);
 					deferred.resolve(user);
 				}
+			})
+			.error(function(err, code) {
+				console.log("RESOLVE4", err, code);
+				deferred.reject();
+				$location.path('/login');
 			});
 		return deferred.promise;
 	}

@@ -30,8 +30,9 @@ public class PersistencyResource {
 
 	private PersistencyApi api = CodeMapperApplication.getPersistencyApi();
 
-	private static void assertUserInProject(User user, String project) {
-		if (user == null || !user.getProjects().contains(project))
+	private static void assertAdminOrProjectMember(User user, String project) {
+		AuthentificationResource.assertAuthentificated(user);
+		if (!user.isAdmin() && !user.getProjects().contains(project))
 			throw new UnauthorizedException();
 	}
 
@@ -56,7 +57,7 @@ public class PersistencyResource {
 	@Path("projects/{project}/case-definitions")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<String> getCaseDefinitionNames(@PathParam("project") String project, @Context User user) {
-		assertUserInProject(user, project);
+		assertAdminOrProjectMember(user, project);
 		try {
 			return api.getCaseDefinitionsNames(project);
 		} catch (CodeMapperException e) {
@@ -71,7 +72,7 @@ public class PersistencyResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getCaseDefinition(@PathParam("project") String project, @PathParam("name") String name, @Context User user) {
 		logger.debug(String.format("Get case definition %s", name));
-		assertUserInProject(user, project);
+		assertAdminOrProjectMember(user, project);
 		try {
 			String stateJson = api.getCaseDefinition(project, name);
 			if (stateJson != null)
@@ -90,7 +91,7 @@ public class PersistencyResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public void setCaseDefinition(@PathParam("project") String project, @PathParam("name") String name, @FormParam("state") String stateJson, @Context User user) {
 		logger.debug(String.format("Set case definition %s", name));
-		assertUserInProject(user, project);
+		assertAdminOrProjectMember(user, project);
 		try {
 			api.setCaseDefinition(project, name, stateJson);
 		} catch (CodeMapperException e) {

@@ -9,7 +9,7 @@
           <button ng-click="create(project, newNames[project])" ng-disabled="!validNewName(project, newNames[project])">Create</button>
         </li>
         <li ng-repeat="caseDefinition in caseDefinitions[project]">
-          <a href="#projects/{{project|encodeUriComponent}}/{{caseDefinition|encodeUriComponent}}" ng-bind="caseDefinition"></a>
+          <a href="#/case-definition/{{project|encodeUriComponent}}/{{caseDefinition|encodeUriComponent}}" ng-bind="caseDefinition"></a>
         </li>
       </ul>
     </li>

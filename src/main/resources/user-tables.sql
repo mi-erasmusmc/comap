@@ -8,10 +8,10 @@ create table users (
 );
 
 insert into users (id, username, password) values
-(1, "admin", "fc8252c8dc55839967c58b9ad755a59b61b67c13227ddae4bd3f78a38bf394f7"),
+(1, "admin", "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"),
 (2, "user1", "0a041b9462caa4a31bac3567e0b6e6fd9100787db2ab433d96f6d178cabfce90"),
 (3, "user2", "6025d18fe48abd45168528f18a82e265dd98d421a7084aa09f61b341703901a3"),
-(4, "user3", "b4e8183bc3773e785982918eefcab56eb390b2582a06812739d97d944830293f");
+(4, "user3", "5860faf02b6bc6222ba5aca523560f0e364ccd8b67bee486fe8bf7c01d492ccb");
 
 drop table if exists projects;
 
@@ -22,8 +22,8 @@ create table projects (
 );
 
 insert into projects (id, name) values
-(1, "EMIF"),
-(2, "ADVANCE");
+(1, "One"),
+(2, "Two");
 
 drop table if exists users_projects;
 

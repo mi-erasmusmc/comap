@@ -1,6 +1,4 @@
 
-var resolveAuthenticated = { user: resolveUser };
-
 var codeMapperApp =
 	angular.module("CodeMapperApp", [ "ui.bootstrap", "ngSanitize", "ngGrid", "ngRoute", "blockUI" ])
 		.config(function ConfigBlockUI(blockUIConfig) {
@@ -9,22 +7,26 @@ var codeMapperApp =
 		})
 		.config(function($routeProvider) {
 		  $routeProvider
-		    .when('/projects', {
+		    .when('/dashboard', {
 		    	templateUrl: 'partials/list-case-definitions.html',
 		    	controller: 'ListCaseDefinitionsCtrl',
-		    	resolve: resolveAuthenticated
+		    	resolve: {
+		    		user: resolveUser
+		    	}
 		    })
-		    .when('/projects/:project/:caseDefinitionName', {
+		    .when('/case-definition/:project/:caseDefinitionName', {
 		    	templateUrl: 'partials/code-mapper.html',
 		    	controller: 'CodeMapperCtrl',
-		    	resolve: resolveAuthenticated
+		    	resolve: {
+		    		user: resolveUser
+		    	}
 		    })
 		    .when('/login', {
 		    	templateUrl: 'partials/login.html',
-		    	controller: 'LoginCtrl'
+		    	controller: 'LoginCtrl',
 		    })
 		    .otherwise({
-		    	redirectTo: '/projects'
+		    	redirectTo: '/dashboard'
 		    });
 		})
 		.service("urls", UrlsService)

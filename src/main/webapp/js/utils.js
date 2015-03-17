@@ -69,7 +69,7 @@ function csvEncode(data) {
 		} else {
 			if (typeof field == 'string'
 					&& (field.indexOf('"') != -1 || field.indexOf(',') != -1)) {
-				return '"' + field.replace('"', '""') + '"';
+				return '"' + field.replace(/"/g, '""') + '"';
 			} else {
 				return "" + field;
 			}

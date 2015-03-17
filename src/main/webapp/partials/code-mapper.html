@@ -39,32 +39,34 @@
     <tab id="concepts-tab" heading="4. Concepts">
       <div id="concept-buttons">
         <div ng-show="state">{{state.concepts.length}} concepts</div>
-        <button ng-click="createInitalTranslations(caseDefinition)" ng-if="state == null" class="btn btn-default btn-sm" id="search-concepts">
+        <button title="Create the automatic coding of the case definition" ng-click="createInitalTranslations(caseDefinition)" ng-if="state == null" class="btn btn-default btn-sm" id="search-concepts">
           <i class="glyphicon glyphicon-refresh"></i>
-          Create initial translations
+          Create automatic coding
         </button>
-        <button ng-click="resetConcepts()" confirm-click="Really reset all translations?" ng-if="state" class="btn btn-default btn-sm" id="reset-concepts">
+        <button title="Reset the coding - all changes are lost" ng-click="resetConcepts()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-default btn-sm" id="reset-concepts">
           <i class="glyphicon glyphicon-fire"></i>
           Reset
         </button>
-        <button ng-click="saveTranslations()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-default btn-sm">
+        <button title="Save the coding online" ng-click="saveTranslations()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-default btn-sm">
           <i class="glyphicon glyphicon-cloud-upload"></i>
           Save
         </button>
-        <button ng-click="downloadConcepts()" ng-if="state" class="btn btn-default btn-sm">
+        <button title="Download as CSV for Excel" ng-click="downloadConcepts()" ng-if="state" class="btn btn-default btn-sm">
           <i class="glyphicon glyphicon-download"></i>
-          Download (CSV)
+          Download
         </button>
         <div ng-if="state">
-         <input type="text" ng-model="searchQuery" id="searchQuery"></input>
-         <button ng-click="searchAndAddConcepts(searchQuery)" class="btn btn-default btn-sm">
-           <i class="glyphicon glyphicon-search"></i>
-           Search & add concepts
-         </button>
+          <form>
+            <input title="The query for adding new concepts" type="text" ng-model="searchQuery" id="searchQuery"></input>
+            <button title="Add new concepts by a query" ng-click="searchAndAddConcepts(searchQuery)" class="btn btn-default btn-sm">
+              <i class="glyphicon glyphicon-search"></i>
+              Add concepts
+            </button>
+          </form>
         </div>
       </div>
       <label for='conceptsFilter'>Filter:</label>
-      <input id='conceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
+      <input title="Filter concepts" id='conceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
       <div ng-grid="conceptsGridOptions" class="grid"></div>
     </tab>
     

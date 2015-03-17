@@ -106,8 +106,9 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
 	});
 };
 
-function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $timeout, $q, $log, $routeParams, $location, blockUI, urls, dataService) {
+function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $timeout, $q, $log, $routeParams, $location, blockUI, urls, dataService, user) {
 	
+	$scope.user = user;
 	$scope.project = $routeParams.project;
 	$scope.caseDefinitionName = $routeParams.caseDefinitionName;
 	
@@ -206,7 +207,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $time
 			date: new Date().toJSON(),
 			name: name,
 			args: args,
-			user: $scope.user.username
+			user: user.username
 		});
 	};
 	
@@ -239,13 +240,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $time
 	/** ********** */
 	
 	$scope.loadTranslations = function() {
-		var initialStateMessage = $scope.createMessage("Retrieve state... ");
+		var initialStateMessage = $scope.createMessage("Loading coding... ");
 		$http.get(urls.caseDefinition($scope.project, $scope.caseDefinitionName))
 			.error(function(err, code, a2) {
 				switch (code) {
 					case 401:
-						alert("Not authenticated for project " + $scope.project);
-						$location.path('/projects');
+						$scope.suffixMessage(initialStateMessage, "not allowed.");
+						alert("You are not member for project " + $scope.project + ":(");
+						$location.path('/dashboard');
 						break;
 					case 404:
 						$scope.suffixMessage(initialStateMessage, "not found, created.");
@@ -264,13 +266,11 @@ function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $time
 				$scope.$broadcast("setSelectedSemanticTypes", state.semanticTypes);
 				$scope.$broadcast("setSelectedCodingSystems", state.codingSystems);
 				$scope.activateTab("concepts-tab");
-				inputBlockUi.start("Reset concepts to edit!");
+				inputBlockUi.start("Cannot edit (reset the current coding to edit)");
 			})
 			.finally(function() {
 				$scope.numberUnsafedChanges = 0;
 				$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.state.codingSystems);
-				$timeout(function() {
-				}, 0);
 			});
 	};
 	
@@ -372,7 +372,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $time
 	 * concepts and display.
 	 */ 
 	$scope.createInitalTranslations = function(caseDefinition) {
-		$log.info("Create initial translations");
+		$log.info("Create initial coding");
 		if ($scope.state != null) {
 			error("CodeMapperCtrl.searchConcepts called with state");
 			return;
@@ -397,7 +397,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $time
 			$scope.state.initialCuis = concepts.map(getCui);
 			$scope.state.concepts = concepts;
 			$scope.conceptsGridOptions.sortInfo = { field: ["sourceConceptsCount", "preferredName"], direction: "desc" };
-			$scope.historyStep("Initial translations", concepts.map(getCui));
+			$scope.historyStep("Automatic coding", concepts.map(getCui));
 			inputBlockUi.start("Reset concepts to edit!");
 		});
 	};
@@ -433,7 +433,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $time
 		$scope.numberUnsafedChanges = 0;
 		$scope.state = null;
 		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, []);
-		$scope.createMessage("Reset translations.");
+		$scope.createMessage("Current codings have been reset.");
 		inputBlockUi.reset();
 	};
 	

@@ -1,0 +1,1913 @@
+Index: src/main/webapp/WEB-INF/code-mapper.properties
+===================================================================
+--- src/main/webapp/WEB-INF/code-mapper.properties	(revision 5346)
++++ src/main/webapp/WEB-INF/code-mapper.properties	(working copy)
+@@ -19,3 +19,4 @@
+ 
+ umls-db-password=
+ 
++persistency-directory=persistency
+\ No newline at end of file
+Index: src/main/webapp/WEB-INF/web.xml
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/xml
+Index: src/main/webapp/style.css
+===================================================================
+--- src/main/webapp/style.css	(revision 5345)
++++ src/main/webapp/style.css	(working copy)
+@@ -128,4 +128,8 @@
+ .ngCell.scroll-y {
+ 	overflow-y: scroll;
+   overflow: -moz-scrollbars-none;
++}
++
++#selectCreateOpenCaseDefinition input, #selectCreateOpenCaseDefinition label {
++	display: inline;
+ }
+\ No newline at end of file
+Index: src/main/webapp/index.html
+===================================================================
+--- src/main/webapp/index.html	(revision 5342)
++++ src/main/webapp/index.html	(working copy)
+@@ -1,105 +0,0 @@
+-<!DOCTYPE html>
+-<html ng-app="CodeMapperApp">
+-  <head>
+-    <meta charset="utf-8">
+-    <title>ADVANCE Code Mapper</title>
+-    
+-    <link rel="stylesheet" href="lib/bootstrap-theme.min.css">
+-    <link rel='stylesheet' type="text/css" href="lib/bootstrap.min.css" />
+-    <link rel='stylesheet' type="text/css" href="lib/ng-grid.css" />
+-    
+-    <script src="lib/jquery.min.js"></script>
+-    <script src="lib/angular.js"></script>
+-    <script src="lib/angular-sanitize.js"></script>
+-    <script src="lib/bootstrap.min.js"></script>
+-    <script src="lib/ui-bootstrap-tpls-0.12.0.js"></script>
+-    <script src="lib/ng-grid-2.0.14.debug.js"></script>
+-    
+-    <link rel='stylesheet' type="text/css" href="style.css" />
+-    <script src="app.js"></script>
+-  </head>
+-  <body ng-controller="CodeMapperCtrl">
+-  
+-    <div class="row">
+-      <div class="col-md-10">
+-        <h1>ADVANCE Code Mapper</h1>
+-      </div>
+-      <div class="col-md-2">
+-        <div style="text-align: right">$Revision$</div>
+-        <div><image src="images/200709mslogo_erasmus_mc.jpg" height="100px" /></div>
+-      </div>
+-    </div>
+-    
+-    <ul class="list-unstyled icon-list messages">
+-      <li ng-repeat="message in messages | limitTo: -1" ng-bind="message.text"></li>
+-    </ul>
+-    
+-    <tabset>
+-      <tab id="coding-systems-tab" heading="1. Vocabularies">
+-        <label for='selectedVocabulariesList'>Selected:</label>
+-        <div id='selectedVocabulariesList'>
+-          <span ng-repeat="voc in selectedVocabularies" ng-bind="voc.abbreviation" ng-dblclick="unselectVocabulary(voc)" class="vocabulary noselect"></span>
+-        </div>
+-        <label for='vocabulariesFilter'>Filter:</label>
+-        <input id='vocabulariesFilter' type="text" ng-model="vocabulariesGridOptions.filterOptions.filterText" />
+-        <div ng-grid="vocabulariesGridOptions" class="grid"></div>
+-      </tab>
+-      
+-      <tab id="semantics-tab" heading="2. Semantic types">
+-        <label for='selectedsemanticTypesList'>Selected:</label>
+-        <span id='selectedsemanticTypesList' ng-repeat="typeGroups in semanticTypesGroupsGridOptions.$gridScope.selectedItems" ng-bind="typeGroups.description" ng-dblclick="unselectSemanticTypeGroup(typeGroups)" class="semantic-type noselect" ></span>
+-        <label for='samanticTypesFilter'>Filter:</label>
+-        <input id='samanticTypesFilter' type="text" ng-model="semanticTypesGroupsGridOptions.filterOptions.filterText" />
+-        <div ng-grid="semanticTypesGroupsGridOptions" class="grid"></div>
+-      </tab>
+-      
+-      <tab id="case-definition-tab" heading="3. Case definition">
+-         <label for='caseDefinitionName'>Name:</label>
+-         <input id="caseDefinitionName" type="text" ng-model="$parent.caseDefinitionName" />
+-         <label for='caseDefinition'>Clinical definition:</label>
+-         <textarea rows=35 cols=200 id="caseDefinition" ng-model="$parent.caseDefinition"></textarea>
+-      </tab>
+-      
+-      <tab id="concepts-tab" heading="4. Concepts">
+-        <div id="concept-buttons">
+-          <div>
+-            Case definition
+-            <span class='emphasize' ng-bind='config.caseDefinitionName'></span>
+-            with {{concepts.length}} concepts
+-          </div>
+-          <button id="search-concepts" class="btn btn-default btn-sm"
+-              confirmed-click="searchConcepts()"
+-              ng-confirm-click="Really (re-)generate concepts?"
+-              ng-dont-confirm="{{concepts.length == 0}}">
+-            <i class="glyphicon glyphicon-refresh"></i>
+-            <span ng-show='concepts.length > 0'>Reg</span><span ng-show='concepts.length == 0'>G</span>enerate concepts
+-          </button>
+-          <button ng-click="downloadConcepts()" class="btn btn-default btn-sm">
+-            <i class="glyphicon glyphicon-download"></i>
+-            Download (CSV)
+-          </button>
+-        </div>
+-        <label for='conceptsFilter'>Filter:</label>
+-        <input id='conceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
+-        <div ng-grid="conceptsGridOptions" class="grid"></div>
+-      </tab>
+-    </tabset>
+-    
+-    <div id="mask" ng-show="isBlocked"></div>
+-    
+-    <script type="text/ng-template" id="ShowConcepts.html">
+-       <div class="modal-header">
+-         <h3 class="modal-title">{{title}} ({{concepts.length}} concepts)</h3>
+-       </div>
+-       <div class="modal-body">
+-         <label for='dialogConceptsFilter'>Filter:</label>
+-         <input id='dialogConceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
+-         <div ng-grid="conceptsGridOptions" class="grid"></div>
+-       </div>
+-       <div class="modal-footer">
+-         <button class="btn btn-primary" ng-click="ok()">OK</button>
+-         <button class="btn btn-warning" ng-if="selectable" ng-click="cancel()">Cancel</button>
+-       </div>
+-    </script>
+-  </body>
+-</html>
+Index: src/main/webapp/app.js
+===================================================================
+--- src/main/webapp/app.js	(revision 5347)
++++ src/main/webapp/app.js	(working copy)
+@@ -5,6 +5,8 @@
+ var CODING_SYSTEMS_URL = CODE_MAPPER_API_URL + '/coding-systems';
+ var UMLS_CONCEPTS_API_URL = CODE_MAPPER_API_URL + '/umls-concepts';
+ var RELATED_CONCEPTS_API_URL = CODE_MAPPER_API_URL + '/related';
++var PERSISTENCY_API_URL = 'resource/persistency';
++var CASE_DEFINITIONS_URL = PERSISTENCY_API_URL + '/case-definition';
+ var SEMANTIC_TYPES_GROUPS_URL = "data/semantic_types_groups.json";
+ var STOPWORDS_URL = "data/stopwords.json";
+ 
+@@ -21,6 +23,15 @@
+ var FILTER_SPANS_REGEX = /^(\d{1,3}|\S{1,2})$/;
+ var STOPWORDS = null;
+ 
++
++// Must be declared in-line in index.jsp
++if (!peregrineResourceUrl) {
++	var msg = "ERROR: Peregrine resource URL unknown"
++	console.log(msg, peregrineResourceUrl);
++	alert(msg);
++}
++
++
+ var CodeMapperApp = angular.module('CodeMapperApp', [ 'ui.bootstrap', 'ngSanitize', 'ngGrid' ]);
+ 
+ var ngConfirmClick = CodeMapperApp.directive('ngConfirmClick', [
+@@ -47,7 +58,6 @@
+ 	$scope.semanticTypesGroups = [];
+ 	$scope.vocabularies = [];
+ 	$scope.caseDefinition = "";
+-	$scope.caseDefinitionName = "";
+ 	$scope.concepts = [];
+ 	$scope.selected = [];
+     $scope.config = {}; // Configuration that was last used to generate $scope.concepts 
+@@ -200,20 +210,6 @@
+ 			$scope.unblock(blockRetrieveStopwords, "OK, found " + STOPWORDS.length);
+ 		});
+ 
+-	var blockRetrievePeregrineUrl = $scope.block("Retrieve Peregrine URL... ");
+-	$http.get(CONFIG_URL)
+-		.error(function(err) {
+-			var msg = "ERROR: Couldn't retrieve peregrine URL";
+-			console.log(msg, err);
+-			alert(msg);
+-			$scope.unblock(blockRetrievePeregrineUrl, "ERROR");
+-		})
+-		.success(function (config) {
+-			$scope.peregrineResourceUrl = config.peregrineResourceUrl;
+-			console.log("Found config", config);
+-			$scope.unblock(blockRetrievePeregrineUrl, "OK");
+-	    });
+-
+ 	var blockSemanticTypesGroups = $scope.block("Retrieving semantic types and groups... ");
+ 	$http.get(SEMANTIC_TYPES_GROUPS_URL)
+ 		.error(function(err) {
+@@ -275,7 +271,6 @@
+ 		$scope.concepts = [];
+ 		$scope.config = {
+ 			caseDefinition: $scope.caseDefinition,
+-			caseDefinitionName: $scope.caseDefinitionName,
+ 			vocabularies: angular.copy($scope.selectedVocabularies),
+ 			semanticTypes: angular.copy($scope.selectedSemanticTypes),
+ 			history: []
+@@ -284,9 +279,9 @@
+ 		var data = {
+ 			text : $scope.config.caseDefinition
+ 		};
+-		console.log("Peregrine", $scope.peregrineResourceUrl);
++		console.log("Peregrine at", peregrineResourceUrl);
+ 		// Index case definition with peregrine
+-		$http.post($scope.peregrineResourceUrl + "/index", data, FORM_ENCODED_POST)
++		$http.post(peregrineResourceUrl + "/index", data, FORM_ENCODED_POST)
+ 			.error(function(err) {
+ 				var msg = "ERROR: Couldn't search concepts in case definition";
+ 				console.log(msg, err);
+@@ -442,6 +437,28 @@
+     			}
+     		});        
+     };
++    
++    $scope.openCreateCaseDefinition = function(notCancellable) {
++    	var options = {
++          templateUrl: 'CreateOpenCaseDefinition.html',
++          controller: 'CreateOpenCaseDefinitionCtrl',
++          size: 'sm',
++        };
++    	if (notCancellable) {
++    		options.backdrop = 'static';
++    		options.keyboard = false;
++    	}
++        var modalInstance = $modal.open(options);
++        
++        modalInstance
++        	.then(function(command, argument) {
++        		console.log(command, argument);
++        	}, function() {
++        		console.log("cancelled");
++        	})
++    };
++    
++    $scope.openCreateCaseDefinition(true);
+ 
+ 	$scope.downloadConcepts = function() {
+ 		console.log("Download concepts");
+@@ -452,13 +469,14 @@
+ 		
+ 		var data = [];
+ 		
+-		[ [$scope.config.caseDefinitionName],
++		[ ["PROJECT", projectName]
++		  ["CASE DEFINITION", caseDefinitionName],
+           ["Generated by ADVANCE Code Mapper"]
+         ].forEach(function(row) { data.push(row); });
+ 		
+ 		[ [],
+-          ["History"],
+-          ["Step", "Arguments"]
++          ["HISTORY"],
++          ["STEP", "ARGUMENTS"]
+         ].forEach(function(row) { data.push(row); });
+ 		
+ 		$scope.config.history.forEach(function(step) {
+@@ -466,8 +484,8 @@
+ 		});
+ 		
+ 		[ [],
+-		  ["Concepts"],
+-		  ["Name", "CUI", "Vocabulary", "Code"]
++		  ["CONCEPTS"],
++		  ["NAME", "CUI", "VOCABULARY", "CODE"]
+         ].forEach(function(row) { data.push(row); });
+ 		selectedVocabularyAbbreviations.forEach(function(vocabulary) {
+ 			$scope.concepts.forEach(function(concept) {
+@@ -478,7 +496,7 @@
+ 		});
+ 		
+ 		[ [],
+-		  ["Case definition"]
++		  ["CASE DEFINITION"]
+ 		].forEach(function(row) { data.push(row); });
+ 		$scope.config.caseDefinition.split("\n").forEach(function(line) {
+ 			data.push([line]);
+@@ -493,7 +511,7 @@
+ 		var a = document.createElement('a');
+ 		a.href = fileURL;
+ 		a.target = '_blank';
+-		a.download = 'case_definition_' + $scope.config.caseDefinitionName + '.csv';
++		a.download = projectName + '_' + caseDefinitionName + '.csv';
+ 		document.body.appendChild(a);
+ 		a.click();
+ 	};
+@@ -637,6 +655,40 @@
+ 	}
+ });
+ 
++var CreateOpenCaseDefinitionCtrl = CodeMapperApp.controller('CreateOpenCaseDefinitionCtrl', function ($scope, $http, $modalInstance, $timeout) {
++	
++	$scope.selection = null;
++	$scope.caseDefinitions = [];
++	
++	$scope.validCreation = function(name) {
++		console.log(name, $scope.caseDefinitions);
++		return name && $scope.caseDefinitions.indexOf(name) == -1 && /^[\w -]+$/.test(name);
++	};
++	
++	$scope.ok = function() {
++		if (selection) {
++			$modalInstance.close("open", $scope.selection);
++		} else {
++			$modalInstance.close("create", $scope.caseDefinitions);
++		}
++	};
++	
++	$scope.cancel = function() {
++		$modalInstance.dismiss('cancel');
++	}
++	
++	$http.get(CASE_DEFINITIONS_URL)
++		.error(function() {
++			var msg = "ERROR: Couldn't retrieve case definitions from " + CASE_DEFINITIONS_URL;
++			console.log(msg, err);
++			alert(msg);
++		})
++		.success(function(caseDefinitions) {
++			console.log("Received", caseDefinitions);
++			$scope.caseDefinitions = caseDefinitions;
++		})
++});
++
+ /** Column definitions only in primary concepts list, not in the dialog. */
+ var commandsColumnDef = {
+ 	displayName: 'Commands',
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/CodingSystem.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/CodingSystem.java	(revision 5342)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/CodingSystem.java	(working copy)
+@@ -1,43 +0,0 @@
+-package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
+-
+-import javax.xml.bind.annotation.XmlRootElement;
+-
+-@XmlRootElement
+-public class CodingSystem {
+-	private String abbreviation = null;
+-	private String name = null;
+-	private String family = null;
+-
+-	public CodingSystem() {
+-	}
+-
+-	public CodingSystem(String abbrevation, String name, String family) {
+-		this.abbreviation = abbrevation;
+-		this.name = name;
+-		this.family = family;
+-	}
+-
+-	public String getAbbreviation() {
+-		return abbreviation;
+-	}
+-
+-	public void setAbbreviation(String abbreviation) {
+-		this.abbreviation = abbreviation;
+-	}
+-
+-	public String getName() {
+-		return name;
+-	}
+-
+-	public void setName(String name) {
+-		this.name = name;
+-	}
+-
+-	public String getFamily() {
+-		return family;
+-	}
+-
+-	public void setFamily(String family) {
+-		this.family = family;
+-	}
+-}
+\ No newline at end of file
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/SourceTerm.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/SourceTerm.java	(revision 5342)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/SourceTerm.java	(working copy)
+@@ -1,33 +0,0 @@
+-package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
+-
+-import javax.xml.bind.annotation.XmlRootElement;
+-
+-@XmlRootElement
+-public class SourceTerm {
+-	private String source = null;
+-	private String term = null;
+-
+-	public SourceTerm() {
+-	}
+-
+-	public SourceTerm(String source, String term) {
+-		this.source = source;
+-		this.term = term;
+-	}
+-
+-	public String getSource() {
+-		return source;
+-	}
+-
+-	public void setSource(String source) {
+-		this.source = source;
+-	}
+-
+-	public String getTerm() {
+-		return term;
+-	}
+-
+-	public void setTerm(String term) {
+-		this.term = term;
+-	}
+-}
+\ No newline at end of file
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/CodingSystem.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/CodingSystem.java	(revision 0)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/CodingSystem.java	(revision 0)
+@@ -0,0 +1,43 @@
++package nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_api;
++
++import javax.xml.bind.annotation.XmlRootElement;
++
++@XmlRootElement
++public class CodingSystem {
++	private String abbreviation = null;
++	private String name = null;
++	private String family = null;
++
++	public CodingSystem() {
++	}
++
++	public CodingSystem(String abbrevation, String name, String family) {
++		this.abbreviation = abbrevation;
++		this.name = name;
++		this.family = family;
++	}
++
++	public String getAbbreviation() {
++		return abbreviation;
++	}
++
++	public void setAbbreviation(String abbreviation) {
++		this.abbreviation = abbreviation;
++	}
++
++	public String getName() {
++		return name;
++	}
++
++	public void setName(String name) {
++		this.name = name;
++	}
++
++	public String getFamily() {
++		return family;
++	}
++
++	public void setFamily(String family) {
++		this.family = family;
++	}
++}
+\ No newline at end of file
+
+Property changes on: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/CodingSystem.java
+___________________________________________________________________
+Added: svn:keywords
+   + Revision
+
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/SourceTerm.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/SourceTerm.java	(revision 0)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/SourceTerm.java	(revision 0)
+@@ -0,0 +1,33 @@
++package nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_api;
++
++import javax.xml.bind.annotation.XmlRootElement;
++
++@XmlRootElement
++public class SourceTerm {
++	private String source = null;
++	private String term = null;
++
++	public SourceTerm() {
++	}
++
++	public SourceTerm(String source, String term) {
++		this.source = source;
++		this.term = term;
++	}
++
++	public String getSource() {
++		return source;
++	}
++
++	public void setSource(String source) {
++		this.source = source;
++	}
++
++	public String getTerm() {
++		return term;
++	}
++
++	public void setTerm(String term) {
++		this.term = term;
++	}
++}
+\ No newline at end of file
+
+Property changes on: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/SourceTerm.java
+___________________________________________________________________
+Added: svn:keywords
+   + Revision
+
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/UmlsApi.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/UmlsApi.java	(revision 0)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/UmlsApi.java	(revision 0)
+@@ -0,0 +1,363 @@
++package nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_api;
++
++import java.sql.Connection;
++import java.sql.DriverManager;
++import java.sql.PreparedStatement;
++import java.sql.ResultSet;
++import java.sql.SQLException;
++import java.util.Collection;
++import java.util.Iterator;
++import java.util.LinkedList;
++import java.util.List;
++import java.util.Map;
++import java.util.Properties;
++import java.util.Set;
++import java.util.TreeMap;
++import java.util.TreeSet;
++
++import org.apache.log4j.Logger;
++
++/**
++ * Database based implementation of the UMLS API used for the code mapper.
++ *
++ * Two SQL indices in MRREL for CUI1 and CUI2 speed up the lookup of hypernyms/hyponyms:
++ * CREATE INDEX MRREL_CUI1 ON MRREL (CUI1);
++ * CREATE INDEX MRREL_CUI2 ON MRREL (CUI2)
++ *
++ * @author benus
++ *
++ */
++public class UmlsApi  {
++
++	private Connection connection;
++	private String uri;
++	private Properties connectionProperties;
++	private List<String> vocabulariesWithDefinition;
++	private List<String> availableVocabularies;
++	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
++
++	public UmlsApi(String uri, Properties connectionProperties, List<String> availableVocabularies, List<String> vocabulariesWithDefinition) {
++		this.uri = uri;
++		this.connectionProperties = connectionProperties;
++		this.availableVocabularies = availableVocabularies;
++		this.vocabulariesWithDefinition = vocabulariesWithDefinition;
++	}
++
++	private Connection getConnection() throws SQLException {
++		if (connection == null || connection.isClosed())
++			connection = DriverManager.getConnection(uri, connectionProperties);
++		return connection;
++	}
++
++	private String placeholders(int number) {
++		StringBuilder sb = new StringBuilder();
++		for (int ix = 0; ix < number; ix++) {
++			if (ix > 0)
++				sb.append(", ");
++			sb.append("?");
++		}
++		return sb.toString();
++	}
++
++	public List<CodingSystem> getCodingSystems() throws CodeMapperException {
++
++		String query = "SELECT DISTINCT rsab, son, sf FROM MRSAB WHERE CURVER = 'Y'";
++		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
++			ResultSet result = statement.executeQuery();
++			List<CodingSystem> codingSystems = new LinkedList<>();
++			while (result.next()) {
++				String rsab = result.getString(1);
++				String name = result.getString(2);
++				String family = result.getString(2);
++				if (availableVocabularies == null || availableVocabularies.contains(rsab)) {
++					CodingSystem codingSystem = new CodingSystem(rsab, name, family);
++					codingSystems.add(codingSystem);
++				}
++			}
++			return codingSystems;
++		} catch (SQLException e) {
++			throw new CodeMapperException(e);
++		}
++	}
++
++	public Map<String, String> getPreferredNames(Collection<String> cuis) throws CodeMapperException {
++
++		if (cuis.isEmpty())
++			return new TreeMap<>();
++		else {
++
++			String queryFmt =
++					"SELECT DISTINCT cui, str FROM MRCONSO "
++					+ "WHERE cui in (%s) "
++					+ "AND lat = 'ENG' "
++					+ "AND ispref = 'Y' "
++					+ "AND ts = 'P' "
++					+ "AND stt = 'PF'";
++			String query = String.format(queryFmt, placeholders(cuis.size()));
++
++			try (PreparedStatement statement = connection.prepareStatement(query)) {
++
++				int offset = 1;
++				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
++					statement.setString(offset, iter.next());
++
++				logger.debug(statement);
++				ResultSet result = statement.executeQuery();
++
++				Map<String, String> names = new TreeMap<>();
++				while (result.next()) {
++					String cui = result.getString(1);
++					String name = result.getString(2);
++					names.put(cui, name);
++				}
++
++				Set<String> missings = new TreeSet<>(cuis);
++				missings.removeAll(names.keySet());
++				for (String missing : missings)
++					logger.warn("No preferred name found for CUI " + missing);
++				return names;
++			} catch (SQLException e) {
++				throw new CodeMapperException(e);
++			}
++		}
++	}
++
++	private Map<String, List<String>> getSemanticTypes(Collection<String> cuis) throws CodeMapperException {
++		if (cuis.isEmpty())
++			return new TreeMap<>();
++		else {
++			String queryFmt =
++					"SELECT DISTINCT cui, tui "
++					+ "FROM MRSTY "
++					+ "WHERE cui in (%s) "
++					+ "ORDER BY cui, tui";
++			String query = String.format(queryFmt, placeholders(cuis.size()));
++
++			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
++
++				int offset = 1;
++
++				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
++					statement.setString(offset, iter.next());
++
++                logger.debug(statement);
++				ResultSet result = statement.executeQuery();
++
++				Map<String, List<String>> semanticTypes = new TreeMap<>();
++				while (result.next()) {
++					String cui = result.getString(1);
++					String tui = result.getString(2);
++					if (!semanticTypes.containsKey(cui))
++						semanticTypes.put(cui, new LinkedList<String>());
++					semanticTypes.get(cui).add(tui);
++				}
++				return semanticTypes;
++			} catch (SQLException e) {
++				throw new CodeMapperException(e);
++			}
++		}
++	}
++
++	public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> vocabularies)
++			throws CodeMapperException {
++
++		if (cuis.isEmpty())
++			return new TreeMap<>();
++		else {
++
++			String sabPlaceholders = "";
++			if (!vocabularies.isEmpty())
++				sabPlaceholders = String.format("AND sab IN (%s)", placeholders(vocabularies.size()));
++
++			String queryFmt =
++				  	"SELECT DISTINCT cui, sab, code, str, tty "
++					+ "FROM MRCONSO "
++					+ "WHERE cui IN (%s) %s ORDER BY cui, sab, code, str";
++			String query = String.format(queryFmt, placeholders(cuis.size()), sabPlaceholders);
++
++			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
++
++				int offset = 1;
++
++				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
++					statement.setString(offset, iter.next());
++
++				if (vocabularies != null)
++					for (Iterator<String> iter = vocabularies.iterator(); iter.hasNext(); offset++)
++						statement.setString(offset, iter.next());
++
++                logger.debug(statement);
++				ResultSet result = statement.executeQuery();
++
++				Map<String, List<SourceConcept>> sourceConcepts = new TreeMap<>();
++				String lastCui = null, lastSab = null, lastCode = null;
++				SourceConcept currentSourceConcept = null;
++				while (result.next()) {
++					String cui = result.getString(1);
++					String sab = result.getString(2);
++					String code = result.getString(3);
++					String str = result.getString(4);
++					String tty = result.getString(5);
++					if (!cui.equals(lastCui) || !sab.equals(lastSab) || !code.equals(lastCode)) {
++						currentSourceConcept = new SourceConcept();
++						currentSourceConcept.setCui(cui);
++						currentSourceConcept.setVocabulary(sab);
++						currentSourceConcept.setId(code);
++						currentSourceConcept.setPreferredTerm(str);
++						if (!sourceConcepts.containsKey(cui))
++							sourceConcepts.put(cui, new LinkedList<SourceConcept>());
++						sourceConcepts.get(cui).add(currentSourceConcept);
++					}
++					if ("PT".equals(tty))
++						currentSourceConcept.setPreferredTerm(str);
++					currentSourceConcept.getTerms().add(str);
++					lastCui = cui;
++					lastSab = sab;
++					lastCode = code;
++				}
++
++				Set<String> missings = new TreeSet<>(cuis);
++				missings.removeAll(sourceConcepts.keySet());
++				for (String missing : missings)
++					logger.warn("No UMLS concept found for CUI " + missing);
++				return sourceConcepts;
++			} catch (SQLException e) {
++				throw new CodeMapperException(e);
++			}
++		}
++	}
++
++	public Map<String, List<UmlsConcept>> getRelated(List<String> cuis, List<String> vocabularies, boolean hyponymsNotHypernyms) throws CodeMapperException {
++
++		if (cuis.isEmpty())
++			return new TreeMap<>();
++		else {
++
++			String queryFmt =
++					   "SELECT DISTINCT %s "
++					+ "FROM MRREL "
++					+ "WHERE rel in ('RN', 'CHD') "
++					+ "AND %s IN (%s) "
++					+ "AND cui1 != cui2 "
++					+ "AND (rela IS NULL OR rela = 'isa')";
++			String selection = hyponymsNotHypernyms ? "cui1, cui2" : "cui2, cui1";
++			String selector = hyponymsNotHypernyms ? "cui1" : "cui2";
++			String query = String.format(queryFmt, selection, selector, placeholders(cuis.size()));
++
++			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
++
++				int offset = 1;
++				for (int ix = 0; ix < cuis.size(); ix++, offset++)
++					statement.setString(offset, cuis.get(ix));
++
++				logger.debug(statement);
++				ResultSet result = statement.executeQuery();
++
++				Map<String, Set<String>> related = new TreeMap<>();
++				while (result.next()) {
++					String cui = result.getString(1);
++					String relatedCui = result.getString(2);
++					if (!related.containsKey(cui))
++						related.put(cui, new TreeSet<String>());
++					related.get(cui).add(relatedCui);
++				}
++
++				Set<String> relatedCuis = new TreeSet<>();
++				for (Collection<String> cs : related.values())
++					relatedCuis.addAll(cs);
++
++				Map<String, UmlsConcept> relatedConcepts = getConcepts(relatedCuis, vocabularies);
++
++				Map<String, List<UmlsConcept>> relatedByReference = new TreeMap<>();
++				for (String cui: cuis) {
++					List<UmlsConcept> concepts = new LinkedList<>();
++					if (related.containsKey(cui))
++						for (String relatedCui: related.get(cui))
++							if (relatedConcepts.containsKey(relatedCui))
++								concepts.add(relatedConcepts.get(relatedCui));
++					relatedByReference.put(cui, concepts);
++				}
++				return relatedByReference;
++			} catch (SQLException e) {
++				throw new CodeMapperException(e);
++			}
++		}
++	}
++
++	private Map<String, String> getDefinitions(Collection<String> cuis) throws CodeMapperException {
++
++		if (cuis.isEmpty())
++			return new TreeMap<>();
++		else {
++
++			String queryFmt = "SELECT DISTINCT cui, sab, def FROM MRDEF WHERE cui IN (%s)";
++			String query = String.format(queryFmt, placeholders(cuis.size()));
++
++			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
++
++				int offset = 1;
++				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
++					statement.setString(offset, iter.next());
++
++				logger.debug(statement);
++				ResultSet result = statement.executeQuery();
++
++				Map<String, Map<String, String>> definitionsByVocabularies = new TreeMap<>();
++				while (result.next()) {
++					String cui = result.getString(1);
++					String sab = result.getString(2);
++					String def = result.getString(3);
++					if (!definitionsByVocabularies.containsKey(cui))
++						definitionsByVocabularies.put(cui, new TreeMap<String, String>());
++					definitionsByVocabularies.get(cui).put(sab, def);
++				}
++
++				Map<String, String> definitions = new TreeMap<>();
++				for (String cui : cuis)
++					if (!definitionsByVocabularies.containsKey(cui))
++						definitions.put(cui, "");
++					else
++						for (String voc : vocabulariesWithDefinition)
++							if (definitionsByVocabularies.get(cui).containsKey(voc)) {
++								definitions.put(cui, definitionsByVocabularies.get(cui).get(voc));
++								break;
++							}
++
++				return definitions;
++			} catch (SQLException e) {
++				throw new CodeMapperException(e);
++			}
++		}
++	}
++
++	public Map<String, UmlsConcept> getConcepts(Collection<String> cuis, Collection<String> vocabularies)
++			throws CodeMapperException {
++		if (cuis.isEmpty())
++			return new TreeMap<>();
++		else {
++
++			cuis = new LinkedList<>(new TreeSet<>(cuis)); // unique CUIs
++
++	        Map<String, List<SourceConcept>> sourceConcepts = getSourceConcepts(cuis, vocabularies);
++	        Map<String, String> preferredNames = getPreferredNames(cuis);
++	        Map<String, String> definitions = getDefinitions(cuis);
++	        Map<String, List<String>> semanticTypes = getSemanticTypes(cuis);
++
++	        Map<String, UmlsConcept> concepts = new TreeMap<>();
++	        for (String cui : cuis) {
++	        	UmlsConcept concept = new UmlsConcept();
++	        	concept.setCui(cui);
++	        	concept.setDefinition(definitions.get(cui));
++	        	concept.setPreferredName(preferredNames.get(cui));
++	            if (sourceConcepts.containsKey(cui))
++	            	concept.setSourceConcepts(sourceConcepts.get(cui));
++	            if (semanticTypes.containsKey(cui))
++	            	concept.setSemanticTypes(semanticTypes.get(cui));
++	            concepts.put(cui, concept);
++	        }
++	        logger.debug("Found source concepts " + concepts.size());
++
++	        return concepts;
++		}
++	}
++}
+
+Property changes on: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/UmlsApi.java
+___________________________________________________________________
+Added: svn:mime-type
+   + text/plain
+
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/SourceConcept.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/SourceConcept.java	(revision 0)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/SourceConcept.java	(revision 0)
+@@ -0,0 +1,71 @@
++package nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_api;
++
++import java.util.ArrayList;
++import java.util.List;
++
++import javax.xml.bind.annotation.XmlRootElement;
++
++@XmlRootElement
++public class SourceConcept {
++    private String cui = null;
++    private String vocabulary = null;
++    private String id = null;
++    private String preferredTerm = null;
++    private List<String> terms = new ArrayList<String>();
++
++    public SourceConcept() {
++    }
++
++    public SourceConcept(String cui, String vocabulary, String id, String preferredTerm) {
++        this.cui = cui;
++        this.vocabulary = vocabulary;
++        this.id = id;
++        this.preferredTerm = preferredTerm;
++    }
++
++    public SourceConcept(String cui, String vocabulary, String id) {
++        this.cui = cui;
++        this.vocabulary = vocabulary;
++        this.id = id;
++    }
++
++    public String getVocabulary() {
++        return vocabulary;
++    }
++
++    public void setVocabulary(String source) {
++        this.vocabulary = source;
++    }
++
++    public String getId() {
++        return id;
++    }
++
++    public void setId(String id) {
++        this.id = id;
++    }
++
++    public String getCui() {
++        return cui;
++    }
++
++    public void setCui(String cui) {
++        this.cui = cui;
++    }
++
++    public String getPreferredTerm() {
++        return preferredTerm;
++    }
++
++    public void setPreferredTerm(String preferredTerm) {
++        this.preferredTerm = preferredTerm;
++    }
++
++    public List<String> getTerms() {
++        return terms;
++    }
++
++    public void setTerms(List<String> terms) {
++        this.terms = terms;
++    }
++}
+\ No newline at end of file
+
+Property changes on: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/SourceConcept.java
+___________________________________________________________________
+Added: svn:keywords
+   + Revision
+
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/UmlsConcept.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/UmlsConcept.java	(revision 0)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/UmlsConcept.java	(revision 0)
+@@ -0,0 +1,72 @@
++package nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_api;
++
++import java.util.LinkedList;
++import java.util.List;
++
++import javax.xml.bind.annotation.XmlRootElement;
++
++@XmlRootElement
++public class UmlsConcept {
++    private String cui = null;
++    private String preferredName = null;
++    private String definition = null;
++    private List<SourceConcept> sourceConcepts = new LinkedList<>();;
++    private List<String> semanticTypes = new LinkedList<>();
++
++    public UmlsConcept() {
++    }
++
++    public UmlsConcept(String cui, String preferredName, String definition, List<String> semanticTypes,
++            List<SourceConcept> sourceConcepts) {
++        this.cui = cui;
++        this.preferredName = preferredName;
++        this.definition = definition;
++        this.semanticTypes = semanticTypes;
++        this.sourceConcepts = sourceConcepts;
++    }
++
++	public UmlsConcept(String cui, String preferredName) {
++        this.cui = cui;
++        this.preferredName = preferredName;
++    }
++
++    public String getCui() {
++        return cui;
++    }
++
++    public void setCui(String cui) {
++        this.cui = cui;
++    }
++
++    public String getPreferredName() {
++        return preferredName;
++    }
++
++    public void setPreferredName(String preferredName) {
++        this.preferredName = preferredName;
++    }
++
++    public String getDefinition() {
++        return definition;
++    }
++
++    public void setDefinition(String definition) {
++        this.definition = definition;
++    }
++
++    public List<String> getSemanticTypes() {
++        return semanticTypes;
++    }
++
++    public void setSemanticTypes(List<String> semanticTypes) {
++        this.semanticTypes = semanticTypes;
++    }
++
++    public List<SourceConcept> getSourceConcepts() {
++        return sourceConcepts;
++    }
++
++    public void setSourceConcepts(List<SourceConcept> sourceConcepts) {
++        this.sourceConcepts = sourceConcepts;
++    }
++}
+\ No newline at end of file
+
+Property changes on: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/UmlsConcept.java
+___________________________________________________________________
+Added: svn:keywords
+   + Revision
+
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/CodeMapperException.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/CodeMapperException.java	(revision 0)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/CodeMapperException.java	(revision 0)
+@@ -0,0 +1,22 @@
++package nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_api;
++
++import java.sql.SQLException;
++
++
++public class CodeMapperException extends Exception {
++
++	public CodeMapperException(String msg) {
++		super(msg);
++	}
++
++	public CodeMapperException(String msg, Exception e) {
++		super(msg, e);
++	}
++
++	public CodeMapperException(SQLException e) {
++		super(e);
++	}
++
++	private static final long serialVersionUID = 1L;
++
++}
+
+Property changes on: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/umls_api/CodeMapperException.java
+___________________________________________________________________
+Added: svn:mime-type
+   + text/plain
+
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/UmlsApi.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/UmlsApi.java	(revision 5342)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/UmlsApi.java	(working copy)
+@@ -1,363 +0,0 @@
+-package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
+-
+-import java.sql.Connection;
+-import java.sql.DriverManager;
+-import java.sql.PreparedStatement;
+-import java.sql.ResultSet;
+-import java.sql.SQLException;
+-import java.util.Collection;
+-import java.util.Iterator;
+-import java.util.LinkedList;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.Properties;
+-import java.util.Set;
+-import java.util.TreeMap;
+-import java.util.TreeSet;
+-
+-import org.apache.log4j.Logger;
+-
+-/**
+- * Database based implementation of the UMLS API used for the code mapper.
+- *
+- * Two SQL indices in MRREL for CUI1 and CUI2 speed up the lookup of hypernyms/hyponyms:
+- * CREATE INDEX MRREL_CUI1 ON MRREL (CUI1);
+- * CREATE INDEX MRREL_CUI2 ON MRREL (CUI2)
+- *
+- * @author benus
+- *
+- */
+-public class UmlsApi  {
+-
+-	private Connection connection;
+-	private String uri;
+-	private Properties connectionProperties;
+-	private List<String> vocabulariesWithDefinition;
+-	private List<String> availableVocabularies;
+-	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
+-
+-	public UmlsApi(String uri, Properties connectionProperties, List<String> availableVocabularies, List<String> vocabulariesWithDefinition) {
+-		this.uri = uri;
+-		this.connectionProperties = connectionProperties;
+-		this.availableVocabularies = availableVocabularies;
+-		this.vocabulariesWithDefinition = vocabulariesWithDefinition;
+-	}
+-
+-	private Connection getConnection() throws SQLException {
+-		if (connection == null || connection.isClosed())
+-			connection = DriverManager.getConnection(uri, connectionProperties);
+-		return connection;
+-	}
+-
+-	private String placeholders(int number) {
+-		StringBuilder sb = new StringBuilder();
+-		for (int ix = 0; ix < number; ix++) {
+-			if (ix > 0)
+-				sb.append(", ");
+-			sb.append("?");
+-		}
+-		return sb.toString();
+-	}
+-
+-	public List<CodingSystem> getCodingSystems() throws CodeMapperException {
+-
+-		String query = "SELECT DISTINCT rsab, son, sf FROM MRSAB WHERE CURVER = 'Y'";
+-		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+-			ResultSet result = statement.executeQuery();
+-			List<CodingSystem> codingSystems = new LinkedList<>();
+-			while (result.next()) {
+-				String rsab = result.getString(1);
+-				String name = result.getString(2);
+-				String family = result.getString(2);
+-				if (availableVocabularies == null || availableVocabularies.contains(rsab)) {
+-					CodingSystem codingSystem = new CodingSystem(rsab, name, family);
+-					codingSystems.add(codingSystem);
+-				}
+-			}
+-			return codingSystems;
+-		} catch (SQLException e) {
+-			throw new CodeMapperException(e);
+-		}
+-	}
+-
+-	public Map<String, String> getPreferredNames(Collection<String> cuis) throws CodeMapperException {
+-
+-		if (cuis.isEmpty())
+-			return new TreeMap<>();
+-		else {
+-
+-			String queryFmt =
+-					"SELECT DISTINCT cui, str FROM MRCONSO "
+-					+ "WHERE cui in (%s) "
+-					+ "AND lat = 'ENG' "
+-					+ "AND ispref = 'Y' "
+-					+ "AND ts = 'P' "
+-					+ "AND stt = 'PF'";
+-			String query = String.format(queryFmt, placeholders(cuis.size()));
+-
+-			try (PreparedStatement statement = connection.prepareStatement(query)) {
+-
+-				int offset = 1;
+-				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
+-					statement.setString(offset, iter.next());
+-
+-				logger.debug(statement);
+-				ResultSet result = statement.executeQuery();
+-
+-				Map<String, String> names = new TreeMap<>();
+-				while (result.next()) {
+-					String cui = result.getString(1);
+-					String name = result.getString(2);
+-					names.put(cui, name);
+-				}
+-
+-				Set<String> missings = new TreeSet<>(cuis);
+-				missings.removeAll(names.keySet());
+-				for (String missing : missings)
+-					logger.warn("No preferred name found for CUI " + missing);
+-				return names;
+-			} catch (SQLException e) {
+-				throw new CodeMapperException(e);
+-			}
+-		}
+-	}
+-
+-	private Map<String, List<String>> getSemanticTypes(Collection<String> cuis) throws CodeMapperException {
+-		if (cuis.isEmpty())
+-			return new TreeMap<>();
+-		else {
+-			String queryFmt =
+-					"SELECT DISTINCT cui, tui "
+-					+ "FROM MRSTY "
+-					+ "WHERE cui in (%s) "
+-					+ "ORDER BY cui, tui";
+-			String query = String.format(queryFmt, placeholders(cuis.size()));
+-
+-			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+-
+-				int offset = 1;
+-
+-				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
+-					statement.setString(offset, iter.next());
+-
+-                logger.debug(statement);
+-				ResultSet result = statement.executeQuery();
+-
+-				Map<String, List<String>> semanticTypes = new TreeMap<>();
+-				while (result.next()) {
+-					String cui = result.getString(1);
+-					String tui = result.getString(2);
+-					if (!semanticTypes.containsKey(cui))
+-						semanticTypes.put(cui, new LinkedList<String>());
+-					semanticTypes.get(cui).add(tui);
+-				}
+-				return semanticTypes;
+-			} catch (SQLException e) {
+-				throw new CodeMapperException(e);
+-			}
+-		}
+-	}
+-
+-	public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> vocabularies)
+-			throws CodeMapperException {
+-
+-		if (cuis.isEmpty())
+-			return new TreeMap<>();
+-		else {
+-
+-			String sabPlaceholders = "";
+-			if (!vocabularies.isEmpty())
+-				sabPlaceholders = String.format("AND sab IN (%s)", placeholders(vocabularies.size()));
+-
+-			String queryFmt =
+-				  	"SELECT DISTINCT cui, sab, code, str, tty "
+-					+ "FROM MRCONSO "
+-					+ "WHERE cui IN (%s) %s ORDER BY cui, sab, code, str";
+-			String query = String.format(queryFmt, placeholders(cuis.size()), sabPlaceholders);
+-
+-			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+-
+-				int offset = 1;
+-
+-				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
+-					statement.setString(offset, iter.next());
+-
+-				if (vocabularies != null)
+-					for (Iterator<String> iter = vocabularies.iterator(); iter.hasNext(); offset++)
+-						statement.setString(offset, iter.next());
+-
+-                logger.debug(statement);
+-				ResultSet result = statement.executeQuery();
+-
+-				Map<String, List<SourceConcept>> sourceConcepts = new TreeMap<>();
+-				String lastCui = null, lastSab = null, lastCode = null;
+-				SourceConcept currentSourceConcept = null;
+-				while (result.next()) {
+-					String cui = result.getString(1);
+-					String sab = result.getString(2);
+-					String code = result.getString(3);
+-					String str = result.getString(4);
+-					String tty = result.getString(5);
+-					if (!cui.equals(lastCui) || !sab.equals(lastSab) || !code.equals(lastCode)) {
+-						currentSourceConcept = new SourceConcept();
+-						currentSourceConcept.setCui(cui);
+-						currentSourceConcept.setVocabulary(sab);
+-						currentSourceConcept.setId(code);
+-						currentSourceConcept.setPreferredTerm(str);
+-						if (!sourceConcepts.containsKey(cui))
+-							sourceConcepts.put(cui, new LinkedList<SourceConcept>());
+-						sourceConcepts.get(cui).add(currentSourceConcept);
+-					}
+-					if ("PT".equals(tty))
+-						currentSourceConcept.setPreferredTerm(str);
+-					currentSourceConcept.getTerms().add(str);
+-					lastCui = cui;
+-					lastSab = sab;
+-					lastCode = code;
+-				}
+-
+-				Set<String> missings = new TreeSet<>(cuis);
+-				missings.removeAll(sourceConcepts.keySet());
+-				for (String missing : missings)
+-					logger.warn("No UMLS concept found for CUI " + missing);
+-				return sourceConcepts;
+-			} catch (SQLException e) {
+-				throw new CodeMapperException(e);
+-			}
+-		}
+-	}
+-
+-	public Map<String, List<UmlsConcept>> getRelated(List<String> cuis, List<String> vocabularies, boolean hyponymsNotHypernyms) throws CodeMapperException {
+-
+-		if (cuis.isEmpty())
+-			return new TreeMap<>();
+-		else {
+-
+-			String queryFmt =
+-					   "SELECT DISTINCT %s "
+-					+ "FROM MRREL "
+-					+ "WHERE rel in ('RN', 'CHD') "
+-					+ "AND %s IN (%s) "
+-					+ "AND cui1 != cui2 "
+-					+ "AND (rela IS NULL OR rela = 'isa')";
+-			String selection = hyponymsNotHypernyms ? "cui1, cui2" : "cui2, cui1";
+-			String selector = hyponymsNotHypernyms ? "cui1" : "cui2";
+-			String query = String.format(queryFmt, selection, selector, placeholders(cuis.size()));
+-
+-			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+-
+-				int offset = 1;
+-				for (int ix = 0; ix < cuis.size(); ix++, offset++)
+-					statement.setString(offset, cuis.get(ix));
+-
+-				logger.debug(statement);
+-				ResultSet result = statement.executeQuery();
+-
+-				Map<String, Set<String>> related = new TreeMap<>();
+-				while (result.next()) {
+-					String cui = result.getString(1);
+-					String relatedCui = result.getString(2);
+-					if (!related.containsKey(cui))
+-						related.put(cui, new TreeSet<String>());
+-					related.get(cui).add(relatedCui);
+-				}
+-
+-				Set<String> relatedCuis = new TreeSet<>();
+-				for (Collection<String> cs : related.values())
+-					relatedCuis.addAll(cs);
+-
+-				Map<String, UmlsConcept> relatedConcepts = getConcepts(relatedCuis, vocabularies);
+-
+-				Map<String, List<UmlsConcept>> relatedByReference = new TreeMap<>();
+-				for (String cui: cuis) {
+-					List<UmlsConcept> concepts = new LinkedList<>();
+-					if (related.containsKey(cui))
+-						for (String relatedCui: related.get(cui))
+-							if (relatedConcepts.containsKey(relatedCui))
+-								concepts.add(relatedConcepts.get(relatedCui));
+-					relatedByReference.put(cui, concepts);
+-				}
+-				return relatedByReference;
+-			} catch (SQLException e) {
+-				throw new CodeMapperException(e);
+-			}
+-		}
+-	}
+-
+-	private Map<String, String> getDefinitions(Collection<String> cuis) throws CodeMapperException {
+-
+-		if (cuis.isEmpty())
+-			return new TreeMap<>();
+-		else {
+-
+-			String queryFmt = "SELECT DISTINCT cui, sab, def FROM MRDEF WHERE cui IN (%s)";
+-			String query = String.format(queryFmt, placeholders(cuis.size()));
+-
+-			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+-
+-				int offset = 1;
+-				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
+-					statement.setString(offset, iter.next());
+-
+-				logger.debug(statement);
+-				ResultSet result = statement.executeQuery();
+-
+-				Map<String, Map<String, String>> definitionsByVocabularies = new TreeMap<>();
+-				while (result.next()) {
+-					String cui = result.getString(1);
+-					String sab = result.getString(2);
+-					String def = result.getString(3);
+-					if (!definitionsByVocabularies.containsKey(cui))
+-						definitionsByVocabularies.put(cui, new TreeMap<String, String>());
+-					definitionsByVocabularies.get(cui).put(sab, def);
+-				}
+-
+-				Map<String, String> definitions = new TreeMap<>();
+-				for (String cui : cuis)
+-					if (!definitionsByVocabularies.containsKey(cui))
+-						definitions.put(cui, "");
+-					else
+-						for (String voc : vocabulariesWithDefinition)
+-							if (definitionsByVocabularies.get(cui).containsKey(voc)) {
+-								definitions.put(cui, definitionsByVocabularies.get(cui).get(voc));
+-								break;
+-							}
+-
+-				return definitions;
+-			} catch (SQLException e) {
+-				throw new CodeMapperException(e);
+-			}
+-		}
+-	}
+-
+-	public Map<String, UmlsConcept> getConcepts(Collection<String> cuis, Collection<String> vocabularies)
+-			throws CodeMapperException {
+-		if (cuis.isEmpty())
+-			return new TreeMap<>();
+-		else {
+-
+-			cuis = new LinkedList<>(new TreeSet<>(cuis)); // unique CUIs
+-
+-	        Map<String, List<SourceConcept>> sourceConcepts = getSourceConcepts(cuis, vocabularies);
+-	        Map<String, String> preferredNames = getPreferredNames(cuis);
+-	        Map<String, String> definitions = getDefinitions(cuis);
+-	        Map<String, List<String>> semanticTypes = getSemanticTypes(cuis);
+-
+-	        Map<String, UmlsConcept> concepts = new TreeMap<>();
+-	        for (String cui : cuis) {
+-	        	UmlsConcept concept = new UmlsConcept();
+-	        	concept.setCui(cui);
+-	        	concept.setDefinition(definitions.get(cui));
+-	        	concept.setPreferredName(preferredNames.get(cui));
+-	            if (sourceConcepts.containsKey(cui))
+-	            	concept.setSourceConcepts(sourceConcepts.get(cui));
+-	            if (semanticTypes.containsKey(cui))
+-	            	concept.setSemanticTypes(semanticTypes.get(cui));
+-	            concepts.put(cui, concept);
+-	        }
+-	        logger.debug("Found source concepts " + concepts.size());
+-
+-	        return concepts;
+-		}
+-	}
+-}
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/SourceConcept.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/SourceConcept.java	(revision 5342)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/SourceConcept.java	(working copy)
+@@ -1,71 +0,0 @@
+-package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
+-
+-import java.util.ArrayList;
+-import java.util.List;
+-
+-import javax.xml.bind.annotation.XmlRootElement;
+-
+-@XmlRootElement
+-public class SourceConcept {
+-    private String cui = null;
+-    private String vocabulary = null;
+-    private String id = null;
+-    private String preferredTerm = null;
+-    private List<String> terms = new ArrayList<String>();
+-
+-    public SourceConcept() {
+-    }
+-
+-    public SourceConcept(String cui, String vocabulary, String id, String preferredTerm) {
+-        this.cui = cui;
+-        this.vocabulary = vocabulary;
+-        this.id = id;
+-        this.preferredTerm = preferredTerm;
+-    }
+-
+-    public SourceConcept(String cui, String vocabulary, String id) {
+-        this.cui = cui;
+-        this.vocabulary = vocabulary;
+-        this.id = id;
+-    }
+-
+-    public String getVocabulary() {
+-        return vocabulary;
+-    }
+-
+-    public void setVocabulary(String source) {
+-        this.vocabulary = source;
+-    }
+-
+-    public String getId() {
+-        return id;
+-    }
+-
+-    public void setId(String id) {
+-        this.id = id;
+-    }
+-
+-    public String getCui() {
+-        return cui;
+-    }
+-
+-    public void setCui(String cui) {
+-        this.cui = cui;
+-    }
+-
+-    public String getPreferredTerm() {
+-        return preferredTerm;
+-    }
+-
+-    public void setPreferredTerm(String preferredTerm) {
+-        this.preferredTerm = preferredTerm;
+-    }
+-
+-    public List<String> getTerms() {
+-        return terms;
+-    }
+-
+-    public void setTerms(List<String> terms) {
+-        this.terms = terms;
+-    }
+-}
+\ No newline at end of file
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/UmlsConcept.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/UmlsConcept.java	(revision 5342)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/UmlsConcept.java	(working copy)
+@@ -1,72 +0,0 @@
+-package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
+-
+-import java.util.LinkedList;
+-import java.util.List;
+-
+-import javax.xml.bind.annotation.XmlRootElement;
+-
+-@XmlRootElement
+-public class UmlsConcept {
+-    private String cui = null;
+-    private String preferredName = null;
+-    private String definition = null;
+-    private List<SourceConcept> sourceConcepts = new LinkedList<>();;
+-    private List<String> semanticTypes = new LinkedList<>();
+-
+-    public UmlsConcept() {
+-    }
+-
+-    public UmlsConcept(String cui, String preferredName, String definition, List<String> semanticTypes,
+-            List<SourceConcept> sourceConcepts) {
+-        this.cui = cui;
+-        this.preferredName = preferredName;
+-        this.definition = definition;
+-        this.semanticTypes = semanticTypes;
+-        this.sourceConcepts = sourceConcepts;
+-    }
+-
+-	public UmlsConcept(String cui, String preferredName) {
+-        this.cui = cui;
+-        this.preferredName = preferredName;
+-    }
+-
+-    public String getCui() {
+-        return cui;
+-    }
+-
+-    public void setCui(String cui) {
+-        this.cui = cui;
+-    }
+-
+-    public String getPreferredName() {
+-        return preferredName;
+-    }
+-
+-    public void setPreferredName(String preferredName) {
+-        this.preferredName = preferredName;
+-    }
+-
+-    public String getDefinition() {
+-        return definition;
+-    }
+-
+-    public void setDefinition(String definition) {
+-        this.definition = definition;
+-    }
+-
+-    public List<String> getSemanticTypes() {
+-        return semanticTypes;
+-    }
+-
+-    public void setSemanticTypes(List<String> semanticTypes) {
+-        this.semanticTypes = semanticTypes;
+-    }
+-
+-    public List<SourceConcept> getSourceConcepts() {
+-        return sourceConcepts;
+-    }
+-
+-    public void setSourceConcepts(List<SourceConcept> sourceConcepts) {
+-        this.sourceConcepts = sourceConcepts;
+-    }
+-}
+\ No newline at end of file
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/rest/CodeMapperResource.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/rest/CodeMapperResource.java	(revision 5342)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/rest/CodeMapperResource.java	(working copy)
+@@ -1,107 +0,0 @@
+-package nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest;
+-
+-import java.util.LinkedList;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.TreeMap;
+-
+-import javax.ws.rs.BadRequestException;
+-import javax.ws.rs.FormParam;
+-import javax.ws.rs.GET;
+-import javax.ws.rs.POST;
+-import javax.ws.rs.Path;
+-import javax.ws.rs.Produces;
+-import javax.ws.rs.core.MediaType;
+-import javax.ws.rs.core.Response;
+-
+-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
+-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodingSystem;
+-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
+-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsConcept;
+-
+-import org.apache.log4j.Logger;
+-
+-@Path("code-mapper")
+-public class CodeMapperResource {
+-
+-	private static Logger logger = Logger.getLogger("CodeMapperWebService");
+-	private final static String VERSION = "$Revision$";
+-
+-	@GET
+-	@Path("version")
+-	@Produces(MediaType.APPLICATION_JSON)
+-	public String version() {
+-		return VERSION;
+-	}
+-
+-	@GET
+-	@Path("coding-systems")
+-	@Produces(MediaType.APPLICATION_JSON)
+-	public List<CodingSystem> getCodingSystems() {
+-		try {
+-			UmlsApi api = CodeMapperApplication.getApi();
+-			return api.getCodingSystems();
+-		} catch (CodeMapperException e) {
+-			e.printStackTrace();
+-			System.out.println(e);
+-			throw new BadRequestException(e);
+-		}
+-	}
+-
+-	@POST
+-	@Path("umls-concepts")
+-	@Produces(MediaType.APPLICATION_JSON)
+-	public List<UmlsConcept> getUmlsConcepts(@FormParam("cuis") List<String> cuis,
+-			@FormParam("vocabularies") List<String> vocabularies) {
+-		try {
+-			UmlsApi api = CodeMapperApplication.getApi();
+-			Map<String, UmlsConcept> concepts = api.getConcepts(cuis, vocabularies);
+-			return new LinkedList<>(concepts.values());
+-		} catch (CodeMapperException e) {
+-			logger.error(e);
+-			e.printStackTrace();
+-			throw new BadRequestException(e);
+-		}
+-	}
+-
+-	@GET
+-	@Path("config")
+-	@Produces(MediaType.APPLICATION_JSON)
+-	public Response getConfig() {
+-		Map<String, String> config = new TreeMap<>();
+-		config.put("peregrineResourceUrl", CodeMapperApplication.getPeregrineResourceUrl());
+-		return Response.ok(config).build();
+-	}
+-
+-	@POST
+-	@Path("related/hyponyms")
+-	@Produces(MediaType.APPLICATION_JSON)
+-	public Map<String, List<UmlsConcept>> getHyponyms(@FormParam("cuis") List<String> cuis, @FormParam("vocabularies") List<String> vocabularies) {
+-		return getRelated(cuis, vocabularies, true);
+-	}
+-
+-	@POST
+-	@Path("related/hypernyms")
+-	@Produces(MediaType.APPLICATION_JSON)
+-	public Map<String, List<UmlsConcept>> getHypernyms(@FormParam("cuis") List<String> cuis, @FormParam("vocabularies") List<String> vocabularies) {
+-		return getRelated(cuis, vocabularies, false);
+-	}
+-
+-	@POST
+-	@Path("related")
+-	@Produces(MediaType.APPLICATION_JSON)
+-	public Map<String, List<UmlsConcept>> getRelated(@FormParam("cuis") List<String> cuis, @FormParam("vocabularies") List<String> vocabularies, @FormParam("hyponymsNotHypernyms") boolean hyponymsNotHypernyms) {
+-		if (cuis.isEmpty())
+-			return new TreeMap<>();
+-		else {
+-			UmlsApi api = CodeMapperApplication.getApi();
+-			try {
+-				return api.getRelated(cuis, vocabularies, hyponymsNotHypernyms);
+-			} catch (CodeMapperException e) {
+-				logger.error(e);
+-				e.printStackTrace();
+-				throw new BadRequestException(e);
+-			}
+-		}
+-	}
+-}
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/rest/UmlsApiResource.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/rest/UmlsApiResource.java	(revision 5342)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/rest/UmlsApiResource.java	(working copy)
+@@ -12,17 +12,16 @@
+ import javax.ws.rs.Path;
+ import javax.ws.rs.Produces;
+ import javax.ws.rs.core.MediaType;
+-import javax.ws.rs.core.Response;
+ 
+-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
+-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodingSystem;
+-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
+-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsConcept;
++import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_api.CodeMapperException;
++import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_api.CodingSystem;
++import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_api.UmlsApi;
++import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_api.UmlsConcept;
+ 
+ import org.apache.log4j.Logger;
+ 
+ @Path("code-mapper")
+-public class CodeMapperResource {
++public class UmlsApiResource {
+ 
+ 	private static Logger logger = Logger.getLogger("CodeMapperWebService");
+ 	private final static String VERSION = "$Revision$";
+@@ -39,7 +38,7 @@
+ 	@Produces(MediaType.APPLICATION_JSON)
+ 	public List<CodingSystem> getCodingSystems() {
+ 		try {
+-			UmlsApi api = CodeMapperApplication.getApi();
++			UmlsApi api = CodeMapperApplication.getUmlsApi();
+ 			return api.getCodingSystems();
+ 		} catch (CodeMapperException e) {
+ 			e.printStackTrace();
+@@ -54,7 +53,7 @@
+ 	public List<UmlsConcept> getUmlsConcepts(@FormParam("cuis") List<String> cuis,
+ 			@FormParam("vocabularies") List<String> vocabularies) {
+ 		try {
+-			UmlsApi api = CodeMapperApplication.getApi();
++			UmlsApi api = CodeMapperApplication.getUmlsApi();
+ 			Map<String, UmlsConcept> concepts = api.getConcepts(cuis, vocabularies);
+ 			return new LinkedList<>(concepts.values());
+ 		} catch (CodeMapperException e) {
+@@ -64,15 +63,6 @@
+ 		}
+ 	}
+ 
+-	@GET
+-	@Path("config")
+-	@Produces(MediaType.APPLICATION_JSON)
+-	public Response getConfig() {
+-		Map<String, String> config = new TreeMap<>();
+-		config.put("peregrineResourceUrl", CodeMapperApplication.getPeregrineResourceUrl());
+-		return Response.ok(config).build();
+-	}
+-
+ 	@POST
+ 	@Path("related/hyponyms")
+ 	@Produces(MediaType.APPLICATION_JSON)
+@@ -94,7 +84,7 @@
+ 		if (cuis.isEmpty())
+ 			return new TreeMap<>();
+ 		else {
+-			UmlsApi api = CodeMapperApplication.getApi();
++			UmlsApi api = CodeMapperApplication.getUmlsApi();
+ 			try {
+ 				return api.getRelated(cuis, vocabularies, hyponymsNotHypernyms);
+ 			} catch (CodeMapperException e) {
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/rest/CodeMapperApplication.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/rest/CodeMapperApplication.java	(revision 5345)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/rest/CodeMapperApplication.java	(working copy)
+@@ -1,6 +1,7 @@
+ package nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest;
+ 
+ import java.io.IOException;
++import java.nio.file.Paths;
+ import java.util.Arrays;
+ import java.util.List;
+ import java.util.Properties;
+@@ -12,25 +13,31 @@
+ import org.apache.log4j.Logger;
+ import org.glassfish.jersey.server.ResourceConfig;
+ 
+-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
++import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.PersistencyApi;
++import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_api.UmlsApi;
+ 
+ @ApplicationPath("resource")
+ public class CodeMapperApplication extends ResourceConfig {
+ 
+ 	private static final String CODE_MAPPER_PROPERTIES = "/WEB-INF/code-mapper.properties";
+ 
+-	private static UmlsApi api = null;
+ 	private static String peregrineResourceUrl = null;
++	private static UmlsApi umlsApi = null;
++	private static PersistencyApi persistencyApi = null;
+ 
+-	public static UmlsApi getApi() {
+-		return api;
++	public static UmlsApi getUmlsApi() {
++		return umlsApi;
+ 	}
+ 
++	public static PersistencyApi getPersistencyApi() {
++		return persistencyApi;
++	}
++
+ 	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
+ 
+ 	public CodeMapperApplication(@Context ServletContext context) throws IOException {
+ 		packages("nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest");
+-		register(CodeMapperResource.class);
++		register(UmlsApiResource.class);
+ 
+ 		Properties properties = new Properties();
+ 		properties.load(context.getResourceAsStream(CODE_MAPPER_PROPERTIES));
+@@ -52,8 +59,11 @@
+ 			Properties connectionProperties = new Properties();
+ 			connectionProperties.setProperty("user", username);
+ 			connectionProperties.setProperty("password", password);
+-			api = new UmlsApi(uri, connectionProperties, availableVocabularies, vocabulariesWithDefinition);
+-		} catch (Exception e) {
++			umlsApi = new UmlsApi(uri, connectionProperties, availableVocabularies, vocabulariesWithDefinition);
++
++			String persistencyDirectory = properties.getProperty("persistency-directory");
++			persistencyApi = new PersistencyApi(Paths.get(persistencyDirectory));
++		} catch (LinkageError | ClassNotFoundException e) {
+ 			logger.error("Couldn't load MYSQL JDBC driver");
+ 		}
+ 	}
+Index: src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/CodeMapperException.java
+===================================================================
+--- src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/CodeMapperException.java	(revision 5342)
++++ src/main/java/nl/erasmusmc/mieur/biosemantics/advance/codemapper/CodeMapperException.java	(working copy)
+@@ -1,22 +0,0 @@
+-package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
+-
+-import java.sql.SQLException;
+-
+-
+-public class CodeMapperException extends Exception {
+-
+-	public CodeMapperException(String msg) {
+-		super(msg);
+-	}
+-
+-	public CodeMapperException(String msg, Exception e) {
+-		super(msg, e);
+-	}
+-
+-	public CodeMapperException(SQLException e) {
+-		super(e);
+-	}
+-
+-	private static final long serialVersionUID = 1L;
+-
+-}
+Index: pom.xml
+===================================================================
+--- pom.xml	(revision 5342)
++++ pom.xml	(working copy)
+@@ -84,6 +84,18 @@
+ 			<version>5.1.34</version>
+ 			<scope>provided</scope>
+ 		</dependency>
++		
++		<dependency>
++		    <groupId>javax.json</groupId>
++		    <artifactId>javax.json-api</artifactId>
++		    <version>1.0</version>
++		</dependency>
++		
++	  <dependency>
++	    <groupId>com.fasterxml.jackson.jaxrs</groupId>
++	    <artifactId>jackson-jaxrs-json-provider</artifactId>
++	    <version>2.2.3</version>
++	  </dependency>
+ 	</dependencies>
+ 	<properties>
+ 		<jersey.version>2.14</jersey.version>

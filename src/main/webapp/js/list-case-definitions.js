@@ -1,6 +1,7 @@
 
-function ListCaseDefinitionsCtrl($scope, $http, $location, urls) {
+function ListCaseDefinitionsCtrl($scope, $http, $location, urls, user) {
 	
+	$scope.user = user;
 	$scope.projects = [];
 	$scope.caseDefinitions = {};
 	$scope.newNames = {};
@@ -32,6 +33,6 @@ function ListCaseDefinitionsCtrl($scope, $http, $location, urls) {
 	
 	$scope.create = function(project, name) {
 		console.log("CREATE", project, name);
-		$location.path('/projects/' + encodeURIComponent(project) + '/' + encodeURIComponent(name));
+		$location.path('/case-definition/' + encodeURIComponent(project) + '/' + encodeURIComponent(name));
 	}
 }

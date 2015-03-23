@@ -1,8 +1,8 @@
 
 function LoginCtrl($scope, $rootScope, $location, $http, urls) {
 
-	$scope.username = "user1";
-	$scope.password = "user1";
+	$scope.username = "";
+	$scope.password = "";
 	
 	$scope.login = function(username, password) {
 		var data = {

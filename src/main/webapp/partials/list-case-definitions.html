@@ -1,17 +1,16 @@
 <div>
-  <span ng-bind="username"></span>
-  <ul>
-    <li ng-repeat="project in projects">
-      <h5>Project <em ng-bind="project"></em></h5>
-      <ul>
-        <li>
+  <div ng-repeat="project in projects">
+    <h4>Case definitions of project {{project}}</h4>
+    <ul>
+      <li ng-repeat="caseDefinition in caseDefinitions[project]">
+        <a href="#/case-definition/{{project|encodeUriComponent}}/{{caseDefinition|encodeUriComponent}}" ng-bind="caseDefinition"></a>
+      </li>
+      <li>
+        <form>
           <input type="text" ng-model="newNames[project]"></input>
           <button ng-click="create(project, newNames[project])" ng-disabled="!validNewName(project, newNames[project])">Create</button>
-        </li>
-        <li ng-repeat="caseDefinition in caseDefinitions[project]">
-          <a href="#/case-definition/{{project|encodeUriComponent}}/{{caseDefinition|encodeUriComponent}}" ng-bind="caseDefinition"></a>
-        </li>
-      </ul>
-    </li>
-  </ul>
+        </form>
+      </li>
+    </ul>
+  </div>
 </div>

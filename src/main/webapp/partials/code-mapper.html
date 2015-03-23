@@ -38,10 +38,9 @@
     
     <tab id="concepts-tab" heading="4. Concepts">
       <div id="concept-buttons">
-        <div ng-show="state">{{state.concepts.length}} concepts</div>
         <button title="Create the automatic coding of the case definition" ng-click="createInitalTranslations(caseDefinition)" ng-if="state == null" class="btn btn-default btn-sm" id="search-concepts">
           <i class="glyphicon glyphicon-refresh"></i>
-          Create automatic coding
+          Create initial coding
         </button>
         <button title="Reset the coding - all changes are lost" ng-click="resetConcepts()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-default btn-sm" id="reset-concepts">
           <i class="glyphicon glyphicon-fire"></i>
@@ -65,9 +64,11 @@
           </form>
         </div>
       </div>
-      <label for='conceptsFilter'>Filter:</label>
-      <input title="Filter concepts" id='conceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
-      <div ng-grid="conceptsGridOptions" class="grid"></div>
+      <div ng-if="state">
+       <label for='conceptsFilter'>Filter {{state.concepts.length}} concepts:</label>
+       <input title="Filter concepts" id='conceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
+       <div ng-grid="conceptsGridOptions" class="grid"></div>
+      </div>
     </tab>
     
     <tab id="history-tab" heading="5. History">

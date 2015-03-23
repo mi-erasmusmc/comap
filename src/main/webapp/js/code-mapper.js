@@ -430,11 +430,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $time
 	
 	$scope.resetConcepts = function() {
 		console.log("RESET");
-		$scope.numberUnsafedChanges = 0;
-		$scope.state = null;
-		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, []);
-		$scope.createMessage("Current codings have been reset.");
-		inputBlockUi.reset();
+		$scope.$apply(function($scope) {
+			$scope.numberUnsafedChanges = 0;
+			$scope.state = null;
+			$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, []);
+			$scope.createMessage("Current codings have been reset.");
+			inputBlockUi.reset();
+		});
 	};
 	
 	/** Delete a concepts from $scope.state.concepts by its cui. */

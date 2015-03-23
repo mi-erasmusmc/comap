@@ -135,6 +135,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $time
     		console.log("Case definition", $scope.caseDefinition);
     		console.log("Selected coding systems", $scope.selected.codingSystems);
     		console.log("Selected semantic types", $scope.selected.semanticTypes);
+    		console.log("Grid options", $scope.conceptsGridOptions);
+    		console.log("Columns", $scope.conceptsColumnDefs);
     		console.log("State", $scope.state);
     	},
     	49 /* 1 */: function() {
@@ -396,7 +398,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $time
 			});
 			$scope.state.initialCuis = concepts.map(getCui);
 			$scope.state.concepts = concepts;
-			$scope.conceptsGridOptions.sortInfo = { field: ["sourceConceptsCount", "preferredName"], direction: "desc" };
+			$scope.conceptsGridOptions.sortInfo = { fields: ["sourceConceptsCount", "preferredName"], directions: [ "desc", "desc" ] };
 			$scope.historyStep("Automatic coding", concepts.map(getCui));
 			inputBlockUi.start("Reset concepts to edit!");
 		});

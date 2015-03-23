@@ -37,7 +37,8 @@
       </div>
     </tab>
     
-    <tab id="concepts-tab" heading="4. Concepts">
+    <tab id="concepts-tab" heading="4. Concepts" ng-click="state != null || createInitalTranslations(caseDefinition)">
+    
       <div id="concept-buttons">
         <button title="Create the automatic coding of the case definition" ng-click="createInitalTranslations(caseDefinition)" ng-if="state == null" class="btn btn-default btn-sm" id="search-concepts">
           <i class="glyphicon glyphicon-refresh"></i>

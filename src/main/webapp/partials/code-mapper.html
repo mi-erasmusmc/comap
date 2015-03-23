@@ -8,15 +8,10 @@
   </ul>
   
   <tabset>
-    <tab id="coding-systems-tab" heading="1. Coding systems" ng-controller="CodingSystemsCtrl">
+
+    <tab id="case-definition-tab" heading="1. Case definition">
       <div block-ui="inputBlockUi">
-        <label for='selectedVocabulariesList'>Selected:</label>
-        <div id='selectedVocabulariesList'>
-          <span ng-repeat="voc in selected.codingSystems" ng-bind="voc.abbreviation" ng-dblclick="unselect(voc.abbreviation)" class="vocabulary noselect"></span>
-        </div>
-        <label for='vocabulariesFilter'>Filter:</label>
-        <input id='vocabulariesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
-        <div ng-grid="gridOptions" class="grid"></div>
+        <textarea rows=35 cols=200 ng-model="$parent.$parent.caseDefinition"></textarea>
       </div>
     </tab>
     
@@ -30,9 +25,15 @@
       </div>
     </tab>
     
-    <tab id="case-definition-tab" heading="3. Case definition">
+    <tab id="coding-systems-tab" heading="3. Coding systems" ng-controller="CodingSystemsCtrl">
       <div block-ui="inputBlockUi">
-        <textarea rows=35 cols=200 ng-model="$parent.$parent.caseDefinition"></textarea>
+        <label for='selectedVocabulariesList'>Selected:</label>
+        <div id='selectedVocabulariesList'>
+          <span ng-repeat="voc in selected.codingSystems" ng-bind="voc.abbreviation" ng-dblclick="unselect(voc.abbreviation)" class="vocabulary noselect"></span>
+        </div>
+        <label for='vocabulariesFilter'>Filter:</label>
+        <input id='vocabulariesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
+        <div ng-grid="gridOptions" class="grid"></div>
       </div>
     </tab>
     

@@ -138,13 +138,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $timeout, $sce, $modal, $time
     		console.log("State", $scope.state);
     	},
     	49 /* 1 */: function() {
-    		$scope.activateTab("coding-systems-tab");
+    		$scope.activateTab("case-definition-tab");
     	},
     	50 /* 2 */: function() {
     		$scope.activateTab("semantics-tab");
     	},
     	51 /* 3 */: function() {
-    		$scope.activateTab("case-definition-tab");
+    		$scope.activateTab("coding-systems-tab");
     	},
     	52 /* 4 */: function() {
     		$scope.activateTab("concepts-tab");

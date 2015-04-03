@@ -23,7 +23,7 @@ var codeMapperApp =
 		    })
 		    .when('/login', {
 		    	templateUrl: 'partials/login.html',
-		    	controller: 'LoginCtrl',
+		    	controller: 'LoginCtrl'
 		    })
 		    .otherwise({
 		    	redirectTo: '/dashboard'

@@ -1,10 +1,11 @@
 
-function ListCaseDefinitionsCtrl($scope, $http, $location, urls, user) {
-	
+function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, user) {
+
 	$scope.user = user;
 	$scope.projects = [];
 	$scope.caseDefinitions = {};
 	$scope.newNames = {};
+	$rootScope.subtitle = "Dashboard";
 	
 	$http.get(urls.projects)
 		.error(function(err) {
@@ -27,12 +28,10 @@ function ListCaseDefinitionsCtrl($scope, $http, $location, urls, user) {
 		});
 	
 	$scope.validNewName = function(project, name) {
-		console.log(project, name);
 		return name.length > 0 && $scope.caseDefinitions[project].indexOf(name) == -1;
 	}
 	
 	$scope.create = function(project, name) {
-		console.log("CREATE", project, name);
 		$location.path('/case-definition/' + encodeURIComponent(project) + '/' + encodeURIComponent(name));
 	}
 }

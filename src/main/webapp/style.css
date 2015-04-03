@@ -3,9 +3,20 @@
 .flag {
   padding: 1em;
 }
-html, body { height: 100%; }
+html, body {
+	height: 100%;
+	padding: 0;
+	margin: 0;
+}
+.concepts-grid, .history-grid, .selection-grid, .semantic-types-grid, .coding-systems-grid, .selection-grid, .changes-grid {
+	margin-top: 1em;
+	height: 600px;
+}
+textarea.case-definition {
+	height: 600px;
+}
 body {
-	margin: 1em;
+	padding: 1em;
 }
 .strong {
 	font-weight: bold;
@@ -17,6 +28,12 @@ body {
 	max-width: 10em;
 	white-space: nowrap;
 }
+.concept-controls {
+	padding-top: 1em;
+}
+.filters label, .modify-concepts label, .on-case-definition label, .add-concepts label {
+	display: block;
+}
 .concept-buttons * {
 	display: inline;
 }
@@ -26,12 +43,7 @@ body {
   padding: 2px 5px;
   font-size: 12px;
 }
-.cui {
-  background-color: #deff71;
-  border: 1px solid #adadad;
-  border-radius: 3px;
-}
-.code, .vocabulary {
+.cui, .code, .vocabulary {
   background-color: #ECECEC;
   border: 1px solid #adadad;
   border-radius: 3px;
@@ -62,10 +74,6 @@ body {
 }
 .messages {
   font-size: smaller;
-}
-.grid {
-  height: 700px;
-  padding-top: 1em;
 }
 .concept-name {
 	max-width: 20em;
@@ -118,9 +126,6 @@ body {
 .emphasize {
 	font-style: italic;
 }
-label {
-	display: block;
-}
 .ngCell.scroll-y {
 	overflow-y: scroll;
   overflow: -moz-scrollbars-none;
@@ -132,4 +137,7 @@ div[block-ui=inputBlockUi] .block-ui-container {
 
 .username {
 	font-style: italic;
+}
+.dropdown-menu {
+	text-align: left;
 }

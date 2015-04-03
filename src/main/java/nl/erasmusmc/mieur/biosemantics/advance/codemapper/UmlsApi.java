@@ -76,7 +76,7 @@ public class UmlsApi  {
 			}
 			return codingSystems;
 		} catch (SQLException e) {
-			throw new CodeMapperException(e);
+			throw CodeMapperException.server("Cannot execute query for coding systems", e);
 		}
 	}
 
@@ -117,7 +117,47 @@ public class UmlsApi  {
 					logger.warn("No preferred name found for CUI " + missing);
 				return names;
 			} catch (SQLException e) {
-				throw new CodeMapperException(e);
+				throw CodeMapperException.server("Cannot execute query for preferred names", e);
+			}
+		}
+	}
+
+	public List<String> getCompletions(String q, List<String> vocabularies, List<String> semanticTypes) throws CodeMapperException {
+		if (q.length() < 3) {
+			throw CodeMapperException.user("Completions query too short");
+		} else {
+			String queryFmt =
+					"SELECT DISTINCT m1.str " // Get the distinct MRCONSO.str
+					+ "FROM MRCONSO AS m1 "
+					+ "INNER JOIN MRCONSO AS m2 "
+					+ "INNER JOIN MRSTY AS sty "
+					+ "ON m1.cui = m2.cui "
+					+ "AND m1.cui = sty.cui "
+					+ "WHERE m1.ts = 'P' " // from preferred terms in MRCONSO ...
+					+ "AND m1.stt = 'PF' "
+					+ "AND m1.ispref = 'Y' "
+					+ "AND m1.lat = 'ENG' "
+					+ "AND m1.str LIKE ? " // that match the query string
+					+ "AND m2.sab IN (%s) " // that are in selected vocabularies
+					+ "AND sty.tui IN (%s)"; // that have the selected semantic types
+			String query = String.format(queryFmt, placeholders(vocabularies.size()), placeholders(semanticTypes.size()));
+			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+				int offset = 1;
+				statement.setString(offset++, q + "%");
+				for (Iterator<String> iter = vocabularies.iterator(); iter.hasNext(); offset++)
+					statement.setString(offset, iter.next());
+				for (Iterator<String> iter = semanticTypes.iterator(); iter.hasNext(); offset++)
+					statement.setString(offset, iter.next());
+				System.out.println(statement);
+				ResultSet result = statement.executeQuery();
+				List<String> completions = new LinkedList<>();
+				while (result.next()) {
+					String str = result.getString(1);
+					completions.add(str);
+				}
+				return completions;
+			} catch (SQLException e) {
+				throw CodeMapperException.server("Cannot execute query for completions", e);
 			}
 		}
 	}
@@ -153,7 +193,7 @@ public class UmlsApi  {
 				}
 				return semanticTypes;
 			} catch (SQLException e) {
-				throw new CodeMapperException(e);
+				throw CodeMapperException.server("Cannot execute query for semantic types", e);
 			}
 		}
 	}
@@ -222,7 +262,7 @@ public class UmlsApi  {
 					logger.warn("No UMLS concept found for CUI " + missing);
 				return sourceConcepts;
 			} catch (SQLException e) {
-				throw new CodeMapperException(e);
+				throw CodeMapperException.server("Cannot execute query for source concepts", e);
 			}
 		}
 	}
@@ -279,7 +319,7 @@ public class UmlsApi  {
 				}
 				return relatedByReference;
 			} catch (SQLException e) {
-				throw new CodeMapperException(e);
+				throw CodeMapperException.server("Cannot execute query for related concepts", e);
 			}
 		}
 	}
@@ -325,7 +365,7 @@ public class UmlsApi  {
 
 				return definitions;
 			} catch (SQLException e) {
-				throw new CodeMapperException(e);
+				throw CodeMapperException.server("Cannot execute query for definitions", e);
 			}
 		}
 	}

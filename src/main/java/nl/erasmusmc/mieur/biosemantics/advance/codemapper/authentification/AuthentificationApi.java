@@ -62,7 +62,7 @@ public class AuthentificationApi {
             }
 			return hexString.toString();
 		} catch (NoSuchAlgorithmException e) {
-			throw new CodeMapperException(e);
+			throw CodeMapperException.server("Problem while hashing", e);
 		}
 	}
 
@@ -129,7 +129,7 @@ public class AuthentificationApi {
 		} catch (SQLException e) {
 			System.err.println("SQL error while authentificating");
 			e.printStackTrace();
-			throw new CodeMapperException(e);
+			throw CodeMapperException.server("Cannot execute query to login", e);
 		}
 	}
 

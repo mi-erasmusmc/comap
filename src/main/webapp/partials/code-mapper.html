@@ -1,17 +1,12 @@
 
 <div>
 
-  <h4>Case definition <em ng-bind="caseDefinitionName"></em></h4>
-
-  <ul class="list-unstyled icon-list messages">
-    <li ng-repeat="message in messages | limitTo: -1" ng-bind="message.text"></li>
-  </ul>
-  
+  <hr/>
   <tabset>
 
     <tab id="case-definition-tab" heading="1. Case definition">
       <div block-ui="inputBlockUi">
-        <textarea rows=35 cols=200 ng-model="$parent.$parent.caseDefinition"></textarea>
+        <textarea rows=35 cols=200 ng-model="$parent.$parent.caseDefinition" class="case-definition"></textarea>
       </div>
     </tab>
     
@@ -21,7 +16,7 @@
         <span ng-repeat="type in selected.semanticTypes" ng-bind="type.description" ng-dblclick="unselect(type)" class="semantic-type noselect" id='selectedsemanticTypesList'></span>
         <label for='samanticTypesFilter'>Filter:</label>
         <input id='samanticTypesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
-        <div ng-grid="gridOptions" class="grid"></div>
+        <div ng-grid="gridOptions" class="grid semantic-types-grid"></div>
       </div>
     </tab>
     
@@ -33,48 +28,87 @@
         </div>
         <label for='vocabulariesFilter'>Filter:</label>
         <input id='vocabulariesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
-        <div ng-grid="gridOptions" class="grid"></div>
+        <div ng-grid="gridOptions" class="grid coding-systems-grid"></div>
       </div>
     </tab>
     
     <tab id="concepts-tab" heading="4. Concepts" ng-click="state != null || createInitalTranslations(caseDefinition)">
+
+      <button title="Create the automatic coding of the case definition" ng-click="createInitalTranslations(caseDefinition)" ng-if="state == null" class="btn btn-default btn-sm" id="search-concepts">
+        <i class="glyphicon glyphicon-refresh"></i>
+        Create initial coding
+      </button>
     
-      <div id="concept-buttons">
-        <button title="Create the automatic coding of the case definition" ng-click="createInitalTranslations(caseDefinition)" ng-if="state == null" class="btn btn-default btn-sm" id="search-concepts">
-          <i class="glyphicon glyphicon-refresh"></i>
-          Create initial coding
-        </button>
-        <button title="Reset the coding - all changes are lost" ng-click="resetConcepts()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-default btn-sm" id="reset-concepts">
-          <i class="glyphicon glyphicon-fire"></i>
-          Reset
-        </button>
-        <button title="Save the coding online" ng-click="saveTranslations()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-default btn-sm">
-          <i class="glyphicon glyphicon-cloud-upload"></i>
-          Save
-        </button>
-        <button title="Download as CSV for Excel" ng-click="downloadConcepts()" ng-if="state" class="btn btn-default btn-sm">
-          <i class="glyphicon glyphicon-download"></i>
-          Download
-        </button>
-        <div ng-if="state">
-          <form>
-            <input title="The query for adding new concepts" type="text" ng-model="searchQuery" id="searchQuery"></input>
-            <button title="Add new concepts by a query" ng-click="searchAndAddConcepts(searchQuery)" class="btn btn-default btn-sm">
-              <i class="glyphicon glyphicon-search"></i>
-              Add concepts
+      <div ng-if="state" class="concepts-controls row">
+       
+       <div class="filters col-md-2">
+         <label>Filter {{state.concepts.length}} concept<span ng-if="state.concepts.length != 1">s</span></label>
+         <input title="Filter concepts" placeholder="Query" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
+         <i class="glyphicon glyphicon-filter"></i>
+       </div>
+        
+        <div class="modify-concepts col-md-4">
+          <label>
+            Modify {{selectedConcepts.length}} concept<span ng-if="selectedConcepts.length != 1">s</span>
+          </label>
+          <button class='btn btn-default btn-sm' ng-click='operationDeleteConcepts(selectedConcepts)' confirm-click="Delete selected concepts?" ng-disabled="!selectedConcepts" title='Delete concepts'> 
+            <i class='glyphicon glyphicon-remove-circle'></i>Delete 
+          </button>
+          
+          <div class='btn-group'> 
+              <button class='btn btn-default btn-sm' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="!selectedConcepts" title='Expand Hypernyms'> 
+                <i class='glyphicon glyphicon-chevron-up'></i>Expand to hypernyms 
+              </button> 
+              <button class='btn btn-default btn-sm' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="!selectedConcepts" title='Expand Hyponyms'> 
+                <i class='glyphicon glyphicon-chevron-down'></i>Expand to hyponyms 
+              </button> 
+          </div>
+        </div>
+        
+        <div class="add-concepts col-md-3">
+          <label>Search and add concept</label>
+          <input type="text" ng-model="searchQuery" 
+            placeholder="Query" title="Search and add concepts"
+            typeahead="c for c in autocompleteConcepts($viewValue)"
+            typeahead-on-select="searchAndAddConcepts(searchQuery)"
+            typeahead-loading="loadingCompletions"
+            typeahead-wait-ms="250"
+            typeahead-min-length="3" 
+            ></input>
+          <i ng-show="loadingCompletions" class="glyphicon glyphicon-refresh"></i>
+          <button title="Search and add concepts" ng-click="searchAndAddConcepts(searchQuery)" ng-disabled="!searchQuery" class="btn btn-default btn-sm">
+            <i class="glyphicon glyphicon-search"></i>
+          </button>
+        </div>
+        
+        <div class="on-case-definition col-md-3">
+          <label>Case definition <em ng-bind="caseDefinitionName"></em></label>
+          <div class="btn-group">
+            <button title="Save the coding online" ng-click="saveTranslations()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-default btn-sm">
+              <i class="glyphicon glyphicon-cloud-upload"></i>
+              Save
             </button>
-          </form>
+            <button title="Download as CSV for Excel" ng-click="downloadConcepts()" ng-if="state" class="btn btn-default btn-sm">
+              <i class="glyphicon glyphicon-download"></i>
+              Download
+            </button>
+          </div>
+          <button title="Reset the coding - all changes are lost" ng-click="resetConcepts()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-default btn-sm" id="reset-concepts">
+            <i class="glyphicon glyphicon-fire"></i>
+            Reset
+          </button>
         </div>
       </div>
-      <div ng-if="state">
-       <label for='conceptsFilter'>Filter {{state.concepts.length}} concepts:</label>
-       <input title="Filter concepts" id='conceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
-       <div ng-grid="conceptsGridOptions" class="grid"></div>
-      </div>
+       
+       <div ng-grid="conceptsGridOptions" class="grid concepts-grid" ng-if="state" ng-style="conceptsGridStyle"></div>
     </tab>
     
-    <tab id="history-tab" heading="5. History">
-      <div ng-grid="historyGridOptions" class="grid"></div>
+    <tab id="history-tab" heading="5. History" select="updateHistoryGridStyle()">
+      <div ng-grid="historyGridOptions" class="grid history-grid" ng-style="historyGridStyle"></div>
     </tab>
   </tabset>
+  <hr />
+  <ul class="list-unstyled icon-list messages">
+    <li ng-repeat="message in messages | limitTo: -3" ng-bind="message.text"></li>
+  </ul>
 </div>

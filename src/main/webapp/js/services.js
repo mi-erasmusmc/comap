@@ -36,6 +36,7 @@ function UrlsService() {
 	this.umlsConcepts = codeMapperApi + '/umls-concepts';
 	this.relatedConcepts = codeMapperApi + '/related';
 	this.config = codeMapperApi + '/config';
+	this.autocomplete = codeMapperApi + '/autocomplete';
 	
 	var authentificationApi = 'rest/authentification';
 	this.login = authentificationApi + '/login';

@@ -30,7 +30,7 @@
   <body ng-keydown="onKeydown($event)" tabindex="0">
     <div class="row">
       <div class="col-md-10">
-        <h1>ADVANCE Code Mapper</h1>
+        <h1>ADVANCE Code Mapper &ndash; <i ng-bind="subtitle"></i></h1>
         <div ng-controller="LoggedInCtrl" ng-if="user">
           Logged in as <span ng-bind="user.username" class="username"></span>
           (<a href="#/dashboard">dashboard</a>)
@@ -38,7 +38,6 @@
         </div>
       </div>
       <div class="col-md-2">
-        <div style="text-align: right">$Revision: 5346 $</div>
         <div><image src="images/200709mslogo_erasmus_mc.jpg" height="100px" /></div>
       </div>
     </div>

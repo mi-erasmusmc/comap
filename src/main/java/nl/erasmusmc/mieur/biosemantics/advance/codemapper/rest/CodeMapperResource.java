@@ -7,10 +7,10 @@ import java.util.TreeMap;
 
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -21,12 +21,9 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsConcept;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
 
-import org.apache.log4j.Logger;
-
 @Path("code-mapper")
 public class CodeMapperResource {
 
-	private static Logger logger = Logger.getLogger("CodeMapperWebService");
 	private final static String VERSION = "$Revision$";
 
 	private UmlsApi api = CodeMapperApplication.getUmlsApi();
@@ -40,6 +37,21 @@ public class CodeMapperResource {
 	}
 
 	@GET
+	@Path("autocomplete")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<String> getConceptCompletions(@Context User user,
+			@QueryParam("str") String str,
+			@QueryParam("codingSystems") List<String> codingSystems,
+			@QueryParam("semanticTypes") List<String> semanticTypes) {
+		AuthentificationResource.assertAuthentificated(user);
+		try {
+			return api.getCompletions(str, codingSystems, semanticTypes);
+		} catch (CodeMapperException e) {
+			throw e.asWebApplicationException();
+		}
+	}
+
+	@GET
 	@Path("coding-systems")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<CodingSystem> getCodingSystems(@Context User user) {
@@ -47,9 +59,7 @@ public class CodeMapperResource {
 		try {
 			return api.getCodingSystems();
 		} catch (CodeMapperException e) {
-			e.printStackTrace();
-			System.out.println(e);
-			throw new InternalServerErrorException(e);
+			throw e.asWebApplicationException();
 		}
 	}
 
@@ -64,9 +74,7 @@ public class CodeMapperResource {
 			Map<String, UmlsConcept> concepts = api.getConcepts(cuis, codingSystems);
 			return new LinkedList<>(concepts.values());
 		} catch (CodeMapperException e) {
-			logger.error(e);
-			e.printStackTrace();
-			throw new InternalServerErrorException(e);
+			throw e.asWebApplicationException();
 		}
 	}
 
@@ -114,9 +122,7 @@ public class CodeMapperResource {
 			try {
 				return api.getRelated(cuis, codingSystems, hyponymsNotHypernyms);
 			} catch (CodeMapperException e) {
-				logger.error(e);
-				e.printStackTrace();
-				throw new InternalServerErrorException(e);
+				throw e.asWebApplicationException();
 			}
 		}
 	}

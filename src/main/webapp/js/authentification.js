@@ -3,7 +3,7 @@ function LoginCtrl($scope, $rootScope, $location, $http, urls) {
 
 	$scope.username = "";
 	$scope.password = "";
-	$scope.$rootScope.subtitle = "Login";
+	$rootScope.subtitle = "Login";
 	
 	$scope.login = function(username, password) {
 		var data = {

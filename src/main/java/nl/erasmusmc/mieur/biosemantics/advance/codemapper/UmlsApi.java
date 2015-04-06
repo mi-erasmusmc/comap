@@ -122,12 +122,12 @@ public class UmlsApi  {
 		}
 	}
 
-	public List<String> getCompletions(String q, List<String> vocabularies, List<String> semanticTypes) throws CodeMapperException {
+	public List<UmlsConcept> getCompletions(String q, List<String> vocabularies, List<String> semanticTypes) throws CodeMapperException {
 		if (q.length() < 3) {
 			throw CodeMapperException.user("Completions query too short");
 		} else {
 			String queryFmt =
-					"SELECT DISTINCT m1.str " // Get the distinct MRCONSO.str
+					"SELECT DISTINCT m1.cui, m1.str " // Get the distinct MRCONSO.str
 					+ "FROM MRCONSO AS m1 "
 					+ "INNER JOIN MRCONSO AS m2 "
 					+ "INNER JOIN MRSTY AS sty "
@@ -150,10 +150,12 @@ public class UmlsApi  {
 					statement.setString(offset, iter.next());
 				System.out.println(statement);
 				ResultSet result = statement.executeQuery();
-				List<String> completions = new LinkedList<>();
+				List<UmlsConcept> completions = new LinkedList<>();
 				while (result.next()) {
-					String str = result.getString(1);
-					completions.add(str);
+					String cui = result.getString(1);
+					String str = result.getString(2);
+					UmlsConcept concept = new UmlsConcept(cui, str);
+					completions.add(concept);
 				}
 				return completions;
 			} catch (SQLException e) {

@@ -8,6 +8,10 @@ html, body {
 	padding: 0;
 	margin: 0;
 }
+.grid {
+	border: 1px solid red;
+	height: 500px;
+}
 .concepts-grid, .history-grid, .selection-grid, .semantic-types-grid, .coding-systems-grid, .selection-grid, .changes-grid {
 	margin-top: 1em;
 	height: 600px;

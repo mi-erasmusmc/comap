@@ -1,7 +1,8 @@
 
 <div>
-
-  <hr/>
+  
+  <alert ng-if="message != null" type="success" close="unsetMessage()">{{message}}</alert>
+  
   <tabset>
 
     <tab id="case-definition-tab" heading="1. Case definition">
@@ -43,8 +44,8 @@
        
        <div class="filters col-md-2">
          <label>Filter {{state.concepts.length}} concept<span ng-if="state.concepts.length != 1">s</span></label>
-         <input title="Filter concepts" placeholder="Query" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
          <i class="glyphicon glyphicon-filter"></i>
+         <input title="Filter concepts" placeholder="Query" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
        </div>
         
         <div class="modify-concepts col-md-4">
@@ -52,15 +53,18 @@
             Modify {{selectedConcepts.length}} concept<span ng-if="selectedConcepts.length != 1">s</span>
           </label>
           <button class='btn btn-default btn-sm' ng-click='operationDeleteConcepts(selectedConcepts)' confirm-click="Delete selected concepts?" ng-disabled="!selectedConcepts" title='Delete concepts'> 
-            <i class='glyphicon glyphicon-remove-circle'></i>Delete 
+            <i class='glyphicon glyphicon-remove-circle'></i>
+            Delete 
           </button>
           
           <div class='btn-group'> 
               <button class='btn btn-default btn-sm' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="!selectedConcepts" title='Expand Hypernyms'> 
-                <i class='glyphicon glyphicon-chevron-up'></i>Expand to hypernyms 
+                <i class='glyphicon glyphicon-chevron-up'></i>
+                Expand to hypernyms 
               </button> 
               <button class='btn btn-default btn-sm' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="!selectedConcepts" title='Expand Hyponyms'> 
-                <i class='glyphicon glyphicon-chevron-down'></i>Expand to hyponyms 
+                <i class='glyphicon glyphicon-chevron-down'></i>
+                Expand to hyponyms 
               </button> 
           </div>
         </div>
@@ -77,7 +81,7 @@
             ></input>
           <i ng-show="loadingCompletions" class="glyphicon glyphicon-refresh"></i>
           <button title="Search and add concepts" ng-click="searchAndAddConcepts(searchQuery)" ng-disabled="!searchQuery" class="btn btn-default btn-sm">
-            <i class="glyphicon glyphicon-search"></i>
+            <i class="glyphicon glyphicon-search"></i>Search and add
           </button>
         </div>
         
@@ -100,15 +104,11 @@
         </div>
       </div>
        
-       <div ng-grid="conceptsGridOptions" class="grid concepts-grid" ng-if="state" ng-style="conceptsGridStyle"></div>
+       <div ng-grid="conceptsGridOptions" class="grid concepts-grid" ng-if="state"></div>
     </tab>
     
     <tab id="history-tab" heading="5. History" select="updateHistoryGridStyle()">
-      <div ng-grid="historyGridOptions" class="grid history-grid" ng-style="historyGridStyle"></div>
+      <div ng-grid="historyGridOptions" class="grid history-grid"></div>
     </tab>
   </tabset>
-  <hr />
-  <ul class="list-unstyled icon-list messages">
-    <li ng-repeat="message in messages | limitTo: -3" ng-bind="message.text"></li>
-  </ul>
 </div>

@@ -39,7 +39,7 @@ public class CodeMapperResource {
 	@GET
 	@Path("autocomplete")
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<String> getConceptCompletions(@Context User user,
+	public List<UmlsConcept> getConceptCompletions(@Context User user,
 			@QueryParam("str") String str,
 			@QueryParam("codingSystems") List<String> codingSystems,
 			@QueryParam("semanticTypes") List<String> semanticTypes) {

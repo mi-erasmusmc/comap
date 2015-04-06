@@ -47,6 +47,13 @@ function getCui(concept) {
 	return concept.cui;
 }
 
+function reduceConcept(concept) {
+    return {
+        cui: concept.cui,
+        preferredName: concept.preferredName
+    };
+}
+
 function getAbbreviation(codingSystem) {
 	if (codingSystem.abbreviation === undefined) {
 		error("getAbbreviation", codingSystem);

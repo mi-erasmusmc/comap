@@ -11,10 +11,8 @@ var INITIAL = {
 	concepts: [],
 	codingSystems: [ "ICD10CM", "ICD9CM", "ICPC2P", "RCD" ],
 	semanticTypes:
-		[ "T020", "T190", "T049", "T019", "T047", "T050", "T037", "T048", "T191", "T046", "T184", "T033" ] // Group
-																											// "DISO"
-																											// ("Findings":
-																											// T033)
+	    // Group "DISO" ("Findings": T033)
+		[ "T020", "T190", "T049", "T019", "T047", "T050", "T037", "T048", "T191", "T046", "T184", "T033" ]
 	 + [ "T005", "T004", "T204", "T007" ] // Some from group "LIVB",
 };
 
@@ -30,6 +28,16 @@ function pluralize(noun, arrayOrNumber) {
         return noun;
     } else {
         return noun + "s";
+    }
+}
+
+function historyDatumToString(data) {
+    if (data == null) {
+        return null;
+    } else if (angular.isString(data)) {
+        return data;
+    } else if (angular.isArray(data)) {
+        return data.map(function(concept) { return concept.preferredName.replace(/,/g, " "); }).join(", ");
     }
 }
 
@@ -252,7 +260,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		rowHeight: 70,
 		headerRowHeight: 35,
 		columnDefs: historyColumnDefs,
-		enableRowSelection: false
+		enableRowSelection: false,
 	};
 
 	/* FUNCTIONS */
@@ -428,7 +436,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			if (filteredByCurrentConcepts.length > 0) {
 			    descr += ", filtered " + filteredByCurrentConcepts.length + " by current coding";
 			}
-			$scope.historyStep("Automatic coding", null, concepts.map(getCui).join(", "), descr);
+			$scope.historyStep("Automatic coding", null, concepts.map(reduceConcept), descr);
 			inputBlockUi.start("Reset concepts to edit!");
 		});
 	};
@@ -467,7 +475,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             				$scope.state.concepts = selectedConcepts.concat($scope.state.concepts);
             				$scope.setSelectedConcepts(selectedConcepts.map(getCui));
             				var descr = "Added " + selectedConcepts.length + " concepts by search on \"" + searchQuery + "\"";
-            				$scope.historyStep("Search", searchQuery, selectedConcepts.map(getCui).join(", "), descr);
+            				$scope.historyStep("Search", searchQuery, selectedConcepts.map(reduceConcept), descr);
             				$scope.searchQuery = "";
         		        }
         			});
@@ -570,7 +578,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     			});
     		$scope.setSelectedConcepts([]);
     		var descr = "Deleted " + deletedCuis.length + " " + pluralize("concept", deletedCuis.length); 
-    		$scope.historyStep("Delete", deletedCuis.join(", "), null, descr);
+    		$scope.historyStep("Delete", concepts.map(reduceConcept), null, descr);
 		});
 	};
 	
@@ -673,7 +681,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     				    " with " + selectedRelatedConcepts.length + 
     				    " " + pluralize(hyponymOrHypernym, selectedRelatedConcepts); 
     				$scope.historyStep("H" + hyponymOrHypernym.slice(1) + "s",
-    				        cuis.join(", "), selectedRelatedConcepts.map(getCui).join(", "), descr);
+    				        concepts.map(reduceConcept), selectedRelatedConcepts.map(reduceConcept), descr);
     			});
     		})
             .finally(function() {
@@ -743,11 +751,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		
 		[ [],
           ["HISTORY"],
-          ["Date", "Step", "Arguments"]
+          ["Date", "Step", "Argument", "Result"]
         ].forEach(function(row) { data.push(row); });
 		if ($scope.state.history) {
 			$scope.state.history.forEach(function(step) {
-				data.push([step.date, step.name].concat(step.args));
+				data.push([step.date,
+				           step.name,
+				           historyDatumToString(step.argument), 
+				           historyDatumToString(step.result)]);
 			});
 		}
 		
@@ -992,10 +1003,13 @@ function createConceptsColumnDefs(showCommands, showOrigin, codingSystems) {
     return [].concat([name], [semantics], showOrigin ? [originColumnDef] : [], [cui], codingSystemsColumnDefs);
 }
 
+
 var historyColumnDefs = [
-   { field: "date", displayName: "Date" },
-   { field: "user", displayName: "User" },
-   { field: "name", displayName: "Operation" },
-   { field: "argument", displayName: "Argument" },
-   { field: "result", displayName: "Result" }
-];
+     { field: "date", displayName: "Date" },
+     { field: "user", displayName: "User" },
+     { field: "name", displayName: "Operation" },
+     { field: "argument", displayName: "Argument",
+         cellTemplate: "<span>{{row.entity[col.field] | historyDatumToString}}</span>" },
+     { field: "result", displayName: "Result",
+         cellTemplate: "<span>{{row.entity[col.field] | historyDatumToString}}</span>" }
+ ];

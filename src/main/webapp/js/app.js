@@ -36,6 +36,9 @@ var codeMapperApp =
 		.filter('encodeUriComponent', function() {
 		  return window.encodeURIComponent;
 		})
+		.filter('historyDatumToString', function() {
+		    return historyDatumToString;
+		})
 		.controller("ShowConceptsCtrl", ShowConceptsCtrl)
 		.controller("CodingSystemsCtrl", CodingSystemsCtrl)
 		.controller("SemanticTypesCtrl", SemanticTypesCtrl)

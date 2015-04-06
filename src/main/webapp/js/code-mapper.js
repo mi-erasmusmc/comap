@@ -321,6 +321,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
           });       
         modalInstance.result.then(function(summary) {
         	console.log("SUMMARY", summary);
+            $scope.historyStep("Summarize", summary, null, "Saved with summary: " + summary);
 			var data = {
 				state: JSON.stringify($scope.state)
 			};
@@ -330,7 +331,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 					console.log(e);
 				})
 				.success(function() {
-		            $scope.historyStep("Summarize", summary, null, "Saved with summary: " + summary);
 					$scope.numberUnsafedChanges = 0;
 				})
 				.finally(function() {

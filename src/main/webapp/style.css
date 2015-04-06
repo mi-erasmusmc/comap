@@ -58,7 +58,7 @@ label {
   border-radius: 3px;
 }
 .semantic-type, .semantic-group {
-  background-color: #D8ECFF;
+  background-color: #ffdac6;
   border: 1px solid #adadad;
   border-radius: 3px;
 }
@@ -66,24 +66,7 @@ label {
   background-color: #FFFCAB;
   max-width: 15em;
 }
-.icon-list li {
-  padding: 0 0 5px 20px;
-  display: block;
-  position: relative;
-}
-.icon-list li:before {
-  font-family: 'Glyphicons Halflings';
-  position: absolute;
-  left: 0px;
-  top:3px;
-  font-size:80%
-}
-.messages li:before {
- content: '\e080';
-}
-.messages {
-  font-size: smaller;
-}
+
 .concept-name {
 	max-width: 20em;
 	display: block;

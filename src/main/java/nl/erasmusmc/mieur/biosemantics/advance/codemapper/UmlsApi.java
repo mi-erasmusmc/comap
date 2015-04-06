@@ -148,7 +148,6 @@ public class UmlsApi  {
 					statement.setString(offset, iter.next());
 				for (Iterator<String> iter = semanticTypes.iterator(); iter.hasNext(); offset++)
 					statement.setString(offset, iter.next());
-				System.out.println(statement);
 				ResultSet result = statement.executeQuery();
 				List<UmlsConcept> completions = new LinkedList<>();
 				while (result.next()) {

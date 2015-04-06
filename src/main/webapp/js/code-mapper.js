@@ -6,7 +6,7 @@
  * definition.
  */
 var INITIAL = {
-	caseDefinition: "headache and fever",
+	caseDefinition: "",
 	history: [],
 	concepts: [],
 	codingSystems: [ "ICD10CM", "ICD9CM", "ICPC2P", "RCD" ],
@@ -134,9 +134,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 
     var inputBlockUi = blockUI.instances.get('inputBlockUi');
     
-    dataService.completed.then(function() {
-        $scope.loadTranslations();
-    });
+    blockUI.start("Loading configuration ...");
+    dataService.completed
+        .then(function() {
+            blockUI.stop();
+            $scope.loadTranslations();
+        });
     
     $scope.activateTab = function(id) {
     	$timeout(function() {
@@ -221,11 +224,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 	});
 	/** Set the selected concepts */
 	$scope.setSelectedConcepts = function(cuis) {
-	    console.log(cuis, $scope.state.concepts);
 	    $timeout(function() {
             $scope.state.concepts.forEach(function(concept, index) {
                 var selected = cuis.indexOf(concept.cui) != -1;
-                console.log(index, cuis,concept.cui, cuis.indexOf(concept.cui), selected);
                 $scope.conceptsGridOptions.selectItem(index, selected);
             });
 	    }, 0);
@@ -258,6 +259,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 	
 	/** Load coding or create new coding. */
 	$scope.loadTranslations = function() {
+	    blockUI.start("Loading codings ...");
 		$http.get(urls.caseDefinition($scope.project, $scope.caseDefinitionName))
 			.error(function(err, code, a2) {
 				switch (code) {
@@ -282,9 +284,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 				$scope.$broadcast("setSelectedCodingSystems", state.codingSystems);
 				$scope.activateTab("concepts-tab");
 				$scope.setMessage("Case definition loaded.");
-				inputBlockUi.start("Cannot edit (reset the current coding to edit)");
+				inputBlockUi.start("Reset the current coding to edit");
 			})
 			.finally(function() {
+			    blockUI.stop();
 				$scope.numberUnsafedChanges = 0;
 				$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.state.codingSystems);
 			});
@@ -313,13 +316,17 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			var data = {
 				state: JSON.stringify($scope.state)
 			};
+			blockUI.start("Saving ...");
 			$http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)
 				.error(function(e) {
 					console.log(e);
 				})
 				.success(function() {
-		            $scope.historyStep("Summarize", [summary], null, "Saved with summary: " + summary);
+		            $scope.historyStep("Summarize", summary, null, "Saved with summary: " + summary);
 					$scope.numberUnsafedChanges = 0;
+				})
+				.finally(function() {
+				   blockUI.stop(); 
 				});
         });
 	};
@@ -336,6 +343,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		var data = {
 			text: text
 		};
+		blockUI.start("Indexing ...");
 		$http.post(dataService.peregrineResource + "/index", data, FORM_ENCODED_POST)
 			.error(function(err) {
 				var msg = "ERROR: Couldn't search concepts in case definition at " + dataService.peregrineResource;
@@ -362,6 +370,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 					cuis : cuis,
 					codingSystems : $scope.state.codingSystems
 				};
+				blockUI.start("Loading concept ...");
 				$http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
 					.error(function(err) {
 						var msg = "ERROR: Couldn't lookup concepts";
@@ -380,7 +389,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			                };
 						});
 						onConcepts(concepts, filteredBySemanticType, filteredByCurrentConcepts);
-					});
+					})
+		            .finally(function() {
+		                blockUI.stop();
+		            });
+			})
+			.finally(function() {
+			    blockUI.stop();
 			});
 	};
 	
@@ -430,7 +445,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		}
         searchConcepts(searchQuery, function(concepts, filteredBySemanticType, filteredByCurrentConcepts) {
 		    if (concepts.length == 0) {
-		          $scope.setMessage("No concepts found.");
+		          $scope.setMessage("No concepts found for query \"" + searchQuery + "\".");
 		    } else {
     			var title = "Concepts for search \"" + searchQuery + "\"";
     			var message = "Found " + concepts.length + " concepts";
@@ -460,6 +475,43 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		});
 	};
 	
+	$scope.searchAndAddConceptDirect = function(concept) {
+	    console.log("Search&add direct", concept);
+	    var data = {
+            cuis : [concept.cui],
+            codingSystems : $scope.state.codingSystems
+        };
+	    blockUI.start("Search concept ...");
+        $http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
+            .error(function(err) {
+                var msg = "ERROR: Couldn't lookup concepts";
+                alert(msg, err);
+            })
+            .success(function(concepts0) {
+                var filteredBySemanticType = [],
+                    filteredByCurrentConcepts = [];
+                var concepts = $scope.filterAndPatch(concepts0, null, filteredBySemanticType, filteredByCurrentConcepts);
+                if (concepts.length == 0) {
+                    var message = "Concept not found";
+                    if (filteredBySemanticTypes.length > 0) {
+                        message  += "(filtered  by semantic types)";
+                    }
+                    if (filteredByCurrentConcepts.length > 0) {
+                        message += "(filtered by current coding)"; 
+                    } 
+                    $scope.setMessage(message);
+                } else {
+                    var concept = concepts[0];
+                    $scope.state.concepts = [concept].concat($scope.state.concepts);
+                    $scope.setSelectedConcepts([concept.cui]);
+                    $scope.searchQuery = "";
+                }
+            })
+            .finally(function() {
+                blockUI.stop();
+            });
+	};
+	
 	/** Generate a list of UMLS concept names with a given prefix. */
 	$scope.autocompleteConcepts= function(str) {
 	    var params = {
@@ -475,11 +527,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 	                    .filter(function(c) {
 	                        return currentCuis.indexOf(c.cui) == -1;
 	                    })
-	                    .map(function(c) {
-	                       return c.preferredName; 
-	                    })
 	                    .sort(function(s1, s2) {
-    	                    return s1.length - s2.length || s1.localeCompare(s2);
+    	                    return s1.preferredName.length - s2.preferredName.length
+    	                        || s1.preferredName.localeCompare(s2.preferredName);
     	                });
 	            }
 	        });
@@ -542,6 +592,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			codingSystems: $scope.state.codingSystems
 		};
     	// Retrieve related concepts from the API
+    	blockUI.start("Load related concept ...");
     	$http.post(urls.relatedConcepts, data, FORM_ENCODED_POST)
     		.error(function(err) {
     			var msg = "ERROR: Couldn't lookup related concepts at " + urls.relatedConcepts;
@@ -624,7 +675,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     				$scope.historyStep("H" + hyponymOrHypernym.slice(1) + "s",
     				        cuis.join(", "), selectedRelatedConcepts.map(getCui).join(", "), descr);
     			});
-    		});
+    		})
+            .finally(function() {
+                blockUI.stop();
+            });
     };
     
     $scope.selectConceptsInDialog = function(concepts, title, selectable, message, onSelectedConcepts) {

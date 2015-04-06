@@ -4,6 +4,7 @@ var codeMapperApp =
 		.config(function ConfigBlockUI(blockUIConfig) {
 			blockUIConfig.message = 'Loading...';
 			blockUIConfig.delay = 0;
+			blockUIConfig.autoBlock = false;
 		})
 		.config(function($routeProvider) {
 		  $routeProvider

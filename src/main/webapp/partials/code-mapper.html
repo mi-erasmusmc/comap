@@ -92,14 +92,14 @@
           <label>Search and add concept</label>
           <input type="text" ng-model="searchQuery" 
             placeholder="Query" title="Search and add concepts"
-            typeahead="c for c in autocompleteConcepts($viewValue)"
-            typeahead-on-select="searchAndAddConcepts(searchQuery)"
-            typeahead-loading="loadingCompletions"
-            typeahead-wait-ms="250"
-            typeahead-min-length="3" 
+            typeahead="c.preferredName for c in autocompleteConcepts($viewValue)"
+            typeahead-on-select="searchAndAddConceptDirect($item)"
+            typeahead-wait-ms=250
+            typeahead-min-length=3
+            typeahead-focus-first=false
             ></input>
-          <i ng-show="loadingCompletions" class="glyphicon glyphicon-refresh"></i>
-          <button title="Search and add concepts" ng-click="searchAndAddConcepts(searchQuery)" ng-disabled="!searchQuery" class="btn btn-default btn-sm">
+          <button title="Search and add concepts" ng-click="searchAndAddConcepts(searchQuery)"
+            ng-disabled="!searchQuery" class="btn btn-default btn-sm">
             <i class="glyphicon glyphicon-search"></i>Search and add
           </button>
         </div>

@@ -38,6 +38,8 @@ function historyDatumToString(data) {
         return data;
     } else if (angular.isArray(data)) {
         return data.map(function(concept) { return concept.preferredName.replace(/,/g, " "); }).join(", ");
+    } else if (angular.isObject(data)) {
+        return data.preferredName;
     }
 }
 
@@ -475,7 +477,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             				$scope.state.concepts = selectedConcepts.concat($scope.state.concepts);
             				$scope.setSelectedConcepts(selectedConcepts.map(getCui));
             				var descr = "Added " + selectedConcepts.length + " concepts by search on \"" + searchQuery + "\"";
-            				$scope.historyStep("Search", searchQuery, selectedConcepts.map(reduceConcept), descr);
+            				$scope.historyStep("Search", search, selectedConcepts.map(reduceConcept), descr);
             				$scope.searchQuery = "";
         		        }
         			});
@@ -483,10 +485,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		});
 	};
 	
-	$scope.searchAndAddConceptDirect = function(concept) {
-	    console.log("Search&add direct", concept);
+	$scope.searchAndAddConceptDirect = function(concept0) {
+	    console.log("Search&add direct", concept0);
 	    var data = {
-            cuis : [concept.cui],
+            cuis : [concept0.cui],
             codingSystems : $scope.state.codingSystems
         };
 	    blockUI.start("Search concept ...");
@@ -510,8 +512,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                     $scope.setMessage(message);
                 } else {
                     var concept = concepts[0];
+                    concept.origin = {
+                        type: "add",
+                        data: concept.preferredName
+                    };
                     $scope.state.concepts = [concept].concat($scope.state.concepts);
                     $scope.setSelectedConcepts([concept.cui]);
+                    var descr = "Added concept " + concept.preferredName;
+                    $scope.historyStep("Add", null, reduceConcept(concept), descr);
                     $scope.searchQuery = "";
                 }
             })
@@ -944,7 +952,7 @@ var originColumnDef = {
 	      "<span ng-bind='row.entity.origin.data.preferredName'></span>" +
 	    "</span>" +
       "</div>" +
-      "<div ng-if='row.entity.origin.type == \"search\"'>" +
+      "<div ng-if='row.entity.origin.type == \"search\" || row.entity.origin.type == \"add\"'>" +
 	    "<span class='query' title='Search result of \"{{row.entity.origin.data}}\"'>" +
 	      "<i class='glyphicon glyphicon-search'></i> " +
 	      "<span>\"{{row.entity.origin.data}}\"</span>" +

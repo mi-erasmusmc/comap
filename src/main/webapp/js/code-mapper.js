@@ -156,6 +156,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     		console.log("Columns", $scope.conceptsColumnDefs);
     		console.log("Selected concepts", $scope.selectedConcepts);
     		console.log("State", $scope.state);
+    		console.log("numberUnsafedChanges", $scope.numberUnsafedChanges);
     	},
     	49 /* 1 */: function() {
     		$scope.activateTab("case-definition-tab");
@@ -663,12 +664,20 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		
 		[ [],
 		  ["CONCEPTS"],
-		  ["Name", "CUI", "Vocabulary", "Code"]
+		  ["Name", "CUI", "Vocabulary", "Code", "Origin"]
         ].forEach(function(row) { data.push(row); });
-		selectedCodingSystemsAbbreviations.forEach(function(vocabulary) {
-			$scope.state.concepts.forEach(function(concept) {
+		$scope.state.concepts.forEach(function(concept) {
+		    var origin = concept.origin.type + ": ";
+		    if (concept.origin.type == "spans") {
+		        origin += concept.origin.data.map(function(s) { return s.text; }).join(", ");
+		    } else if (concept.origin.type == "hyponym" || concept.origin.type == "hypernym") {
+		        origin += concept.origin.data.cui;
+		    } else if (concept.origin.type == "search") {
+		        origin += concept.origin.data;
+		    }
+		    selectedCodingSystemsAbbreviations.forEach(function(vocabulary) {
 				concept.codes[vocabulary].forEach(function(code) {
-					data.push([concept.preferredName, concept.cui, vocabulary, code]);
+					data.push([concept.preferredName, concept.cui, vocabulary, code, origin]);
 				})
 			});
 		});

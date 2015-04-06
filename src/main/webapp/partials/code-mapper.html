@@ -111,7 +111,10 @@
               <i class="glyphicon glyphicon-cloud-upload"></i>
               Save
             </button>
-            <button title="Download as CSV for Excel" ng-click="downloadConcepts()" ng-if="state" class="btn btn-default btn-sm">
+            <button title="Download as CSV for Excel (after save)"
+                ng-disabled="numberUnsafedChanges > 0"
+                ng-click="downloadConcepts()"
+                ng-if="state" class="btn btn-default btn-sm">
               <i class="glyphicon glyphicon-download"></i>
               Download
             </button>

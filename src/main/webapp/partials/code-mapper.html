@@ -6,6 +6,7 @@
   <tabset>
 
     <tab id="case-definition-tab" heading="1. Case definition">
+      <label>Free text case definition</label>
       <div block-ui="inputBlockUi">
         <textarea rows=35 cols=200 ng-model="$parent.$parent.caseDefinition" class="case-definition"></textarea>
       </div>
@@ -13,29 +14,47 @@
     
     <tab id="semantics-tab" heading="2. Semantic types" ng-controller="SemanticTypesCtrl">
       <div block-ui="inputBlockUi">
-        <label for='selectedsemanticTypesList'>Selected:</label>
-        <span ng-repeat="type in selected.semanticTypes" ng-bind="type.description" ng-dblclick="unselect(type)" class="semantic-type noselect" id='selectedsemanticTypesList'></span>
-        <label for='samanticTypesFilter'>Filter:</label>
-        <input id='samanticTypesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
+      <div class="row">
+        <div class="col-md-2">
+          <label for='samanticTypesFilter'>Filter {{all.count}} semantic types</label>
+          <i class="glyphicon glyphicon-filter"></i>
+          <input id='samanticTypesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
+        </div>
+        <div class="col-md-10">
+          <label for='selectedsemanticTypesList'>Selected</label>
+          <span ng-repeat="type in selected.semanticTypes" ng-bind="type.description" ng-dblclick="unselect(type)" class="semantic-type noselect" id='selectedsemanticTypesList'></span>
+        </div>
+      </div>
         <div ng-grid="gridOptions" class="grid semantic-types-grid"></div>
       </div>
     </tab>
     
     <tab id="coding-systems-tab" heading="3. Coding systems" ng-controller="CodingSystemsCtrl">
       <div block-ui="inputBlockUi">
-        <label for='selectedVocabulariesList'>Selected:</label>
-        <div id='selectedVocabulariesList'>
-          <span ng-repeat="voc in selected.codingSystems" ng-bind="voc.abbreviation" ng-dblclick="unselect(voc.abbreviation)" class="vocabulary noselect"></span>
+        <div class="row">
+          <div class="col-md-2">
+            <label for='vocabulariesFilter'>Filter {{all.count}} coding systems</label>
+            <i class="glyphicon glyphicon-filter"></i>
+            <input id='vocabulariesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
+          </div>
+          <div class="col-md-10">
+            <label for='selectedVocabulariesList'>Selected</label>
+            <div id='selectedVocabulariesList'>
+              <span ng-repeat="voc in selected.codingSystems" ng-bind="voc.abbreviation" ng-dblclick="unselect(voc.abbreviation)" class="vocabulary noselect"></span>
+            </div>
+          </div>
         </div>
-        <label for='vocabulariesFilter'>Filter:</label>
-        <input id='vocabulariesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
         <div ng-grid="gridOptions" class="grid coding-systems-grid"></div>
       </div>
     </tab>
     
     <tab id="concepts-tab" heading="4. Concepts" ng-click="state != null || createInitalTranslations(caseDefinition)">
 
-      <button title="Create the automatic coding of the case definition" ng-click="createInitalTranslations(caseDefinition)" ng-if="state == null" class="btn btn-default btn-sm" id="search-concepts">
+      <button title="Create the automatic coding of the case definition"
+            ng-click="createInitalTranslations(caseDefinition)"
+            ng-if="state == null"
+            class="btn btn-primary btn-sm center-block"
+            id="search-concepts">
         <i class="glyphicon glyphicon-refresh"></i>
         Create initial coding
       </button>

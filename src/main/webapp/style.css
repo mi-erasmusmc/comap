@@ -8,19 +8,27 @@ html, body {
 	padding: 0;
 	margin: 0;
 }
-.grid {
-	border: 1px solid red;
-	height: 500px;
-}
-.concepts-grid, .history-grid, .selection-grid, .semantic-types-grid, .coding-systems-grid, .selection-grid, .changes-grid {
+.concepts-grid, .history-grid, .semantic-types-grid, .coding-systems-grid  {
 	margin-top: 1em;
 	height: 600px;
 }
 textarea.case-definition {
 	height: 600px;
 }
+.selection-grid {
+	height: 500px;
+}
+.changes-grid {
+	height: 400px;
+}
+#search-concepts {
+	margin-top: 1em;
+}
 body {
 	padding: 1em;
+}
+label {
+  display: block;
 }
 .strong {
 	font-weight: bold;
@@ -34,9 +42,6 @@ body {
 }
 .concept-controls {
 	padding-top: 1em;
-}
-.filters label, .modify-concepts label, .on-case-definition label, .add-concepts label {
-	display: block;
 }
 .concept-buttons * {
 	display: inline;

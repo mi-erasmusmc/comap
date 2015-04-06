@@ -61,6 +61,10 @@ function getType(semanticType) {
 	return semanticType.type;
 }
 
+function compareByCodeCount(c1, c2) {
+    return c2.sourceConceptsCount - c1.sourceConceptsCount;
+}
+
 /** Encodes an 2-D array of data to CSV. */
 function csvEncode(data) {
 	function escape(field) {

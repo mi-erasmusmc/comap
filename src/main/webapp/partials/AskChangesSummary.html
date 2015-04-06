@@ -1,8 +1,8 @@
 
 <div class="modal-header">
-  <h3 class="modal-title">Save translations of {{caseDefinitionName}}</h3>
+  <h3 class="modal-title">Save translations of <em ng-bind="caseDefinitionName"></em></h3>
 </div>
-<div class="modal-body">
+<div class="modal-body ask-summary">
   <label for="summary">Please summarize your changes:</label>
   <textarea id="summary" cols=50 rows=8 ng-model="summary"></textarea>
   <div ng-grid="changesGridOptions" class="grid changes-grid"></div>

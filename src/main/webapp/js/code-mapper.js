@@ -44,7 +44,6 @@ function CodingSystemsCtrl($scope, $timeout, dataService) {
 			showSelectionCheckbox: true,
 			rowHeight: 35,
 			filterOptions: { filterText: '' },
-			showFilter: true,
 			columnDefs: [
               { displayName: 'Name', field: 'name' },
               { displayName: 'Abbreviation', field: 'abbreviation' },
@@ -86,7 +85,6 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
 	     data: "all",
 	     rowHeight: 35,
 	     filterOptions: { filterText: '' },
-	     showFilter: true,
 	     showSelectionCheckbox: true,
 	     columnDefs: [
     		 { displayName: 'Type', field: 'type' },
@@ -220,17 +218,29 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			});
 		}
 	});
+	/** Set the selected concepts */
+	$scope.setSelectedConcepts = function(cuis) {
+	    console.log(cuis, $scope.state.concepts);
+	    $timeout(function() {
+            $scope.state.concepts.forEach(function(concept, index) {
+                var selected = cuis.indexOf(concept.cui) != -1;
+                console.log(index, cuis,concept.cui, cuis.indexOf(concept.cui), selected);
+                $scope.conceptsGridOptions.selectItem(index, selected);
+            });
+	    }, 0);
+	}
     
     /* HISTORY */
     
     /** Create a history step for $scope.state.history */
-    $scope.historyStep = function(name, args, descr) {
+    $scope.historyStep = function(name, argument, result, descr) {
         $scope.setMessage(descr);
         $scope.numberUnsafedChanges += 1;
         $scope.state.history.push({
             date: new Date().toJSON(),
             name: name,
-            args: args,
+            argument: argument,
+            result: result,
             user: user.username
         });
     };
@@ -245,6 +255,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 
 	/* FUNCTIONS */
 	
+	/** Load coding or create new coding. */
 	$scope.loadTranslations = function() {
 		$http.get(urls.caseDefinition($scope.project, $scope.caseDefinitionName))
 			.error(function(err, code, a2) {
@@ -269,7 +280,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 				$scope.$broadcast("setSelectedSemanticTypes", state.semanticTypes);
 				$scope.$broadcast("setSelectedCodingSystems", state.codingSystems);
 				$scope.activateTab("concepts-tab");
-				$scope.setMessage("Case definition " + $scope.caseDefinitionName + " loaded.");
+				$scope.setMessage("Case definition loaded.");
 				inputBlockUi.start("Cannot edit (reset the current coding to edit)");
 			})
 			.finally(function() {
@@ -278,6 +289,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			});
 	};
 	
+	/** Ask a summary of recent changes and save/upload the coding. */ 
 	$scope.saveTranslations = function() {
 		if ($scope.state == null) {
 			error("CodeMapperCtrl.expandRelated called without state");
@@ -305,13 +317,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 					console.log(e);
 				})
 				.success(function() {
-		            $scope.historyStep("Summarize", [summary], "Saved with summary: " + summary);
+		            $scope.historyStep("Summarize", [summary], null, "Saved with summary: " + summary);
 					$scope.numberUnsafedChanges = 0;
 				});
         });
 	};
 	
-	$scope.searchConcepts = function(text, onConcepts) {
+	/** Search UMLS concepts in `text` and give results to function `onConcepts`. */
+	var searchConcepts = function(text, onConcepts) {
 		
 		if ($scope.state == null) {
 			error("CodeMapperCtrl.searchAndAdd called without state");
@@ -371,9 +384,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 	};
 	
 	/**
-	 * Index the case definition for concepts, retrieve information about those
-	 * concepts and display.
-	 */ 
+     * Index the case definition for concepts, retrieve information about those
+     * concepts and display.
+     */ 
 	$scope.createInitalTranslations = function(caseDefinition) {
 		$log.info("Create initial coding");
 		if ($scope.state != null) {
@@ -388,9 +401,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			history: []
 		};
 		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.state.codingSystems);
-		$scope.searchConcepts(caseDefinition, function(concepts, filteredBySemanticType, filteredByCurrentConcepts) {
+		searchConcepts(caseDefinition, function(concepts, filteredBySemanticType, filteredByCurrentConcepts) {
 			$scope.state.initialCuis = concepts.map(getCui);
-			$scope.state.concepts = concepts;
+			$scope.state.concepts = concepts.sort(compareByCodeCount);
 			$scope.conceptsGridOptions.sortInfo = { fields: ["sourceConceptsCount", "preferredName"], directions: [ "desc", "desc" ] };
 			var descr = "Found " + concepts.length + " concepts in case definition";
 			if (filteredBySemanticType.length > 0) {
@@ -399,27 +412,27 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			if (filteredByCurrentConcepts.length > 0) {
 			    descr += ", filtered " + filteredByCurrentConcepts.length + " by current coding";
 			}
-			$scope.historyStep("Automatic coding", concepts.map(getCui), descr);
+			$scope.historyStep("Automatic coding", null, concepts.map(getCui).join(", "), descr);
 			inputBlockUi.start("Reset concepts to edit!");
 		});
 	};
 	
 	/**
-	 * Index a given query string for concepts, retrieve information and select
-	 * concepts in a dialog for inclusion.
-	 */
+     * Index a given query string for concepts, retrieve information and select
+     * concepts in a dialog for inclusion.
+     */
 	$scope.searchAndAddConcepts = function(searchQuery) {
 		$log.info("Search and add concepts", searchQuery, $scope);
 		if ($scope.state == null) {
 			error("CodeMapperCtrl.searchAndAddConcepts called without state");
 			return;
 		}
-		$scope.searchConcepts(searchQuery, function(concepts, filteredBySemanticType, filteredByCurrentConcepts) {
+        searchConcepts(searchQuery, function(concepts, filteredBySemanticType, filteredByCurrentConcepts) {
 		    if (concepts.length == 0) {
 		          $scope.setMessage("No concepts found.");
 		    } else {
     			var title = "Concepts for search \"" + searchQuery + "\"";
-    			var message = concepts.length + " concepts";
+    			var message = "Found " + concepts.length + " concepts";
     			if (filteredBySemanticType.length > 0) {
     			    message  += ", filtered " + filteredBySemanticType.length + " by semantic types";
     			}
@@ -436,8 +449,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             					};
             				});
             				$scope.state.concepts = selectedConcepts.concat($scope.state.concepts);
+            				$scope.setSelectedConcepts(selectedConcepts.map(getCui));
             				var descr = "Added " + selectedConcepts.length + " concepts by search on \"" + searchQuery + "\"";
-            				$scope.historyStep("Search and add \"" + searchQuery + "\"", selectedConcepts.map(getCui), descr);
+            				$scope.historyStep("Search", searchQuery, selectedConcepts.map(getCui).join(", "), descr);
             				$scope.searchQuery = "";
         		        }
         			});
@@ -445,6 +459,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		});
 	};
 	
+	/** Generate a list of UMLS concept names with a given prefix. */
 	$scope.autocompleteConcepts= function(str) {
 	    var params = {
             str: str,
@@ -469,6 +484,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 	        });
 	}
 	
+	/** Reset the coding of the case definition by deleting the state. Re-enable
+	 * input for case definition, semantic types and coding systems. */
 	$scope.resetConcepts = function() {
 		console.log("RESET");
 		$scope.$apply(function($scope) {
@@ -500,15 +517,16 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     					return true;
     				}
     			});
+    		$scope.setSelectedConcepts([]);
     		var descr = "Deleted " + deletedCuis.length + " " + pluralize("concept", deletedCuis.length); 
-    		$scope.historyStep("Deleted concepts", deletedCuis, descr);
+    		$scope.historyStep("Delete", deletedCuis.join(", "), null, descr);
 		});
 	};
 	
 	/**
-	 * Expand a given concept to its hypernyms or hyponyms, show selection
-	 * dialog and integrate in the list of concepts ($scope.state.concepts).
-	 */
+     * Expand a given concept to its hypernyms or hyponyms, show selection
+     * dialog and integrate in the list of concepts ($scope.state.concepts).
+     */
     $scope.operationExpandRelatedConcepts = function(concepts, hyponymsNotHypernyms) {
 		if ($scope.state == null) {
 			error("CodeMapperCtrl.expandRelated called without state");
@@ -536,18 +554,24 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     			var filteredByCurrentConcepts = [];
     			angular.forEach(relatedConceptsByCuis, function(relatedConceptsForCui, forCui) {
     				
-    				console.log(forCui, relatedConceptsForCui);
-    				
     				var relatedConceptsCuis = relatedConcepts.map(getCui);
     				relatedConceptsForCui = relatedConceptsForCui
     					.filter(function(c, ix, a) {
-							return a.map(getCui).indexOf(c.cui) == ix && // Exclude duplicates in relatedConceptsForCui0
-								relatedConceptsCuis.indexOf(c.cui) == -1; // Include only novel concepts (not yet in relatedConcepts)
+							return a.map(getCui).indexOf(c.cui) == ix && // Exclude
+                                                                            // duplicates
+                                                                            // in
+                                                                            // relatedConceptsForCui0
+								relatedConceptsCuis.indexOf(c.cui) == -1; // Include
+                                                                            // only
+                                                                            // novel
+                                                                            // concepts
+                                                                            // (not
+                                                                            // yet
+                                                                            // in
+                                                                            // relatedConcepts)
 						});	
-    				console.log(forCui, relatedConceptsForCui);
-
+    				
     				relatedConceptsForCui = $scope.filterAndPatch(relatedConceptsForCui, filteredBySemanticTypes, filteredByCurrentConcepts);
-    				console.log(forCui, relatedConceptsForCui);
 
     				relatedConceptsForCui.forEach(function(c) {
     					c.origin = {
@@ -588,6 +612,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     				    var offset = ++conceptOffsets[related.origin.data.cui];
     					$scope.state.concepts.splice(offset, 0, related);
     				});
+    				$scope.setSelectedConcepts(selectedRelatedConcepts.map(getCui));
     				
     				var descr = "Expanded " +
     				    (concepts.length <= 3 
@@ -595,14 +620,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			                    : concepts.length + " " + pluralize("concept", concepts)) +
     				    " with " + selectedRelatedConcepts.length + 
     				    " " + pluralize(hyponymOrHypernym, selectedRelatedConcepts); 
-    				$scope.historyStep("Expand " + hyponymOrHypernym + "s of " + conceptNames,
-    						selectedRelatedConcepts.map(getCui), descr);
+    				$scope.historyStep("H" + hyponymOrHypernym.slice(1) + "s",
+    				        cuis.join(", "), selectedRelatedConcepts.map(getCui).join(", "), descr);
     			});
     		});
     };
     
     $scope.selectConceptsInDialog = function(concepts, title, selectable, message, onSelectedConcepts) {
-		
+        
 		// Display retrieved concepts in a dialog
         var modalInstance = $modal.open({
           templateUrl: 'partials/ShowConcepts.html',
@@ -610,7 +635,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
           size: 'lg',
           resolve: {
     	    title: function() { return title; },
-        	concepts: function() { return concepts; },
+        	concepts: function() { return concepts.sort(compareByCodeCount); },
         	codingSystems: function() { return $scope.state.codingSystems; },
         	selectable: function() { return selectable; },
         	message: function() { return message; }
@@ -675,13 +700,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		var file = new Blob([ csv ], {
 			type : 'attachment/csv;charset=UTF-8'
 		});
-		var fileURL = URL.createObjectURL(file);
 		var a = document.createElement('a');
-		a.href = fileURL;
+		a.href = URL.createObjectURL(file);
 		a.target = '_blank';
-		a.download = encodeURIComponent($scope.project + '_' + $scope.caseDefinitionName) + '.csv';
+		a.download = $scope.project + '_' + $scope.caseDefinitionName + '.csv';
 		document.body.appendChild(a);
-		a.click();
+		$timeout(function() {
+		    a.click();
+		}, 0);
 	};
     
     /** ************ */
@@ -786,16 +812,15 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
     
 	if (selectable) {
 		$timeout(function() {
-			$scope.concepts.forEach(function(concept, index) {
-				if (concept.sourceConcepts.length > 0) {
-					$scope.conceptsGridOptions.selectItem(index, true);
-				}
-			});
+            $scope.concepts.forEach(function(concept, index) {
+                if (concept.sourceConcepts.length > 0) {
+                    $scope.conceptsGridOptions.selectItem(index, true);
+                }
+            });
 		}, 0);
 	}
 	
 	$scope.ok = function () {
-	    console.log("xxx");
 		$modalInstance.close(selectable ? $scope.conceptsGridOptions.$gridScope.selectedItems : concepts);
 	};
 	$scope.cancel = function () {
@@ -834,13 +859,13 @@ var originColumnDef = {
         "<span class=span ng-repeat='span in row.entity.origin.data' ng-bind='span.text'></span>" +
       "</div>" +
       "<div ng-if='row.entity.origin.type == \"hyponym\"'>" +
-        "<span class='cui' title='Hyponym of {{row.entity.origin.data.preferredName}}'>" +
+        "<span title='Hyponym of {{row.entity.origin.data.preferredName}}'>" +
           "<i class='glyphicon glyphicon-chevron-down'></i> " +
           "<span ng-bind='row.entity.origin.data.preferredName'></span>" +
         "</span>" +
       "</div>" +
       "<div ng-if='row.entity.origin.type == \"hypernym\"'>" +
-	    "<span class='cui' title='Hypernym of {{row.entity.origin.data.preferredName}}'>" +
+	    "<span title='Hypernym of {{row.entity.origin.data.preferredName}}'>" +
 	      "<i class='glyphicon glyphicon-chevron-up'></i> " +
 	      "<span ng-bind='row.entity.origin.data.preferredName'></span>" +
 	    "</span>" +
@@ -907,7 +932,7 @@ function createConceptsColumnDefs(showCommands, showOrigin, codingSystems) {
 var historyColumnDefs = [
    { field: "date", displayName: "Date" },
    { field: "user", displayName: "User" },
-   { field: "name", displayName: "Step" },
-   { field: "args", displayName: "Arguments",
-	 cellTemplate: "<div>{{row.entity[col.field].join(', ')}}</div>" }
+   { field: "name", displayName: "Operation" },
+   { field: "argument", displayName: "Argument" },
+   { field: "result", displayName: "Result" }
 ];

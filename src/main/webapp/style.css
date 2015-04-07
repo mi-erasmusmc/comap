@@ -133,3 +133,10 @@ div[block-ui=inputBlockUi] .block-ui-container {
 .dropdown-menu {
 	text-align: left;
 }
+.advance-code-mapper-title {
+	margin: 0;
+}
+.subtitle {
+	font-style: italic;
+	margin-top: 1em;
+}

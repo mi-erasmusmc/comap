@@ -1,6 +1,6 @@
 <div>
   <div ng-repeat="project in projects">
-    <h4>Case definitions of project {{project}}</h4>
+    <h4>Project {{project}}: Case definitions</h4>
     <ul>
       <li ng-repeat="caseDefinition in caseDefinitions[project]">
         <a href="#/case-definition/{{project|encodeUriComponent}}/{{caseDefinition|encodeUriComponent}}" ng-bind="caseDefinition"></a>

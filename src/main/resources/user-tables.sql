@@ -22,8 +22,8 @@ create table projects (
 );
 
 insert into projects (id, name) values
-(1, "One"),
-(2, "Two");
+(1, "ADVANCE"),
+(2, "EMIF");
 
 drop table if exists users_projects;
 

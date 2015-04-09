@@ -698,6 +698,79 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             });
     };
     
+    $scope.operationEditCodes = function(concepts) {
+        $modal.open({
+            templateUrl: 'partials/EditCodes.html',
+            controller: 'EditCodesCtrl',
+            size: 'lg',
+            resolve: {
+                codes: function() { 
+                    var codes = [];
+                    concepts.forEach(function(concept) {
+                        $scope.state.codingSystems.forEach(function(codingSystem) {
+                            concept.codes[codingSystem].forEach(function(code0) {
+                                var code = angular.copy(code0);
+                                code.concept = concept;
+                                codes.push(code);
+                            });
+                        });
+                    });
+                    return codes;
+                }
+            }
+        }).result.then(function(codes) {
+            function isSelected(cui, vocabulary, id) {
+                return codes.filter(function(code) {
+                    return code.cui == cui && code.vocabulary == vocabulary && code.id == id;
+                }).length != 0
+            };
+            var added = [];
+            var removed = [];
+            concepts.forEach(function(concept) {
+                $scope.state.codingSystems.forEach(function(codingSystem) {
+                    concept.codes[codingSystem].forEach(function(code) {
+                        var selected = isSelected(code.cui, code.vocabulary, code.id);
+                        if (!code.selected && selected) {
+                            added.push({
+                                code: code,
+                                concept: concept
+                            });
+                        }
+                        if (code.selected && !selected) {
+                            removed.push({
+                                code: code,
+                                concept: concept
+                            });
+                        }
+                        code.selected = selected;
+                    });
+                });
+            });
+            if (added.length == 0 && removed.length == 0) {
+                $scope.setMessage("No codes changed");                    
+            } else {
+                var descr, result;
+                console.log(added, removed);
+                var resultCodes = function(codes) {
+                    return codes.map(function(cc) {
+                        return cc.code.id + " (" + cc.code.vocabulary + ") to " + cc.concept.preferredName;
+                    }).join(", ");
+                };
+                if (removed.length == 0) {
+                    descr = "Added " + added.length + " codes";
+                    result = "added: " + resultCodes(added);
+                } else if (added.length == 0) {
+                    descr = "Removed " + removed.length + " codes";
+                    result = "removed: " + resultCodes(removed);
+                } else {
+                    descr = "Added " + added.length + " and removed " + removed.length + " codes";
+                    result = "added: " + resultCodes(added) + ", removed: " + resultCodes(removed);
+                }
+                $scope.historyStep("Edit codes", concepts.map(reduceConcept), result, descr);
+            }
+        });
+    };
+    
     $scope.selectConceptsInDialog = function(concepts, title, selectable, message, onSelectedConcepts) {
         
 		// Display retrieved concepts in a dialog
@@ -836,6 +909,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 	    					return sourceConcept.vocabulary == codingSystem;
 	    				})
 	    				.map(function(sourceConcept) {
+	    				    // Select all codes by default
+	    				    sourceConcept.selected = true;
 	    					return sourceConcept;
 	    				});
 	    		});
@@ -906,6 +981,38 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
 		$modalInstance.dismiss('cancel');
 	};
 };
+
+function EditCodesCtrl($scope, $modalInstance, $timeout, codes) {
+    $scope.codes = codes.map(function(code) {
+        code.conceptName = code.concept.preferredName;
+        return code;
+    });
+    $scope.gridOptions = {
+        data: "codes",
+        filterOption: { filterText: '' },
+        enableRowSelection: true,
+        columnDefs: [
+            { displayName: 'Code', field: 'id',
+                cellTemplate:
+                    "<span ng-bind='row.getProperty(col.field)' title='{{row.entity.preferredTerm}}' " +
+                    "class='code' ng-class=\"row.selected ? 'selected' : 'unselected'\"></span>"
+            },
+            { displayName: 'Coding system', field: 'vocabulary' },
+            { displayName: 'Concept', field: 'conceptName' }
+        ]
+    };
+    $timeout(function() {
+        codes.forEach(function(code, index) {
+            $scope.gridOptions.selectItem(index, code.selected);
+        });
+    }, 0);
+    $scope.ok = function() {
+        $modalInstance.close($scope.gridOptions.$gridScope.selectedItems);
+    };
+    $scope.cancel = function() {
+        $modalInstance.dismiss('cancel');
+    };
+}
 
 function AskChangesSummaryCtrl($scope, $http, $modalInstance, $timeout, caseDefinitionName, changes) {
 	
@@ -992,7 +1099,8 @@ function createConceptsColumnDefs(showCommands, showOrigin, codingSystems) {
                 displayName: codingSystem,
                 field: "codes." + codingSystem,
                 cellClass: 'scroll-y',
-                cellTemplate: "<span ng-repeat='code in row.getProperty(col.field)' class='code' ng-bind='code.id' title='{{code.preferredTerm}}'></span>",
+                cellTemplate: "<span ng-repeat='code in row.getProperty(col.field)' ng-bind='code.id' title='{{code.preferredTerm}}'" +
+                		"class='code' ng-class=\"code.selected ? 'selected' : 'unselected'\"></span>",
                 sortFn: function(cs1, cs2) {
                     if (cs1.length != cs2.length) {
                         return cs2.length - cs1.length;

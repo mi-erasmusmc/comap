@@ -15,7 +15,7 @@ html, body {
 textarea.case-definition {
 	height: 600px;
 }
-.selection-grid {
+.selection-grid, .codes-grid {
 	height: 500px;
 }
 .changes-grid {
@@ -57,6 +57,12 @@ label {
   border: 1px solid #adadad;
   border-radius: 3px;
 }
+.code.selected {
+	background-color: #fff;
+}
+.code.unselected {
+	text-decoration: line-through;
+}
 .semantic-type, .semantic-group {
   background-color: #ffdac6;
   border: 1px solid #adadad;
@@ -94,6 +100,9 @@ label {
 }
 .ngRow.selected.odd {
 	background-color: #D1E9EE;
+}
+.ngAggregate {
+	background-color: #BFBFBF;
 }
 .noselect {
     -webkit-touch-callout: none;

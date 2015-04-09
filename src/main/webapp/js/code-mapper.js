@@ -748,7 +748,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		    }
 		    selectedCodingSystemsAbbreviations.forEach(function(vocabulary) {
 				concept.codes[vocabulary].forEach(function(code) {
-					data.push([concept.preferredName, concept.cui, vocabulary, code, origin]);
+					data.push([concept.preferredName, concept.cui, vocabulary, code.id, code.preferredName, origin]);
 				})
 			});
 		});
@@ -836,7 +836,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 	    					return sourceConcept.vocabulary == codingSystem;
 	    				})
 	    				.map(function(sourceConcept) {
-	    					return sourceConcept.id;
+	    					return sourceConcept;
 	    				});
 	    		});
 	    		// Add the count of source codes
@@ -984,7 +984,7 @@ function createConceptsColumnDefs(showCommands, showOrigin, codingSystems) {
     
     var cui =
         { displayName: "UMLS", field: 'cui',
-            cellTemplate: "<span class='cui' ng-bind='row.entity.cui'></span>" };
+            cellTemplate: "<span class='cui' ng-bind='row.entity.cui' title='{{row.entity.preferredName}}'></span>" };
     
     var codingSystemsColumnDefs = 
         codingSystems.map(function(codingSystem) {
@@ -992,7 +992,7 @@ function createConceptsColumnDefs(showCommands, showOrigin, codingSystems) {
                 displayName: codingSystem,
                 field: "codes." + codingSystem,
                 cellClass: 'scroll-y',
-                cellTemplate: "<span class='code' ng-repeat='code in row.getProperty(col.field)' ng-bind='code'></span>",
+                cellTemplate: "<span ng-repeat='code in row.getProperty(col.field)' class='code' ng-bind='code.id' title='{{code.preferredTerm}}'></span>",
                 sortFn: function(cs1, cs2) {
                     if (cs1.length != cs2.length) {
                         return cs2.length - cs1.length;

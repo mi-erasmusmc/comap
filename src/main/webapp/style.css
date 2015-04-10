@@ -146,3 +146,12 @@ div[block-ui=inputBlockUi] .block-ui-container {
 	font-style: italic;
 	margin-top: 1.3em;
 }
+#concepts-tab > a, #history-tab > a {
+ background-color: rgb(237, 233, 255);
+}
+#concepts-tab.active > a, #history-tab.active > a {
+  background-color: rgb(245, 242, 255);
+}
+.active a {
+	font-style: italic;
+}

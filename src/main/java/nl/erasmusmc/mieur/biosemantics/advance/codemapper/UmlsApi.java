@@ -251,7 +251,6 @@ public class UmlsApi  {
 					}
 					if ("PT".equals(tty))
 						currentSourceConcept.setPreferredTerm(str);
-					currentSourceConcept.getTerms().add(str);
 					lastCui = cui;
 					lastSab = sab;
 					lastCode = code;

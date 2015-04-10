@@ -17,23 +17,23 @@
       <div class="row">
         <div class="col-md-2">
           <div>
-            <label for='samanticTypesFilter'>Filter {{all.count}} semantic types</label>
+            <label for='samanticTypesFilter'>Filter {{all.length}} semantic types</label>
             <i class="glyphicon glyphicon-filter"></i>
             <input id='samanticTypesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
           </div>
           <div class='btn-group'> 
-            <button class='btn btn-default btn-sm' ng-click="gridOptions.selectAll(true)">
+            <button class='btn btn-default btn-sm' ng-click="selectAll(gridOptions)">
               <i class="glyphicon glyphicon-expand"></i>
               Select all
             </button>
-            <button class='btn btn-default btn-sm' ng-click="gridOptions.selectAll(false)">
+            <button class='btn btn-default btn-sm' ng-click="selectNone(gridOptions)">
               <i class="glyphicon glyphicon-unchecked"></i>
               none
             </button>
           </div>
         </div>
         <div class="col-md-10">
-          <label for='selectedsemanticTypesList'>Selected</label>
+          <label for='selectedsemanticTypesList'>Selected ({{selected.semanticTypes.length}})</label>
           <span ng-repeat="type in selected.semanticTypes" ng-bind="type.description" ng-dblclick="unselect(type)" class="semantic-type noselect" id='selectedsemanticTypesList'></span>
         </div>
       </div>
@@ -49,11 +49,11 @@
             <i class="glyphicon glyphicon-filter"></i>
             <input id='vocabulariesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
             <div class='btn-group'> 
-              <button class='btn btn-default btn-sm' ng-click="gridOptions.selectAll(true)">
+              <button class='btn btn-default btn-sm' ng-click="selectAll(gridOptions)">
                 <i class="glyphicon glyphicon-expand"></i>
                 Select all
               </button>
-              <button class='btn btn-default btn-sm' ng-click="gridOptions.selectAll(false)">
+              <button class='btn btn-default btn-sm' ng-click="selectNone(gridOptions)">
                 <i class="glyphicon glyphicon-unchecked"></i>
                 none
               </button>
@@ -88,11 +88,11 @@
          <i class="glyphicon glyphicon-filter"></i>
          <input title="Filter concepts" placeholder="Query" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
          <div class='btn-group'> 
-           <button class='btn btn-default btn-sm' ng-click="conceptsGridOptions.selectAll(true)">
+           <button class='btn btn-default btn-sm' ng-click="selectAll(conceptsGridOptions)">
              <i class="glyphicon glyphicon-expand"></i>
              Select all
            </button>
-           <button class='btn btn-default btn-sm' ng-click="conceptsGridOptions.selectAll(false)">
+           <button class='btn btn-default btn-sm' ng-click="selectNone(conceptsGridOptions)">
              <i class="glyphicon glyphicon-unchecked"></i>
              none
            </button>

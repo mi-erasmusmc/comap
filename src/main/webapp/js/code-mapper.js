@@ -215,6 +215,17 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     	}
     };
     
+    $rootScope.selectAll = function(gridOptions) {
+        gridOptions.selectAll(false);
+        gridOptions.ngGrid.data.forEach(function(item, ix) {
+            gridOptions.selectItem(ix, true);
+        });
+    };
+    
+    $rootScope.selectNone = function(gridOptions) {
+        gridOptions.selectAll(false);
+    };
+    
     /* MESSAGE */
     
     $scope.message = null;

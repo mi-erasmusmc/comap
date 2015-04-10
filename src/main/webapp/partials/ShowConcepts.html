@@ -7,11 +7,11 @@
   <label for='dialogConceptsFilter'>Filter:</label>
   <input id='dialogConceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
   <div class='btn-group'> 
-    <button class='btn btn-default btn-sm' ng-click="conceptsGridOptions.selectAll(true)">
+    <button class='btn btn-default btn-sm' ng-click="selectAll(conceptsGridOptions)">
       <i class="glyphicon glyphicon-expand"></i>
       Select all
     </button>
-    <button class='btn btn-default btn-sm' ng-click="conceptsGridOptions.selectAll(false)">
+    <button class='btn btn-default btn-sm' ng-click="selectNone(conceptsGridOptions)">
       <i class="glyphicon glyphicon-unchecked"></i>
       none
     </button>

@@ -321,7 +321,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         	console.log("SUMMARY", summary);
             $scope.historyStep("Summarize", summary, null, "Saved with summary: " + summary);
 			var data = {
-				state: JSON.stringify($scope.state)
+				state: angular.toJson($scope.state)
 			};
 			blockUI.start("Saving ...");
 			$http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)

@@ -43,6 +43,6 @@ drop table if exists case_definitions;
 create table case_definitions (
   project_id int not null references projects(id),
   name char(255) not null,
-  state text not null,
+  state mediumtext not null,
   primary key (project_id, name)
 );

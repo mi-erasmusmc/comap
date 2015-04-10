@@ -109,13 +109,13 @@
           </button>
           
           <div class='btn-group'> 
-              <button class='btn btn-default btn-sm' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="selectedConcepts.length == 0" title='Expand Hypernyms'> 
+              <button class='btn btn-default btn-sm' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="selectedConcepts.length == 0" title='Expand to more general concepts'> 
                 <i class='glyphicon glyphicon-chevron-up'></i>
-                Expand to hypernyms 
+                Expand to more general concepts 
               </button> 
-              <button class='btn btn-default btn-sm' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="selectedConcepts.length == 0" title='Expand Hyponyms'> 
+              <button class='btn btn-default btn-sm' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="selectedConcepts.length == 0" title='Expand to more specific concepts'> 
                 <i class='glyphicon glyphicon-chevron-down'></i>
-                Expand to hyponyms 
+                more specific concepts 
               </button> 
           </div>
           

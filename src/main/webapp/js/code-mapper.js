@@ -1054,17 +1054,17 @@ var originColumnDef = {
       "<div ng-if='row.entity.origin.type == \"spans\"' class='spans' title='Found in case definition'>" +
         "<span class=span ng-repeat='span in row.entity.origin.data' ng-bind='span.text'></span>" +
       "</div>" +
-      "<div ng-if='row.entity.origin.type == \"hyponym\"'>" +
-        "<span title='Hyponym of {{row.entity.origin.data.preferredName}}'>" +
-          "<i class='glyphicon glyphicon-chevron-down'></i> " +
-          "<span ng-bind='row.entity.origin.data.preferredName'></span>" +
-        "</span>" +
-      "</div>" +
       "<div ng-if='row.entity.origin.type == \"hypernym\"'>" +
-	    "<span title='Hypernym of {{row.entity.origin.data.preferredName}}'>" +
+	    "<span title='More general than {{row.entity.origin.data.preferredName}}'>" +
 	      "<i class='glyphicon glyphicon-chevron-up'></i> " +
 	      "<span ng-bind='row.entity.origin.data.preferredName'></span>" +
 	    "</span>" +
+      "</div>" +
+      "<div ng-if='row.entity.origin.type == \"hyponym\"'>" +
+        "<span title='More specific than {{row.entity.origin.data.preferredName}}'>" +
+          "<i class='glyphicon glyphicon-chevron-down'></i> " +
+          "<span ng-bind='row.entity.origin.data.preferredName'></span>" +
+        "</span>" +
       "</div>" +
       "<div ng-if='row.entity.origin.type == \"search\" || row.entity.origin.type == \"add\"'>" +
 	    "<span class='query' title='Search result of \"{{row.entity.origin.data}}\"'>" +

@@ -43,6 +43,14 @@ function historyDatumToString(data) {
     }
 }
 
+function showConcept(concept) {
+    return concept.preferredName;
+}
+
+function showConcepts(concepts) {
+    return concepts.map(showConcept).join(", ");
+}
+
 function CodingSystemsCtrl($scope, $timeout, dataService) {
 	
 	dataService.codingSystemsPromise.then(function() {
@@ -700,6 +708,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             controller: 'EditCodesCtrl',
             size: 'lg',
             resolve: {
+                concepts: function() {
+                    return concepts;
+                },
                 codes: function() { 
                     var codes = [];
                     concepts.forEach(function(concept) {
@@ -979,7 +990,8 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
 	};
 };
 
-function EditCodesCtrl($scope, $modalInstance, $timeout, codes) {
+function EditCodesCtrl($scope, $modalInstance, $timeout, concepts, codes) {
+    $scope.concepts = concepts;
     $scope.codes = codes.map(function(code) {
         code.conceptName = code.concept.preferredName;
         return code;

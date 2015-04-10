@@ -39,6 +39,12 @@ var codeMapperApp =
 		.filter('historyDatumToString', function() {
 		    return historyDatumToString;
 		})
+		.filter('showConcept', function() {
+		    return showConcept;
+		})
+        .filter('showConcepts', function() {
+            return showConcepts;
+        })
 		.controller("ShowConceptsCtrl", ShowConceptsCtrl)
 		.controller("CodingSystemsCtrl", CodingSystemsCtrl)
 		.controller("SemanticTypesCtrl", SemanticTypesCtrl)

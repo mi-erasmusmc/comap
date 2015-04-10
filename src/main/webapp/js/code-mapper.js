@@ -16,6 +16,8 @@ var INITIAL = {
 	 + [ "T005", "T004", "T204", "T007" ] // Some from group "LIVB",
 };
 
+var SHOW_UMLS_COLUMN = false;
+
 /**
  * Concepts found by Peregrine are filtered by a stopword list and by the
  * following regex matching three-digit numbers and two-letter words.
@@ -1122,7 +1124,7 @@ function createConceptsColumnDefs(showCommands, showOrigin, codingSystems) {
                 }
             };
         });
-    return [].concat([name], [semantics], showOrigin ? [originColumnDef] : [], [cui], codingSystemsColumnDefs);
+    return [].concat([name], [semantics], showOrigin ? [originColumnDef] : [], SHOW_UMLS_COLUMN ? [cui] : [], codingSystemsColumnDefs);
 }
 
 

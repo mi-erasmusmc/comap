@@ -57,9 +57,6 @@ label {
   border: 1px solid #adadad;
   border-radius: 3px;
 }
-.code.selected {
-	background-color: #fff;
-}
 .code.unselected {
 	text-decoration: line-through;
 }

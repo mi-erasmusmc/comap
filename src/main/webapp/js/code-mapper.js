@@ -747,20 +747,20 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             } else {
                 var descr, result;
                 console.log(added, removed);
-                var resultCodes = function(codes) {
+                var resultCodes = function(codes, preposition) {
                     return codes.map(function(cc) {
-                        return cc.code.id + " (" + cc.code.vocabulary + ") to " + cc.concept.preferredName;
+                        return cc.code.id + " (" + cc.code.vocabulary + ") " + preposition + " " + cc.concept.preferredName;
                     }).join(", ");
                 };
                 if (removed.length == 0) {
                     descr = "Added " + added.length + " codes";
-                    result = "added: " + resultCodes(added);
+                    result = "added: " + resultCodes(added, "to");
                 } else if (added.length == 0) {
                     descr = "Removed " + removed.length + " codes";
-                    result = "removed: " + resultCodes(removed);
+                    result = "removed: " + resultCodes(removed, "from");
                 } else {
                     descr = "Added " + added.length + " and removed " + removed.length + " codes";
-                    result = "added: " + resultCodes(added) + ", removed: " + resultCodes(removed);
+                    result = "added: " + resultCodes(added, "to") + ", removed: " + resultCodes(removed, "from");
                 }
                 $scope.historyStep("Edit codes", concepts.map(reduceConcept), result, descr);
             }
@@ -803,8 +803,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         ].forEach(function(row) { data.push(row); });
 		
 		[ [],
-		  ["CONCEPTS"],
-		  ["Name", "CUI", "Vocabulary", "Code", "Origin"]
+		  ["CODES"],
+		  ["Coding system", "Code", "Name in coding system", "Concept name", "CUI", "Origin"]
         ].forEach(function(row) { data.push(row); });
 		$scope.state.concepts.forEach(function(concept) {
 		    var origin = concept.origin.type + ": ";
@@ -817,7 +817,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		    }
 		    selectedCodingSystemsAbbreviations.forEach(function(vocabulary) {
 				concept.codes[vocabulary].forEach(function(code) {
-					data.push([concept.preferredName, concept.cui, vocabulary, code.id, code.preferredName, origin]);
+				    if (code.selected) {
+				        data.push([vocabulary, code.id, code.preferredTerm, concept.preferredName, concept.cui, origin]);
+				    }
 				})
 			});
 		});
@@ -987,12 +989,13 @@ function EditCodesCtrl($scope, $modalInstance, $timeout, codes) {
         filterOption: { filterText: '' },
         enableRowSelection: true,
         columnDefs: [
+            { displayName: 'Coding system', field: 'vocabulary' },
             { displayName: 'Code', field: 'id',
                 cellTemplate:
                     "<span ng-bind='row.getProperty(col.field)' title='{{row.entity.preferredTerm}}' " +
                     "class='code' ng-class=\"row.selected ? 'selected' : 'unselected'\"></span>"
             },
-            { displayName: 'Coding system', field: 'vocabulary' },
+            { displayName: 'Preferred term (in coding system)', field: 'preferredTerm' },
             { displayName: 'Concept', field: 'conceptName' }
         ]
     };

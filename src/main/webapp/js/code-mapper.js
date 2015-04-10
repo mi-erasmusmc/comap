@@ -105,9 +105,8 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
 	     rowHeight: 35,
 	     filterOptions: { filterText: '' },
 	     columnDefs: [
-    		 { displayName: 'Type', field: 'type' },
-    		 { displayName: 'Description', field: 'description' },
-    		 { displayName: 'Group', field: 'group'},
+    		 { displayName: 'Semantic type', field: 'description' },
+    		 { displayName: 'Group', field: 'semantic_group'},
 		 ],
 	 };
 	

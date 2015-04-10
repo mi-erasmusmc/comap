@@ -240,6 +240,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 	/** Set the selected concepts */
 	$scope.setSelectedConcepts = function(cuis) {
 	    $timeout(function() {
+	        $scope.conceptsGridOptions.selectAll(false);
             $scope.state.concepts.forEach(function(concept, index) {
                 var selected = cuis.indexOf(concept.cui) != -1;
                 $scope.conceptsGridOptions.selectItem(index, selected);

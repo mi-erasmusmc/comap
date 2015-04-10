@@ -164,6 +164,15 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     	}, 0);
     };
     
+    $scope.$on('$locationChangeStart', function(ev) {
+        if ($scope.numberUnsafedChanges > 0) {
+            var really = confirm("Your unsafed changes are lost when navigating away. Really?")
+            if (!really) {
+                ev.preventDefault();
+            }
+        }
+    });
+    
     /* KEYBOARD */
     
     var ctrlKeydownCallbacks = {

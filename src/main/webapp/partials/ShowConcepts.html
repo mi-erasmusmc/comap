@@ -6,6 +6,16 @@
 <div class="modal-body">
   <label for='dialogConceptsFilter'>Filter:</label>
   <input id='dialogConceptsFilter' type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
+  <div class='btn-group'> 
+    <button class='btn btn-default btn-sm' ng-click="conceptsGridOptions.selectAll(true)">
+      <i class="glyphicon glyphicon-expand"></i>
+      Select all
+    </button>
+    <button class='btn btn-default btn-sm' ng-click="conceptsGridOptions.selectAll(false)">
+      <i class="glyphicon glyphicon-unchecked"></i>
+      none
+    </button>
+  </div>
   <div ng-grid="conceptsGridOptions" class="grid selection-grid" ng-style="gridStyle"></div>
 </div>
 <div class="modal-footer">

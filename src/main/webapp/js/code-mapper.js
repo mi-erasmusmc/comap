@@ -51,7 +51,6 @@ function CodingSystemsCtrl($scope, $timeout, dataService) {
 	
 	$scope.gridOptions = {
 			data: "all",
-			showSelectionCheckbox: true,
 			rowHeight: 35,
 			filterOptions: { filterText: '' },
 			columnDefs: [
@@ -95,7 +94,6 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
 	     data: "all",
 	     rowHeight: 35,
 	     filterOptions: { filterText: '' },
-	     showSelectionCheckbox: true,
 	     columnDefs: [
     		 { displayName: 'Type', field: 'type' },
     		 { displayName: 'Description', field: 'description' },
@@ -219,9 +217,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		columnDefs: 'conceptsColumnDefs',
 		enableRowSelection: true,
 		enableCellSelection: true,
-	    filterOptions: { filterText: '' },
-	    pinSelectionCheckbox: true,
-	    showSelectionCheckbox: true
+	    filterOptions: { filterText: '' }
 	};
 	$scope.$watch('state', function(newState) {
 		if (newState == null) {
@@ -958,7 +954,6 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
 		rowHeight: 70,
 		headerRowHeight: 30,
 	    filterOptions: { filterText: '' },
-		showSelectionCheckbox: $scope.selectable,
 		enableRowSelection: $scope.selectable,
 		columnDefs: createConceptsColumnDefs(false, false, codingSystems)
 	};

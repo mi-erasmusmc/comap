@@ -219,7 +219,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     
     /* CONCEPTS */
 	
-	$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, []);
+	$scope.conceptsColumnDefs = createConceptsColumnDefs(true, []);
 	$scope.conceptsGridOptions = {
 		data: "state.concepts",
         rowHeight: 70,
@@ -305,7 +305,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			.finally(function() {
 			    blockUI.stop();
 				$scope.numberUnsafedChanges = 0;
-				$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.state.codingSystems);
+				$scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems);
 			});
 	};
 	
@@ -432,7 +432,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			semanticTypes: $scope.selected.semanticTypes.map(getType),
 			history: []
 		};
-		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, $scope.state.codingSystems);
+		$scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems);
 		searchConcepts(caseDefinition, function(concepts, filteredBySemanticType, filteredByCurrentConcepts) {
 			$scope.state.initialCuis = concepts.map(getCui);
 			$scope.state.concepts = concepts.sort(compareByCodeCount);
@@ -565,7 +565,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		$scope.$apply(function($scope) {
 			$scope.numberUnsafedChanges = 0;
 			$scope.state = null;
-			$scope.conceptsColumnDefs = createConceptsColumnDefs(true, true, []);
+			$scope.conceptsColumnDefs = createConceptsColumnDefs(true, []);
 			$scope.setMessage("Current codings have been reset.");
 			inputBlockUi.reset();
 		});
@@ -970,7 +970,7 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
 		headerRowHeight: 30,
 	    filterOptions: { filterText: '' },
 		enableRowSelection: $scope.selectable,
-		columnDefs: createConceptsColumnDefs(false, false, codingSystems)
+		columnDefs: createConceptsColumnDefs(true, codingSystems)
 	};
     
 	if (selectable) {
@@ -1088,7 +1088,7 @@ var originColumnDef = {
 
 
 /** Generate column definitions */
-function createConceptsColumnDefs(showCommands, showOrigin, codingSystems) {
+function createConceptsColumnDefs(showOrigin, codingSystems) {
     var name = 
         { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip',
             cellTemplate: 
@@ -1124,7 +1124,12 @@ function createConceptsColumnDefs(showCommands, showOrigin, codingSystems) {
                 }
             };
         });
-    return [].concat([name], [semantics], showOrigin ? [originColumnDef] : [], SHOW_UMLS_COLUMN ? [cui] : [], codingSystemsColumnDefs);
+    return [].concat(
+            [name],
+            [semantics],
+            showOrigin ? [originColumnDef] : [],
+            SHOW_UMLS_COLUMN ? [cui] : [],
+            codingSystemsColumnDefs);
 }
 
 

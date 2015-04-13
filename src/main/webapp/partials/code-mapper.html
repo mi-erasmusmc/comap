@@ -55,7 +55,7 @@
       <button title="Create the automatic coding of the case definition"
             ng-click="createInitalTranslations(caseDefinition)"
             ng-if="state == null"
-            class="btn btn-primary center-block"
+            class="btn btn-sm btn-primary center-block"
             id="search-concepts">
         <i class="glyphicon glyphicon-refresh"></i>
         Create initial coding
@@ -73,23 +73,23 @@
           <label>
             Modify {{selectedConcepts.length}} concept<span ng-if="selectedConcepts.length != 1">s</span>
           </label>
-          <button class='btn btn-default' ng-click='operationDeleteConcepts(selectedConcepts)' confirm-click="Delete selected concepts?" ng-disabled="selectedConcepts.length == 0" title='Delete concepts'> 
+          <button class='btn btn-sm btn-default' ng-click='operationDeleteConcepts(selectedConcepts)' confirm-click="Delete selected concepts?" ng-disabled="selectedConcepts.length == 0" title='Delete concepts'> 
             <i class='glyphicon glyphicon-remove-circle'></i>
             Delete 
           </button>
           
           <div class='btn-group'> 
-              <button class='btn btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more general concepts'> 
+              <button class='btn btn-sm btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more general concepts'> 
                 <i class='glyphicon glyphicon-chevron-up'></i>
-                Expand more general 
+                More general
               </button> 
-              <button class='btn btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more specific concepts'> 
+              <button class='btn btn-sm btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more specific concepts'> 
                 <i class='glyphicon glyphicon-chevron-down'></i>
-                &hellip; more specific 
+                More specific
               </button> 
           </div>
           
-          <button class="btn btn-default" ng-click="operationEditCodes(selectedConcepts)" ng-disabled="selectedConcepts.length == 0" title="Enable/disable source codes of selected concepts">
+          <button class="btn btn-sm btn-default" ng-click="operationEditCodes(selectedConcepts)" ng-disabled="selectedConcepts.length == 0" title="Enable/disable source codes of selected concepts">
             <i class='glyphicon glyphicon-edit'></i>
             Codes
           </button>
@@ -106,27 +106,27 @@
             typeahead-focus-first=false
             ></input>
           <button title="Search and add concepts" ng-click="searchAndAddConcepts(searchQuery)"
-            ng-disabled="!searchQuery" class="btn btn-default">
-            <i class="glyphicon glyphicon-search"></i>Search and add
+            ng-disabled="!searchQuery" class="btn btn-sm btn-default">
+            <i class="glyphicon glyphicon-search"></i>Search
           </button>
         </div>
         
         <div class="on-case-definition col-md-3">
           <label>Case definition <em ng-bind="caseDefinitionName"></em></label>
           <div class="btn-group">
-            <button title="Save the coding online" ng-click="saveTranslations()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-default">
+            <button title="Save the coding online" ng-click="saveTranslations()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-sm btn-default">
               <i class="glyphicon glyphicon-cloud-upload"></i>
               Save
             </button>
             <button title="Download as CSV for Excel (after save)"
                 ng-disabled="numberUnsafedChanges > 0"
                 ng-click="downloadConcepts()"
-                ng-if="state" class="btn btn-default">
+                ng-if="state" class="btn btn-sm btn-default">
               <i class="glyphicon glyphicon-download"></i>
               Download
             </button>
           </div>
-          <button title="Reset the coding - all changes are lost" ng-click="resetConcepts()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-default" id="reset-concepts">
+          <button title="Reset the coding - all changes are lost" ng-click="resetConcepts()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-sm btn-default" id="reset-concepts">
             <i class="glyphicon glyphicon-fire"></i>
             Reset
           </button>

@@ -62,6 +62,7 @@ function CodingSystemsCtrl($scope, $timeout, dataService) {
     $scope.gridOptions = {
             data: "all",
             rowHeight: 35,
+            showSelectionCheckbox: true,
             filterOptions: { filterText: '' },
             columnDefs: [
               { displayName: 'Name', field: 'name' },
@@ -103,6 +104,7 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
     $scope.gridOptions = {
          data: "all",
          rowHeight: 35,
+         showSelectionCheckbox: true,
          filterOptions: { filterText: '' },
          columnDefs: [
              { displayName: 'Semantic type', field: 'description' },
@@ -243,6 +245,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         data: "state.concepts",
         rowHeight: 70,
         headerRowHeight: 35,
+        showSelectionCheckbox: true,
         columnDefs: 'conceptsColumnDefs',
         enableRowSelection: true,
         enableCellSelection: true,
@@ -1011,6 +1014,7 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
         headerRowHeight: 30,
         filterOptions: { filterText: '' },
         enableRowSelection: $scope.selectable,
+        showSelectionCheckbox: $scope.selectable,
         columnDefs: createConceptsColumnDefs(true, codingSystems)
     };
     
@@ -1043,6 +1047,7 @@ function EditCodesCtrl($scope, $modalInstance, $timeout, concepts, codes) {
         data: "codes",
         filterOption: { filterText: '' },
         enableRowSelection: true,
+        showSelectionCheckbox: true,
         columnDefs: [
             { displayName: 'Coding system', field: 'vocabulary' },
             { displayName: 'Code', field: 'id',

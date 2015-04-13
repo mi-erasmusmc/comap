@@ -21,16 +21,6 @@
             <i class="glyphicon glyphicon-filter"></i>
             <input id='samanticTypesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
           </div>
-          <div class='btn-group'> 
-            <button class='btn btn-default' ng-click="selectAll(gridOptions)">
-              <i class="glyphicon glyphicon-expand"></i>
-              Select all
-            </button>
-            <button class='btn btn-default' ng-click="selectNone(gridOptions)">
-              <i class="glyphicon glyphicon-unchecked"></i>
-              &hellip; none
-            </button>
-          </div>
         </div>
         <div class="col-md-10">
           <label for='selectedsemanticTypesList'>Selected ({{selected.semanticTypes.length}})</label>
@@ -48,16 +38,6 @@
             <label for='vocabulariesFilter'>Filter {{all.count}} coding systems</label>
             <i class="glyphicon glyphicon-filter"></i>
             <input id='vocabulariesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
-            <div class='btn-group'> 
-              <button class='btn btn-default' ng-click="selectAll(gridOptions)">
-                <i class="glyphicon glyphicon-expand"></i>
-                Select all
-              </button>
-              <button class='btn btn-default' ng-click="selectNone(gridOptions)">
-                <i class="glyphicon glyphicon-unchecked"></i>
-                &hellip; none
-              </button>
-            </div>
           </div>
           <div class="col-md-10">
             <label for='selectedVocabulariesList'>Selected</label>
@@ -87,16 +67,6 @@
          <label>Filter {{state.concepts.length}} concept<span ng-if="state.concepts.length != 1">s</span></label>
          <i class="glyphicon glyphicon-filter"></i>
          <input title="Filter concepts" placeholder="Query" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
-         <div class='btn-group'> 
-           <button class='btn btn-default' ng-click="selectAll(conceptsGridOptions)" title="Select all concepts">
-             <i class="glyphicon glyphicon-expand"></i>
-             Select all
-           </button>
-           <button class='btn btn-default' ng-click="selectNone(conceptsGridOptions)" title="Select no concept">
-             <i class="glyphicon glyphicon-unchecked"></i>
-             &hellip; none
-           </button>
-         </div>
        </div>
         
         <div class="modify-concepts col-md-4">

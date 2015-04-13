@@ -5,16 +5,6 @@
   Select the codes for concept(s) {{concepts|showConcepts}}
   <label for='dialogConceptsFilter'>Filter {{codes.length}} codes:</label>
   <input id='dialogConceptsFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
-  <div class='btn-group'> 
-    <button class='btn btn-default btn-sm' ng-click="selectAll(gridOptions)">
-      <i class="glyphicon glyphicon-expand"></i>
-      Select all
-    </button>
-    <button class='btn btn-default btn-sm' ng-click="selectAll(gridOptions)">
-      <i class="glyphicon glyphicon-unchecked"></i>
-      &hellip; none
-    </button>
-  </div>
   <div ng-grid="gridOptions" class="grid codes-grid"></div>
 </div>
 <div class="modal-footer">

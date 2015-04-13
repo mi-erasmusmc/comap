@@ -867,18 +867,18 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         
         [ [],
           ["CODES"],
-          ["Coding system", "Code", "Name in coding system", "Concept name", "CUI", "Origin"]
+          ["CODING SYSTEMS", "CODE", "NAME IN CODING SYSTEM", "CONCEPT NAME", "CONCEPT ID", "Origin"]
         ].forEach(function(row) { data.push(row); });
-        $scope.state.concepts.forEach(function(concept) {
-            var origin = concept.origin.type + ": ";
-            if (concept.origin.type == "spans") {
-                origin += concept.origin.data.map(function(s) { return s.text; }).join(", ");
-            } else if (concept.origin.type == "hyponym" || concept.origin.type == "hypernym") {
-                origin += concept.origin.data.cui;
-            } else if (concept.origin.type == "search") {
-                origin += concept.origin.data;
-            }
-            selectedCodingSystemsAbbreviations.forEach(function(vocabulary) {
+        selectedCodingSystemsAbbreviations.forEach(function(vocabulary) {
+            $scope.state.concepts.forEach(function(concept) {
+                var origin = concept.origin.type + ": ";
+                if (concept.origin.type == "spans") {
+                    origin += concept.origin.data.map(function(s) { return s.text; }).join(", ");
+                } else if (concept.origin.type == "hyponym" || concept.origin.type == "hypernym") {
+                    origin += concept.origin.data.cui;
+                } else if (concept.origin.type == "search") {
+                    origin += concept.origin.data;
+                }
                 concept.codes[vocabulary].forEach(function(code) {
                     if (code.selected) {
                         data.push([vocabulary, code.id, code.preferredTerm, concept.preferredName, concept.cui, origin]);
@@ -889,7 +889,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         
         [ [],
           ["HISTORY"],
-          ["Date", "Step", "Argument", "Result"]
+          ["DATE", "STEP", "ARGUMENT", "RESULT"]
         ].forEach(function(row) { data.push(row); });
         if ($scope.state.history) {
             $scope.state.history.forEach(function(step) {

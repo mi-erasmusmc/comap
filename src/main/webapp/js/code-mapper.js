@@ -470,18 +470,24 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         };
         $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems);
         searchConcepts(caseDefinition, function(concepts, filteredBySemanticType, filteredByCurrentConcepts) {
-            $scope.state.initialCuis = concepts.map(getCui);
-            $scope.state.concepts = concepts.sort(compareByCodeCount);
-            $scope.conceptsGridOptions.sortInfo = { fields: ["sourceConceptsCount", "preferredName"], directions: [ "desc", "desc" ] };
-            var descr = "Found " + concepts.length + " concepts in case definition";
-            if (filteredBySemanticType.length > 0) {
-                descr += ", filtered " + filteredBySemanticType.length + " by semantic type";
+            if (concepts.length > 0) {
+                $scope.state.initialCuis = concepts.map(getCui);
+                $scope.state.concepts = concepts.sort(compareByCodeCount);
+                $scope.conceptsGridOptions.sortInfo = { fields: ["sourceConceptsCount", "preferredName"], directions: [ "desc", "desc" ] };
+                var descr = "Found " + concepts.length + " concepts in case definition";
+                if (filteredBySemanticType.length > 0) {
+                    descr += ", filtered " + filteredBySemanticType.length + " by semantic type";
+                }
+                if (filteredByCurrentConcepts.length > 0) {
+                    descr += ", filtered " + filteredByCurrentConcepts.length + " by current coding";
+                }
+                $scope.historyStep("Automatic coding", null, concepts.map(reduceConcept), descr);
+                inputBlockUi.start("Reset concepts to edit!");
+            } else {
+                $scope.setMessage("No concepts found. Elaborate case definition or broaden semantic types!")
+                $scope.state = null;
+                $scope.conceptsColumnDefs = createConceptsColumnDefs(true, []);
             }
-            if (filteredByCurrentConcepts.length > 0) {
-                descr += ", filtered " + filteredByCurrentConcepts.length + " by current coding";
-            }
-            $scope.historyStep("Automatic coding", null, concepts.map(reduceConcept), descr);
-            inputBlockUi.start("Reset concepts to edit!");
         });
     };
     

@@ -29,18 +29,20 @@
   
   <body ng-keydown="onKeydown($event)" tabindex="0">
     <div class="row">
-      <div class="col-md-10">
+      <div class="col-md-4 text-left">
         <div ng-controller="LoggedInCtrl" ng-if="user">
           Logged in as <span ng-bind="user.username" class="username"></span>
-          (<a href="#/dashboard">dashboard</a>)
-          <button ng-click="logout()">Logout</button>
+          (<a href="#/dashboard">my projects</a>)
+          <button ng-click="logout()" class="btn btn-primary btn-xs">Logout</button>
         </div>
-        <a class="center-block" href="mailto:b.becker@erasmusmc.nl?subject=AdvanceCodeMapper">Help? Suggestions?</a>
         <h2 class="subtitle" ng-bind="subtitle"></h2>
       </div>
-      <div class="col-md-2 text-center">
+      <div class="col-md-4 text-center">
         <h3 class="advance-code-mapper-title">ADVANCE Code Mapper</h3>
-        <image src="images/200709mslogo_erasmus_mc.jpg" height="100px" />
+        <a class="center-block" href="mailto:b.becker@erasmusmc.nl?subject=AdvanceCodeMapper">Help? Suggestions?</a>
+      </div>
+      <div class="col-md-4 text-right">
+        <image src="images/200709mslogo_erasmus_mc.jpg" height="80px" />
       </div>
     </div>
     <hr/>

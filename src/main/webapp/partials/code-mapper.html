@@ -22,13 +22,13 @@
             <input id='samanticTypesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
           </div>
           <div class='btn-group'> 
-            <button class='btn btn-default btn-sm' ng-click="selectAll(gridOptions)">
+            <button class='btn btn-default' ng-click="selectAll(gridOptions)">
               <i class="glyphicon glyphicon-expand"></i>
               Select all
             </button>
-            <button class='btn btn-default btn-sm' ng-click="selectNone(gridOptions)">
+            <button class='btn btn-default' ng-click="selectNone(gridOptions)">
               <i class="glyphicon glyphicon-unchecked"></i>
-              none
+              &hellip; none
             </button>
           </div>
         </div>
@@ -49,13 +49,13 @@
             <i class="glyphicon glyphicon-filter"></i>
             <input id='vocabulariesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
             <div class='btn-group'> 
-              <button class='btn btn-default btn-sm' ng-click="selectAll(gridOptions)">
+              <button class='btn btn-default' ng-click="selectAll(gridOptions)">
                 <i class="glyphicon glyphicon-expand"></i>
                 Select all
               </button>
-              <button class='btn btn-default btn-sm' ng-click="selectNone(gridOptions)">
+              <button class='btn btn-default' ng-click="selectNone(gridOptions)">
                 <i class="glyphicon glyphicon-unchecked"></i>
-                none
+                &hellip; none
               </button>
             </div>
           </div>
@@ -75,7 +75,7 @@
       <button title="Create the automatic coding of the case definition"
             ng-click="createInitalTranslations(caseDefinition)"
             ng-if="state == null"
-            class="btn btn-primary btn-sm center-block"
+            class="btn btn-primary center-block"
             id="search-concepts">
         <i class="glyphicon glyphicon-refresh"></i>
         Create initial coding
@@ -88,13 +88,13 @@
          <i class="glyphicon glyphicon-filter"></i>
          <input title="Filter concepts" placeholder="Query" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
          <div class='btn-group'> 
-           <button class='btn btn-default btn-sm' ng-click="selectAll(conceptsGridOptions)">
+           <button class='btn btn-default' ng-click="selectAll(conceptsGridOptions)" title="Select all concepts">
              <i class="glyphicon glyphicon-expand"></i>
              Select all
            </button>
-           <button class='btn btn-default btn-sm' ng-click="selectNone(conceptsGridOptions)">
+           <button class='btn btn-default' ng-click="selectNone(conceptsGridOptions)" title="Select no concept">
              <i class="glyphicon glyphicon-unchecked"></i>
-             none
+             &hellip; none
            </button>
          </div>
        </div>
@@ -103,23 +103,23 @@
           <label>
             Modify {{selectedConcepts.length}} concept<span ng-if="selectedConcepts.length != 1">s</span>
           </label>
-          <button class='btn btn-default btn-sm' ng-click='operationDeleteConcepts(selectedConcepts)' confirm-click="Delete selected concepts?" ng-disabled="selectedConcepts.length == 0" title='Delete concepts'> 
+          <button class='btn btn-default' ng-click='operationDeleteConcepts(selectedConcepts)' confirm-click="Delete selected concepts?" ng-disabled="selectedConcepts.length == 0" title='Delete concepts'> 
             <i class='glyphicon glyphicon-remove-circle'></i>
             Delete 
           </button>
           
           <div class='btn-group'> 
-              <button class='btn btn-default btn-sm' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="selectedConcepts.length == 0" title='Expand to more general concepts'> 
+              <button class='btn btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more general concepts'> 
                 <i class='glyphicon glyphicon-chevron-up'></i>
-                Expand to more general concepts 
+                Expand more general 
               </button> 
-              <button class='btn btn-default btn-sm' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="selectedConcepts.length == 0" title='Expand to more specific concepts'> 
+              <button class='btn btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more specific concepts'> 
                 <i class='glyphicon glyphicon-chevron-down'></i>
-                more specific concepts 
+                &hellip; more specific 
               </button> 
           </div>
           
-          <button class="btn btn-default btn-sm" ng-click="operationEditCodes(selectedConcepts)" ng-disabled="selectedConcepts.length == 0" title="Enable/disable source codes">
+          <button class="btn btn-default" ng-click="operationEditCodes(selectedConcepts)" ng-disabled="selectedConcepts.length == 0" title="Enable/disable source codes of selected concepts">
             <i class='glyphicon glyphicon-edit'></i>
             Codes
           </button>
@@ -136,7 +136,7 @@
             typeahead-focus-first=false
             ></input>
           <button title="Search and add concepts" ng-click="searchAndAddConcepts(searchQuery)"
-            ng-disabled="!searchQuery" class="btn btn-default btn-sm">
+            ng-disabled="!searchQuery" class="btn btn-default">
             <i class="glyphicon glyphicon-search"></i>Search and add
           </button>
         </div>
@@ -144,19 +144,19 @@
         <div class="on-case-definition col-md-3">
           <label>Case definition <em ng-bind="caseDefinitionName"></em></label>
           <div class="btn-group">
-            <button title="Save the coding online" ng-click="saveTranslations()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-default btn-sm">
+            <button title="Save the coding online" ng-click="saveTranslations()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-default">
               <i class="glyphicon glyphicon-cloud-upload"></i>
               Save
             </button>
             <button title="Download as CSV for Excel (after save)"
                 ng-disabled="numberUnsafedChanges > 0"
                 ng-click="downloadConcepts()"
-                ng-if="state" class="btn btn-default btn-sm">
+                ng-if="state" class="btn btn-default">
               <i class="glyphicon glyphicon-download"></i>
               Download
             </button>
           </div>
-          <button title="Reset the coding - all changes are lost" ng-click="resetConcepts()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-default btn-sm" id="reset-concepts">
+          <button title="Reset the coding - all changes are lost" ng-click="resetConcepts()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-default" id="reset-concepts">
             <i class="glyphicon glyphicon-fire"></i>
             Reset
           </button>

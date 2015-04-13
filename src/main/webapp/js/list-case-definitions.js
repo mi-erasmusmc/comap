@@ -5,7 +5,7 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
     $scope.projects = [];
     $scope.caseDefinitions = {};
     $scope.newNames = {};
-    $rootScope.subtitle = "Dashboard";
+    $rootScope.subtitle = "Projects";
     
     $http.get(urls.projects)
         .error(function(err) {

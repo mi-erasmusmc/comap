@@ -50,7 +50,7 @@
       </div>
     </tab>
     
-    <tab id="concepts-tab" heading="4. Concepts" ng-click="state != null || createInitalTranslations(caseDefinition)">
+    <tab id="concepts-tab" heading="4. Mapping" ng-click="state != null || createInitalTranslations(caseDefinition)">
 
       <button title="Create the automatic coding of the case definition"
             ng-click="createInitalTranslations(caseDefinition)"
@@ -58,7 +58,7 @@
             class="btn btn-sm btn-primary center-block"
             id="search-concepts">
         <i class="glyphicon glyphicon-refresh"></i>
-        Create initial coding
+        Create initial mapping
       </button>
     
       <div ng-if="state" class="concepts-controls row">
@@ -112,7 +112,7 @@
         </div>
         
         <div class="on-case-definition col-md-3">
-          <label>Case definition <em ng-bind="caseDefinitionName"></em></label>
+          <label>Mapping for <em ng-bind="caseDefinitionName"></em></label>
           <div class="btn-group">
             <button title="Save the coding online" ng-click="saveTranslations()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-sm btn-default">
               <i class="glyphicon glyphicon-cloud-upload"></i>
@@ -126,9 +126,9 @@
               Download
             </button>
           </div>
-          <button title="Reset the coding - all changes are lost" ng-click="resetConcepts()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-sm btn-default" id="reset-concepts">
+          <button title="Discard the coding - all changes are lost" ng-click="resetConcepts()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-sm btn-default" id="reset-concepts">
             <i class="glyphicon glyphicon-fire"></i>
-            Reset
+            Discard
           </button>
         </div>
       </div>

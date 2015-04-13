@@ -1,8 +1,8 @@
 
 function error(msg, consoleArgs) {
-	msg = "ERROR: " + msg;
-	console.log(msg, consoleArgs);
-	alert(msg);
+    msg = "ERROR: " + msg;
+    console.log(msg, consoleArgs);
+    alert(msg);
 }
 
 
@@ -11,25 +11,25 @@ function error(msg, consoleArgs) {
  * data.
  */
 var FORM_ENCODED_POST = {
-	headers : {
-		'Content-Type' : 'application/x-www-form-urlencoded'
-	},
-	transformRequest : function(obj) {
-		var str = [];
-		for ( var key in obj) {
-			if (obj[key] instanceof Array) {
-				for ( var idx in obj[key]) {
-					var subObj = obj[key][idx];
-					str.push(encodeURIComponent(key) + "="
-							+ encodeURIComponent(subObj));
-				}
-			} else {
-				str.push(encodeURIComponent(key) + "="
-						+ encodeURIComponent(obj[key]));
-			}
-		}
-		return str.join("&");
-	}
+    headers : {
+        'Content-Type' : 'application/x-www-form-urlencoded'
+    },
+    transformRequest : function(obj) {
+        var str = [];
+        for ( var key in obj) {
+            if (obj[key] instanceof Array) {
+                for ( var idx in obj[key]) {
+                    var subObj = obj[key][idx];
+                    str.push(encodeURIComponent(key) + "="
+                            + encodeURIComponent(subObj));
+                }
+            } else {
+                str.push(encodeURIComponent(key) + "="
+                        + encodeURIComponent(obj[key]));
+            }
+        }
+        return str.join("&");
+    }
 };
 
 /**
@@ -37,14 +37,14 @@ var FORM_ENCODED_POST = {
  * "C000123"
  */
 function cuiOfId(id) {
-	return 'C' + Array(8 - id.length).join('0') + id;
+    return 'C' + Array(8 - id.length).join('0') + id;
 }
 
 function getCui(concept) {
-	if (concept.cui === undefined) {
-		error("getCui", concept);
-	}
-	return concept.cui;
+    if (concept.cui === undefined) {
+        error("getCui", concept);
+    }
+    return concept.cui;
 }
 
 function reduceConcept(concept) {
@@ -55,17 +55,17 @@ function reduceConcept(concept) {
 }
 
 function getAbbreviation(codingSystem) {
-	if (codingSystem.abbreviation === undefined) {
-		error("getAbbreviation", codingSystem);
-	}
-	return codingSystem.abbreviation;
+    if (codingSystem.abbreviation === undefined) {
+        error("getAbbreviation", codingSystem);
+    }
+    return codingSystem.abbreviation;
 }
 
 function getType(semanticType) {
-	if (semanticType.type === undefined) {
-		error("getType", semanticType);
-	}
-	return semanticType.type;
+    if (semanticType.type === undefined) {
+        error("getType", semanticType);
+    }
+    return semanticType.type;
 }
 
 function compareByCodeCount(c1, c2) {
@@ -74,21 +74,21 @@ function compareByCodeCount(c1, c2) {
 
 /** Encodes an 2-D array of data to CSV. */
 function csvEncode(data) {
-	function escape(field) {
-		if (field == null || field == undefined) {
-			return "";
-		} else {
-			if (typeof field == 'string'
-					&& (field.indexOf('"') != -1 || field.indexOf(',') != -1)) {
-				return '"' + field.replace(/"/g, '""') + '"';
-			} else {
-				return "" + field;
-			}
-		}
-	}
-	var result = "";
-	data.forEach(function(row) {
-		result += row.map(escape).join(', ') + '\n';
-	});
-	return result;
+    function escape(field) {
+        if (field == null || field == undefined) {
+            return "";
+        } else {
+            if (typeof field == 'string'
+                    && (field.indexOf('"') != -1 || field.indexOf(',') != -1)) {
+                return '"' + field.replace(/"/g, '""') + '"';
+            } else {
+                return "" + field;
+            }
+        }
+    }
+    var result = "";
+    data.forEach(function(row) {
+        result += row.map(escape).join(', ') + '\n';
+    });
+    return result;
 }

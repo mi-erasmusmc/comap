@@ -355,8 +355,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 			};
 			blockUI.start("Saving ...");
 			$http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)
-				.error(function(e) {
-					console.log(e);
+				.error(function(e, status) {
+                    if (status == 401) {
+                        alert("Your session has timed out :( You have to re-login!")
+                    } else {
+                        var msg = "ERROR: An error occurred while saving";
+                        alert(msg, err);
+                    }
 				})
 				.success(function() {
 					$scope.numberUnsafedChanges = 0;
@@ -381,10 +386,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 		};
 		blockUI.start("Indexing ...");
 		$http.post(dataService.peregrineResource + "/index", data, FORM_ENCODED_POST)
-			.error(function(err) {
-				var msg = "ERROR: Couldn't search concepts in case definition at " + dataService.peregrineResource;
-				console.log(msg, err);
-				alert(msg);
+			.error(function(err, status) {
+                if (status == 401) {
+                    alert("Your session has timed out :( You have to re-login!")
+                } else {
+    				var msg = "ERROR: Couldn't search concepts in case definition at " + dataService.peregrineResource;
+    				console.log(msg, err);
+    				alert(msg);
+                }
 			})
 			.success(function(result) { 
 				var spans = result.spans.filter(function(span) {
@@ -408,9 +417,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
 				};
 				blockUI.start("Loading concept ...");
 				$http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
-					.error(function(err) {
-						var msg = "ERROR: Couldn't lookup concepts";
-						alert(msg, err);
+					.error(function(err, status) {
+					    if (status == 401) {
+					        alert("Your session has timed out :( You have to re-login!")
+					    } else {
+    						var msg = "ERROR: Couldn't lookup concepts";
+    						alert(msg, err);
+					    }
 					})
 					.success(function(concepts0) {
 					    var filteredBySemanticType = [],
@@ -520,9 +533,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         };
 	    blockUI.start("Search concept ...");
         $http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
-            .error(function(err) {
-                var msg = "ERROR: Couldn't lookup concepts";
-                alert(msg, err);
+            .error(function(err, status) {
+                if (status == 401) {
+                    alert("Your session has timed out :( You have to re-login!")
+                } else {
+                    var msg = "ERROR: Couldn't lookup concepts";
+                    alert(msg, err);
+                }
             })
             .success(function(concepts0) {
                 var filteredBySemanticType = [],
@@ -637,10 +654,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     	// Retrieve related concepts from the API
     	blockUI.start("Load related concept ...");
     	$http.post(urls.relatedConcepts, data, FORM_ENCODED_POST)
-    		.error(function(err) {
-    			var msg = "ERROR: Couldn't lookup related concepts at " + urls.relatedConcepts;
-    			alert(msg);
-    			console.log(msg, err);
+    		.error(function(err, status) {
+                if (status == 401) {
+                    alert("Your session has timed out :( You have to re-login!")
+                } else {
+        			var msg = "ERROR: Couldn't lookup related concepts at " + urls.relatedConcepts;
+        			alert(msg);
+        			console.log(msg, err);
+                }
     		})
     		.success(function(relatedConceptsByCuis) {
     			

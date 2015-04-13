@@ -50,9 +50,9 @@ function DataService($http, $q, urls) {
 	
 	this.peregrineResource = null;
 	this.configPromise = $http.get(urls.config)
-		.error(function(err) {
+		.error(function(err, status) {
 			var msg = "ERROR: Couldn't retrieve config from " + urls.config;
-			console.log(msg, err);
+			console.log(msg, err, status);
 			alert(msg);
 		})
 		.success(function(config) {
@@ -61,9 +61,9 @@ function DataService($http, $q, urls) {
 	
 	this.stopwords = null;
 	this.stopwordsPromise = $http.get(urls.stopwords)
-		.error(function(err) {
+		.error(function(err, status) {
 			var msg = "ERROR: Couldn't retrieve stopwords from " + urls.stopwords;
-			console.log(msg, err);
+			console.log(msg, err, status);
 			alert(msg);
 		})
 		.success(function(stopwords) {
@@ -72,9 +72,9 @@ function DataService($http, $q, urls) {
 	this.semanticTypes = null;
 	this.semanticTypesByType = {};
 	this.semanticTypesPromise = $http.get(urls.semanticTypes)
-		.error(function(err) {
+		.error(function(err, status) {
 			var msg = "ERROR: Couldn't load semantic types and groups from " + urls.semanticTypes;
-			console.log(msg, err);
+			console.log(msg, err, status);
 			alert(msg);
 		})
 		.success(function(semanticTypes) {
@@ -85,10 +85,10 @@ function DataService($http, $q, urls) {
 		});
 	this.codingSystems = null;
 	this.codingSystemsPromise = $http.get(urls.codingSystems)
-		.error(function(err) {
-			var msg = "ERROR: Couldn't retrieve coding systems from " + urls.codingSystems;
-			console.log(msg, err);
-			alert(msg);
+		.error(function(err, status) {
+    		var msg = "ERROR: Couldn't retrieve coding systems from " + urls.codingSystems;
+    		console.log(msg, err, status);
+    		alert(msg);
 		})
 		.success(function(codingSystems) {
 			service.codingSystems = codingSystems

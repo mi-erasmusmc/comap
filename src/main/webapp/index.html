@@ -32,7 +32,7 @@
       <div class="col-md-4 text-left">
         <div ng-controller="LoggedInCtrl" ng-if="user">
           Logged in as <span ng-bind="user.username" class="username"></span>
-          (<a href="#/dashboard">my projects</a>)
+          (<a href="#/projects">my projects</a>)
           <button ng-click="logout()" class="btn btn-primary btn-xs">Logout</button>
         </div>
         <h2 class="subtitle" ng-bind="subtitle"></h2>

@@ -304,7 +304,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 switch (code) {
                     case 401:
                         alert("You are not member for project " + $scope.project + ":(");
-                        $location.path('/dashboard');
+                        $location.path('/projects');
                         break;
                     case 404:
                         $scope.state = null;

@@ -14,7 +14,7 @@ function LoginCtrl($scope, $rootScope, $location, $http, urls) {
             .success(function(result) {
                 if (result.success) {
                     $rootScope.user = result.user;
-                    $location.path('/dashboard');
+                    $location.path('/projects');
                 } else {
                     $scope.error = result.error;
                 }

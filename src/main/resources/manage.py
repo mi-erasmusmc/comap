@@ -45,7 +45,7 @@ def add_user_to_project(username, project):
     project_id = get_project(project)
     cur.execute("INSERT INTO users_projects (user_id, project_id) VALUES (%s, %s)",
                 [user_id, project_id])
-    print("Adding user %d to project %d with ID %d" %
+    print("Added user %d to project %d with ID %d" %
           (user_id, project_id, db.insert_id()))
     db.commit()
 

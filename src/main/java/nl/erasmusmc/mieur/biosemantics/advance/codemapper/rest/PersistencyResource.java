@@ -54,6 +54,20 @@ public class PersistencyResource {
 	}
 
 	@GET
+	@Path("projects/{project}/users")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<String> getUsersOfProject(@PathParam("project") String project, @Context HttpServletRequest request, @Context User user) {
+		assertAdminOrProjectMember(user, project);
+		try {
+			return api.getUsersOfProject(project);
+		} catch (CodeMapperException e) {
+			System.err.println("Couldn't get case definitions");
+			e.printStackTrace();
+			throw new InternalServerErrorException(e);
+		}
+	}
+
+	@GET
 	@Path("projects/{project}/case-definitions")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<String> getCaseDefinitionNames(@PathParam("project") String project, @Context User user) {

@@ -132,7 +132,9 @@ label {
 div[block-ui=inputBlockUi] .block-ui-container {
 	cursor: not-allowed;
 }
-
+ul.inline li {
+	display: inline;
+}
 .username {
 	font-style: italic;
 }

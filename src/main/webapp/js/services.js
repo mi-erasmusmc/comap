@@ -30,6 +30,9 @@ function UrlsService() {
     this.caseDefinition = function(project, caseDefinitionName) {
         return this.caseDefinitions(project) + '/' +  encodeURIComponent(caseDefinitionName)
     };
+    this.usersForProject = function(project) {
+        return this.projects + '/' + encodeURIComponent(project) + '/users';
+    };
     
     var codeMapperApi = 'rest/code-mapper';
     this.codingSystems = codeMapperApi + '/coding-systems';

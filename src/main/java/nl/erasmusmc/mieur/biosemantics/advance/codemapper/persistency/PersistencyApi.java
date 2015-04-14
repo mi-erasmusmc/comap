@@ -76,6 +76,19 @@ public class PersistencyApi {
 		}
 	}
 
+	public List<String> getUsersOfProject(String project) throws CodeMapperException {
+		String query =
+				"SELECT u.username FROM users_projects AS up "
+				+ "INNER JOIN users AS u ON u.id = up.user_id "
+				+ "INNER JOIN projects as p ON p.id = up.project_id "
+				+ "WHERE p.name = ?";
+		try {
+			return parameterizedStringListQuery(query, project);
+		} catch (SQLException e) {
+			throw CodeMapperException.server("Cannot execute query to get users of project", e);
+		}
+	}
+
 	public List<String> getCaseDefinitionsNames(String project) throws CodeMapperException {
 		String query =
 				"SELECT case_definitions.name FROM case_definitions "

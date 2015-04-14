@@ -4,6 +4,7 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
     $scope.user = user;
     $scope.projects = [];
     $scope.caseDefinitions = {};
+    $scope.usersForProject = {};
     $scope.newNames = {};
     $rootScope.subtitle = "";
     
@@ -23,6 +24,14 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
                     })
                     .success(function(caseDefinitions) {
                         $scope.caseDefinitions[project] = caseDefinitions;
+                    });
+                $http.get(urls.usersForProject(project))
+                    .error(function(err) {
+                        var msg = "Couldn't load users for project " + project;
+                        error(msg);
+                    })
+                    .success(function(users) {
+                        $scope.usersForProject[project] = users.sort();
                     });
             });
         });

@@ -29,7 +29,8 @@ drop table if exists users_projects;
 
 create table users_projects (
   user_id int not null references users(id),
-  project_id int not null references projects(id)
+  project_id int not null references projects(id),
+  unique (user_id, project_id)
 );
 
 insert into users_projects (user_id, project_id) values

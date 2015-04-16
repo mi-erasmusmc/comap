@@ -6,6 +6,9 @@
   <tabset>
 
     <tab id="case-definition-tab" heading="1. Case definition" ng-controller="CaseDefinitionCtrl">
+      <alert ng-if="state.mapping != null" type="info">
+        Discard mapping to edit.
+      </alert>
       <label>Free text case definition</label>
       <div ng-if="state.indexing == null">
         <button ng-click="createIndexing(text)" class="btn btn-primary block">Index</button>
@@ -19,29 +22,32 @@
     
     <tab id="semantics-tab" heading="2. Semantic types" ng-controller="SemanticTypesCtrl" disabled="state.indexing == null">
       <div block-ui="inputBlockUi">
-      <div class="row">
-        <div class="col-md-2" ng-show="state.mapping == null">
-          <div>
-            <label for='samanticTypesFilter'>Filter {{semanticTypes.length}} semantic types</label>
-            <i class="glyphicon glyphicon-filter"></i>
-            <input id='samanticTypesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
+        <alert ng-if="state.mapping != null" type="info">
+          Discard mapping to edit.
+        </alert>
+        <div class="row">
+          <div class="col-md-2" ng-show="state.mapping == null">
+            <div>
+              <label for='samanticTypesFilter'>Filter {{semanticTypes.length}} semantic types</label>
+              <i class="glyphicon glyphicon-filter"></i>
+              <input id='samanticTypesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
+            </div>
+          </div>
+          <div class="col-md-10">
+            <label for='selectedsemanticTypesList'>Selected ({{selected.semanticTypes.length}})</label>
+            <span ng-repeat="type in selected.semanticTypes" ng-bind="type.description" ng-disabled="state.mapping" ng-dblclick="state.mapping == null && unselect(type)" class="semantic-type noselect" id='selectedsemanticTypesList'></span>
           </div>
         </div>
-        <div class="col-md-10">
-          <label for='selectedsemanticTypesList'>Selected ({{selected.semanticTypes.length}})</label>
-          <span ng-repeat="type in selected.semanticTypes" ng-bind="type.description" ng-disabled="state.mapping" ng-dblclick="state.mapping != null && unselect(type)" class="semantic-type noselect" id='selectedsemanticTypesList'></span>
-        </div>
-      </div>
         <div ng-show="state.mapping == null" ng-grid="gridOptions" class="grid semantic-types-grid"></div>
-        <div ng-if="state.mapping != null">
-          Discard mapping to edit semantic types.
-        </div>
       </div>
     </tab>
     
     <tab id="coding-systems-tab" heading="3. Coding systems" ng-controller="CodingSystemsCtrl">
       
       <div block-ui="inputBlockUi">
+        <alert ng-if="state.mapping != null" type="info">
+          Discard mapping to edit.
+        </alert>
         <div class="row">
         
           <div class="col-md-2" ng-show="state.mapping == null">
@@ -53,15 +59,12 @@
           <div class="col-md-10">
             <label for='selectedVocabulariesList'>Selected ({{selected.codingSystems.length}})</label>
             <div id='selectedVocabulariesList'>
-              <span ng-repeat="voc in selected.codingSystems" ng-bind="voc.abbreviation" ng-dblclick="state.mapping != null && unselect(voc.abbreviation)" class="vocabulary noselect"></span>
+              <span ng-repeat="voc in selected.codingSystems" ng-bind="voc.abbreviation" ng-dblclick="state.mapping == null && unselect(voc.abbreviation)" class="vocabulary noselect"></span>
             </div>
           </div>
         </div>
         
         <div ng-show="state.mapping == null" ng-grid="gridOptions" class="grid coding-systems-grid"></div>
-        <div ng-if="state.mapping != null">
-          Discard mapping to edit coding systems.
-        </div>
       </div>
     </tab>
     

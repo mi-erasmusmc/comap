@@ -4,7 +4,12 @@ var codeMapperApp =
         .config(function ConfigBlockUI(blockUIConfig) {
             blockUIConfig.message = 'Loading...';
             blockUIConfig.delay = 0;
-            blockUIConfig.autoBlock = false;
+            blockUIConfig.autoBlock = true;
+            blockUIConfig.requestFilter = function(config) {
+                if (config.url.match(/autocomplete/)) {
+                    return false;
+                }
+            };
         })
         .config(function($routeProvider) {
           $routeProvider

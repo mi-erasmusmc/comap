@@ -165,11 +165,62 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     $scope.setSelectedConcepts = function(cuis) {
         $timeout(function() {
             $scope.conceptsGridOptions.selectAll(false);
-            $scope.state.concepts.forEach(function(concept, index) {
+            $scope.state.mapping.concepts.forEach(function(concept, index) {
                 var selected = cuis.indexOf(concept.cui) != -1;
                 $scope.conceptsGridOptions.selectItem(index, selected);
             });
         }, 0);
+    }
+    
+    // Patch: adapt concepts for the code mapper application
+    function patchConcept(concept0, codingSystems) {
+        var concept = angular.copy(concept0);
+        // Add field `codes` that is a mapping from coding systems to
+        // source
+        // concepts
+        concept.codes = {};
+        codingSystems.forEach(function(codingSystem) {
+            concept.codes[codingSystem] = concept.sourceConcepts
+                .filter(function(sourceConcept) {
+                    return sourceConcept.vocabulary == codingSystem;
+                })
+                .map(function(sourceConcept) {
+                    // Select all codes by default
+                    sourceConcept.selected = true;
+                    return sourceConcept;
+                });
+        });
+        // Add the count of source codes
+        concept.sourceConceptsCount = concept.sourceConcepts.length; 
+        // Enrich information about semantic types by descriptions and
+        // groups.
+        var types = concept.semanticTypes
+            .map(function(type) {
+                return dataService.semanticTypesByType[type].description;
+            })
+            .filter(function(v, ix, arr) {
+                return ix == arr.indexOf(v);
+            });
+        var groups = concept.semanticTypes
+            .map(function(type) {
+                return dataService.semanticTypesByType[type].group;
+            })
+            .filter(function(v, ix, arr) {
+                return ix == arr.indexOf(v);
+            });
+        concept.semantic = {
+            types: types,
+            groups: groups
+        };
+        return concept;
+    }
+    
+    $scope.conceptHasSelectedSemanticType = function(concept) {
+        return 0 < concept.semanticTypes
+            .filter(function(type) {
+                return $scope.state.mapping.semanticTypes.indexOf(type) != -1;
+            })
+            .length;
     }
 
     /* FUNCTIONS */
@@ -341,14 +392,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             history: []
         };
         $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems);
-        var concepts = $scope.state.indexing.concepts
-            .filter(function(concept) {
-                return concept.semanticTypes
-                    .filter(function(type) {
-                        return $scope.state.mapping.semanticTypes.indexOf(type) != -1;
-                    })
-                    .length > 0;
-            });
+        var concepts = $scope.state.indexing.concepts.filter($scope.conceptHasSelectedSemanticType);
         var data = {
             cuis: concepts.map(getCui),
             vocabularies: $scope.selected.codingSystems.map(getAbbreviation)
@@ -395,7 +439,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 if (filteredByCurrentConcepts.length > 0) {
                     message += ", filtered " + filteredByCurrentConcepts.length + " by current coding"; 
                 } 
-                $scope.selectConceptsInDialog(concepts, title, true, message,
+                selectConceptsInDialog(concepts, title, true, message, $scope.state.mapping.codingSystems,
                     function(selectedConcepts) {
                         if (angular.isArray(selectedConcepts)) {
                             selectedConcepts.forEach(function(concept) {
@@ -489,7 +533,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
      * input for case definition, semantic types and coding systems. */
     $scope.discardMapping = function() {
         console.log("DISCARD");
-        $scope.$apply(function($scope) {
+        $scope.$apply(function() {
             $scope.state.mapping = null;
             $scope.conceptsColumnDefs = createConceptsColumnDefs(true, []);
             $scope.setMessage("Current mapping has been discarded.");
@@ -498,15 +542,15 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     
     /** Delete a concepts from $scope.state.concepts by its cui. */
     $scope.operationDeleteConcepts = function(concepts) {
-        if ($scope.state == null) {
-            error("CodeMapperCtrl.deleteConcept called without state");
+        if ($scope.state == null || $scope.state.mapping == null) {
+            error("CodeMapperCtrl.deleteConcept called without mapping");
             return;
         }
         $scope.$apply(function() {
             var cuis = concepts.map(getCui);
             var deletedCuis = [];
             var deletedNames = [];
-            $scope.state.concepts = $scope.state.concepts
+            $scope.state.mapping.concepts = $scope.state.mapping.concepts
                 .filter(function(concept) {
                     if (cuis.indexOf(concept.cui) != -1) {
                         deletedNames.push(concept.preferredName);
@@ -527,8 +571,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
      * dialog and integrate in the list of concepts ($scope.state.concepts).
      */
     $scope.operationExpandRelatedConcepts = function(concepts, hyponymsNotHypernyms) {
-        if ($scope.state == null) {
-            error("CodeMapperCtrl.expandRelated called without state");
+        if ($scope.state == null || $scope.state.mapping == null) {
+            error("CodeMapperCtrl.expandRelated called without mapping");
             return;
         }
         var conceptNames = concepts.map(function(c) { return c.preferredName; }).join(", ");
@@ -537,7 +581,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         var data = {
             cuis: cuis,
             hyponymsNotHypernyms: hyponymsNotHypernyms,
-            codingSystems: $scope.state.codingSystems
+            codingSystems: $scope.state.mapping.codingSystems
         };
         // Retrieve related concepts from the API
         blockUI.start("Load related concept ...");
@@ -552,30 +596,18 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 }
             })
             .success(function(relatedConceptsByCuis) {
-                
                 var relatedConcepts = [];
-                var filteredBySemanticTypes = [];
-                var filteredByCurrentConcepts = [];
                 angular.forEach(relatedConceptsByCuis, function(relatedConceptsForCui, forCui) {
-                    
+
                     var relatedConceptsCuis = relatedConcepts.map(getCui);
                     relatedConceptsForCui = relatedConceptsForCui
                         .filter(function(c, ix, a) {
-                            return a.map(getCui).indexOf(c.cui) == ix && // Exclude
-                                                                            // duplicates
-                                                                            // in
-                                                                            // relatedConceptsForCui0
-                                relatedConceptsCuis.indexOf(c.cui) == -1; // Include
-                                                                            // only
-                                                                            // novel
-                                                                            // concepts
-                                                                            // (not
-                                                                            // yet
-                                                                            // in
-                                                                            // relatedConcepts)
-                        });    
-                    
-                    relatedConceptsForCui = $scope.filterAndPatch(relatedConceptsForCui, filteredBySemanticTypes, filteredByCurrentConcepts);
+                            return isFirstOccurrence(c, ix, a) && relatedConceptsCuis.indexOf(c.cui) == -1 && $scope.conceptHasSelectedSemanticType(c);
+                        })
+                        .map(function(concept) {
+                            return patchConcept(concept, $scope.state.mapping.codingSystems);
+                        });
+                    console.log(hyponymsNotHypernyms, forCui, relatedConceptsForCui);
 
                     relatedConceptsForCui.forEach(function(c) {
                         c.origin = {
@@ -590,21 +622,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 });
                     
                 var message = "Found " + relatedConcepts.length + " " + pluralize(hyponymOrHypernym, relatedConcepts);
-                if (filteredBySemanticTypes.length > 0) {
-                    message  += ", filtered " + filteredBySemanticTypes.length + " by semantic types";
-                }
-                if (filteredByCurrentConcepts.length > 0) {
-                    message += ", filtered " + filteredByCurrentConcepts.length + " by current coding"; 
-                } 
-                    
                 var title = "H" + hyponymOrHypernym.slice(1) + "s of " + conceptNames;
-                
-                $scope.selectConceptsInDialog(relatedConcepts, title, true, message, function(selectedRelatedConcepts) {
+                selectConceptsInDialog(relatedConcepts, title, true, message, $scope.state.mapping.codingSystems, function(selectedRelatedConcepts) {
                     
                     // Search position of original inital concepts
                     var conceptOffsets = {};
                     cuis.forEach(function(cui) {
-                        $scope.state.concepts.forEach(function(c, cIx) {
+                        $scope.state.mapping.concepts.forEach(function(c, cIx) {
                             if (c.cui == cui) {
                                 conceptOffsets[cui] = cIx;
                             }
@@ -614,7 +638,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                     // Insert each related concept in list of concepts
                     selectedRelatedConcepts.forEach(function(related, ix) {
                         var offset = ++conceptOffsets[related.origin.data.cui];
-                        $scope.state.concepts.splice(offset, 0, related);
+                        $scope.state.mapping.concepts.splice(offset, 0, related);
                     });
                     $scope.setSelectedConcepts(selectedRelatedConcepts.map(getCui));
                     
@@ -623,9 +647,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                                 ? pluralize("concept", concepts) + " " + conceptNames
                                 : concepts.length + " " + pluralize("concept", concepts)) +
                         " with " + selectedRelatedConcepts.length + 
-                        " " + pluralize(hyponymOrHypernym, selectedRelatedConcepts); 
-                    $scope.historyStep("H" + hyponymOrHypernym.slice(1) + "s",
-                            concepts.map(reduceConcept), selectedRelatedConcepts.map(reduceConcept), descr);
+                        " " + pluralize(hyponymOrHypernym, selectedRelatedConcepts);
+                    var operation = hyponymsNotHypernyms ? "Expand to more specific" : "Expand to more general";
+                    $scope.historyStep(operation, concepts.map(reduceConcept), selectedRelatedConcepts.map(reduceConcept), descr);
                 });
             })
             .finally(function() {
@@ -709,7 +733,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         });
     };
     
-    $scope.selectConceptsInDialog = function(concepts, title, selectable, message, onSelectedConcepts) {
+    function selectConceptsInDialog(concepts, title, selectable, message, codingSystems, onSelectedConcepts) {
         
         // Display retrieved concepts in a dialog
         var modalInstance = $modal.open({
@@ -719,7 +743,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
           resolve: {
             title: function() { return title; },
             concepts: function() { return concepts.sort(compareByCodeCount); },
-            codingSystems: function() { return $scope.state.codingSystems; },
+            codingSystems: function() { return codingSystems; },
             selectable: function() { return selectable; },
             message: function() { return message; }
           }
@@ -840,49 +864,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 patchConcept(concept, $scope.state.codingSystems);
             });
     };
-    
-    // Patch: adapt concepts for the code mapper application
-    function patchConcept(concept0, codingSystems) {
-        var concept = angular.copy(concept0);
-        // Add field `codes` that is a mapping from coding systems to
-        // source
-        // concepts
-        concept.codes = {};
-        codingSystems.forEach(function(codingSystem) {
-            concept.codes[codingSystem] = concept.sourceConcepts
-                .filter(function(sourceConcept) {
-                    return sourceConcept.vocabulary == codingSystem;
-                })
-                .map(function(sourceConcept) {
-                    // Select all codes by default
-                    sourceConcept.selected = true;
-                    return sourceConcept;
-                });
-        });
-        // Add the count of source codes
-        concept.sourceConceptsCount = concept.sourceConcepts.length; 
-        // Enrich information about semantic types by descriptions and
-        // groups.
-        var types = concept.semanticTypes
-            .map(function(type) {
-                return dataService.semanticTypesByType[type].description;
-            })
-            .filter(function(v, ix, arr) {
-                return ix == arr.indexOf(v);
-            });
-        var groups = concept.semanticTypes
-            .map(function(type) {
-                return dataService.semanticTypesByType[type].group;
-            })
-            .filter(function(v, ix, arr) {
-                return ix == arr.indexOf(v);
-            });
-        concept.semantic = {
-            types: types,
-            groups: groups
-        };
-        return concept;
-    }
 
     $scope.trustDefinition = function(definition) {
         return $sce.trustAsHtml(definition);

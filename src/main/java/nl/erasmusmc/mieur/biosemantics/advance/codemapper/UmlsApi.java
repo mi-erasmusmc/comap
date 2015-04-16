@@ -202,7 +202,7 @@ public class UmlsApi  {
 	public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> vocabularies)
 			throws CodeMapperException {
 
-		if (cuis.isEmpty())
+		if (cuis.isEmpty() || vocabularies == null)
 			return new TreeMap<>();
 		else {
 

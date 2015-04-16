@@ -5,52 +5,67 @@
   
   <tabset>
 
-    <tab id="case-definition-tab" heading="1. Case definition">
+    <tab id="case-definition-tab" heading="1. Case definition" ng-controller="CaseDefinitionCtrl">
       <label>Free text case definition</label>
-      <div block-ui="inputBlockUi">
-        <textarea rows=35 cols=200 ng-model="$parent.$parent.caseDefinition" class="case-definition"></textarea>
+      <div ng-if="state.indexing == null">
+        <button ng-click="createIndexing(text)" class="btn btn-primary block">Index</button>
+        <textarea rows=35 cols=200 ng-model="text" class="case-definition"></textarea>
+      </div>
+      <div ng-if="state.indexing != null">
+        <button ng-if="state.mapping == null" ng-click="resetIndexing()" class="btn btn-primary block">Reset</button>
+        <highlight text="state.indexing.caseDefinition" spans="state.indexing.spans" concepts="state.indexing.concepts"></highlight>
       </div>
     </tab>
     
-    <tab id="semantics-tab" heading="2. Semantic types" ng-controller="SemanticTypesCtrl">
+    <tab id="semantics-tab" heading="2. Semantic types" ng-controller="SemanticTypesCtrl" disabled="state.indexing == null">
       <div block-ui="inputBlockUi">
       <div class="row">
-        <div class="col-md-2">
+        <div class="col-md-2" ng-show="state.mapping == null">
           <div>
-            <label for='samanticTypesFilter'>Filter {{all.length}} semantic types</label>
+            <label for='samanticTypesFilter'>Filter {{semanticTypes.length}} semantic types</label>
             <i class="glyphicon glyphicon-filter"></i>
             <input id='samanticTypesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
           </div>
         </div>
         <div class="col-md-10">
           <label for='selectedsemanticTypesList'>Selected ({{selected.semanticTypes.length}})</label>
-          <span ng-repeat="type in selected.semanticTypes" ng-bind="type.description" ng-dblclick="unselect(type)" class="semantic-type noselect" id='selectedsemanticTypesList'></span>
+          <span ng-repeat="type in selected.semanticTypes" ng-bind="type.description" ng-disabled="state.mapping" ng-dblclick="state.mapping != null && unselect(type)" class="semantic-type noselect" id='selectedsemanticTypesList'></span>
         </div>
       </div>
-        <div ng-grid="gridOptions" class="grid semantic-types-grid"></div>
+        <div ng-show="state.mapping == null" ng-grid="gridOptions" class="grid semantic-types-grid"></div>
+        <div ng-if="state.mapping != null">
+          Discard mapping to edit semantic types.
+        </div>
       </div>
     </tab>
     
     <tab id="coding-systems-tab" heading="3. Coding systems" ng-controller="CodingSystemsCtrl">
+      
       <div block-ui="inputBlockUi">
         <div class="row">
-          <div class="col-md-2">
-            <label for='vocabulariesFilter'>Filter {{all.count}} coding systems</label>
+        
+          <div class="col-md-2" ng-show="state.mapping == null">
+            <label for='vocabulariesFilter'>Filter {{codingSystems.count}} coding systems</label>
             <i class="glyphicon glyphicon-filter"></i>
             <input id='vocabulariesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
           </div>
+          
           <div class="col-md-10">
-            <label for='selectedVocabulariesList'>Selected</label>
+            <label for='selectedVocabulariesList'>Selected ({{selected.codingSystems.length}})</label>
             <div id='selectedVocabulariesList'>
-              <span ng-repeat="voc in selected.codingSystems" ng-bind="voc.abbreviation" ng-dblclick="unselect(voc.abbreviation)" class="vocabulary noselect"></span>
+              <span ng-repeat="voc in selected.codingSystems" ng-bind="voc.abbreviation" ng-dblclick="state.mapping != null && unselect(voc.abbreviation)" class="vocabulary noselect"></span>
             </div>
           </div>
         </div>
-        <div ng-grid="gridOptions" class="grid coding-systems-grid"></div>
+        
+        <div ng-show="state.mapping == null" ng-grid="gridOptions" class="grid coding-systems-grid"></div>
+        <div ng-if="state.mapping != null">
+          Discard mapping to edit coding systems.
+        </div>
       </div>
     </tab>
     
-    <tab id="concepts-tab" heading="4. Mapping" ng-click="state != null || createInitalTranslations(caseDefinition)">
+    <tab id="concepts-tab" heading="4. Mapping" disabled="state.indexing == null" ng-click="state.mapping != null || createInitalTranslations(caseDefinition)">
 
       <button title="Create the automatic coding of the case definition"
             ng-click="createInitalTranslations(caseDefinition)"
@@ -114,7 +129,7 @@
         <div class="on-case-definition col-md-3">
           <label>Mapping for <em ng-bind="caseDefinitionName"></em></label>
           <div class="btn-group">
-            <button title="Save the coding online" ng-click="saveTranslations()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-sm btn-default">
+            <button title="Save the coding online" ng-click="saveMapping()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-sm btn-default">
               <i class="glyphicon glyphicon-cloud-upload"></i>
               Save
             </button>
@@ -126,7 +141,7 @@
               Download
             </button>
           </div>
-          <button title="Discard the coding - all changes are lost" ng-click="resetConcepts()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-sm btn-default" id="reset-concepts">
+          <button title="Discard the coding - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-sm btn-default" id="reset-concepts">
             <i class="glyphicon glyphicon-fire"></i>
             Discard
           </button>
@@ -136,7 +151,7 @@
        <div ng-grid="conceptsGridOptions" class="grid concepts-grid" ng-if="state"></div>
     </tab>
     
-    <tab id="history-tab" heading="5. History" select="updateHistoryGridStyle()">
+    <tab id="history-tab" heading="5. History" disabled="state.mapping == null" select="updateHistoryGridStyle()">
       <div ng-grid="historyGridOptions" class="grid history-grid"></div>
     </tab>
   </tabset>

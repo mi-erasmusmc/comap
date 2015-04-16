@@ -24,15 +24,6 @@ var SHOW_UMLS_COLUMN = false;
  */
 var STOPWORDS_REGEX = /^(\d{1,3}|\S{1,2})$/;
 
-function pluralize(noun, arrayOrNumber) {
-    var count = angular.isArray(arrayOrNumber) ? arrayOrNumber.length : arrayOrNumber; 
-    if (count == 1) {
-        return noun;
-    } else {
-        return noun + "s";
-    }
-}
-
 function historyDatumToString(data) {
     if (data == null) {
         return null;
@@ -45,113 +36,20 @@ function historyDatumToString(data) {
     }
 }
 
-function showConcept(concept) {
-    return concept.preferredName;
-}
-
-function showConcepts(concepts) {
-    return concepts.map(showConcept).join(", ");
-}
-
-function CodingSystemsCtrl($scope, $timeout, dataService) {
-    
-    dataService.codingSystemsPromise.then(function() {
-        $scope.all = dataService.codingSystems;
-    });
-    
-    $scope.gridOptions = {
-            data: "all",
-            rowHeight: 35,
-            showSelectionCheckbox: true,
-            filterOptions: { filterText: '' },
-            columnDefs: [
-              { displayName: 'Name', field: 'name' },
-              { displayName: 'Abbreviation', field: 'abbreviation' },
-            ]
-    };
-    
-    $timeout(function() {
-        $scope.selected.codingSystems =
-            $scope.gridOptions.$gridScope.selectedItems;
-    }, 0);
-
-    $scope.unselect = function(abbreviation) {
-        $scope.all.forEach(function(voc1, index) {
-            if (abbreviation == voc1.abbreviation) {
-                $scope.gridOptions.selectItem(index, false);
-            }
-        });
-    };
-    
-    $scope.$on("setSelectedCodingSystems", function(event, abbreviations) {
-        $scope.all.forEach(function(voc, ix) {
-            var selected = abbreviations.indexOf(voc.abbreviation) != -1;
-            $scope.gridOptions.selectItem(ix, selected);
-        });
-    });
-};
-
-/** *************** */
-/* SEMANTIC TYPES */
-/** *************** */
-
-function SemanticTypesCtrl($scope, $timeout, dataService) {
-
-    dataService.semanticTypesPromise.then(function() {
-        $scope.all = dataService.semanticTypes;
-    });
-
-    $scope.gridOptions = {
-         data: "all",
-         rowHeight: 35,
-         showSelectionCheckbox: true,
-         filterOptions: { filterText: '' },
-         columnDefs: [
-             { displayName: 'Semantic type', field: 'description' },
-             { displayName: 'Group', field: 'semantic_group'},
-         ],
-     };
-    
-    $timeout(function() {
-        $scope.selected.semanticTypes =
-            $scope.gridOptions.$gridScope.selectedItems;
-    }, 0);
-    
-    $scope.unselect = function(semanticType) {
-        $scope.all.forEach(function(semanticType1, index) {
-            if (semanticType.type == semanticType1.type) {
-                $scope.gridOptions.selectItem(index, false);
-            }
-        });
-    };
-    
-    $scope.$on("setSelectedSemanticTypes", function(event, semanticTypes) {
-        $scope.all.forEach(function(semanticType, index) {
-            var selected = semanticTypes.indexOf(semanticType.type) != -1;
-            $scope.gridOptions.selectItem(index, selected);
-        });
-    });
-};
-
 function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $log, $routeParams, $location, blockUI, urls, dataService, user) {
     
     $scope.user = user;
     $scope.project = $routeParams.project;
     $scope.caseDefinitionName = $routeParams.caseDefinitionName;
-
-    $scope.caseDefinition = "";
+    
     $rootScope.subtitle = $scope.caseDefinitionName + " (" + $scope.project + ")";
     
-    // Reflects the abbreviations and current selection of coding systems and
-    // semantic types
+    $scope.state = State.empty();
+    $scope.numberUnsafedChanges = 0;
     $scope.selected = {
         codingSystems: null,
         semanticTypes: null
     };
-    $scope.state = null; // State of the current translations
-    $scope.numberUnsafedChanges = 0; // Changes since last save
-
-    var inputBlockUi = blockUI.instances.get('inputBlockUi');
     
     blockUI.start("Loading configuration ...");
     dataService.completed
@@ -179,15 +77,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     
     var ctrlKeydownCallbacks = {
         48 /* 0 */: function() {
-            console.log("Case definition name", $scope.caseDefinitionName);
-            console.log("Case definition", $scope.caseDefinition);
-            console.log("Selected coding systems", $scope.selected.codingSystems);
-            console.log("Selected semantic types", $scope.selected.semanticTypes);
-            console.log("Grid options", $scope.conceptsGridOptions);
-            console.log("Columns", $scope.conceptsColumnDefs);
-            console.log("Selected concepts", $scope.selectedConcepts);
             console.log("State", $scope.state);
-            console.log("numberUnsafedChanges", $scope.numberUnsafedChanges);
         },
         49 /* 1 */: function() {
             $scope.activateTab("case-definition-tab");
@@ -212,20 +102,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             if (callback) {
                 callback();
             } else {
-                console.log("No callback for keyCode", event.keyCode);
             }
         }
-    };
-    
-    $rootScope.selectAll = function(gridOptions) {
-        gridOptions.selectAll(false);
-        gridOptions.ngGrid.data.forEach(function(item, ix) {
-            gridOptions.selectItem(ix, true);
-        });
-    };
-    
-    $rootScope.selectNone = function(gridOptions) {
-        gridOptions.selectAll(false);
     };
     
     /* MESSAGE */
@@ -238,11 +116,34 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         $scope.message = null;
     }
     
+    /* HISTORY */
+    
+    /** Create a history step for $scope.state.history */
+    $scope.historyStep = function(operation, argument, result, descr) {
+        $scope.setMessage(descr);
+        $scope.numberUnsafedChanges += 1;
+        $scope.state.mapping.history.push({
+            date: new Date().toJSON(),
+            operation: operation,
+            argument: argument,
+            result: result,
+            user: user.username
+        });
+    };
+    
+    $scope.historyGridOptions = {
+        data: "state.mapping.history",
+        rowHeight: 70,
+        headerRowHeight: 35,
+        columnDefs: historyColumnDefs,
+        enableRowSelection: false,
+    };
+    
     /* CONCEPTS */
     
     $scope.conceptsColumnDefs = createConceptsColumnDefs(true, []);
     $scope.conceptsGridOptions = {
-        data: "state.concepts",
+        data: "state.mapping.concepts",
         rowHeight: 70,
         headerRowHeight: 35,
         showSelectionCheckbox: true,
@@ -257,10 +158,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         } else {
             $timeout(function() {
                 $scope.selectedConcepts = $scope.conceptsGridOptions.$gridScope.selectedItems;
-            });
+            }, 0);
         }
     });
-    /** Set the selected concepts */
+
     $scope.setSelectedConcepts = function(cuis) {
         $timeout(function() {
             $scope.conceptsGridOptions.selectAll(false);
@@ -270,29 +171,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             });
         }, 0);
     }
-    
-    /* HISTORY */
-    
-    /** Create a history step for $scope.state.history */
-    $scope.historyStep = function(name, argument, result, descr) {
-        $scope.setMessage(descr);
-        $scope.numberUnsafedChanges += 1;
-        $scope.state.history.push({
-            date: new Date().toJSON(),
-            name: name,
-            argument: argument,
-            result: result,
-            user: user.username
-        });
-    };
-    
-    $scope.historyGridOptions = {
-        data: "state.history",
-        rowHeight: 70,
-        headerRowHeight: 35,
-        columnDefs: historyColumnDefs,
-        enableRowSelection: false,
-    };
 
     /* FUNCTIONS */
     
@@ -307,7 +185,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                         $location.path('/projects');
                         break;
                     case 404:
-                        $scope.state = null;
+                        $scope.state = State.empty();
                         $scope.$broadcast("setSelectedSemanticTypes", INITIAL.semanticTypes);
                         $scope.$broadcast("setSelectedCodingSystems", INITIAL.codingSystems);
                         $scope.caseDefinition = "" + INITIAL.caseDefinition;
@@ -318,12 +196,11 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             .success(function(state) {
                 console.log("Loaded", state);
                 $scope.state = state;
-                $scope.caseDefinition = "" + state.caseDefinition;
-                $scope.$broadcast("setSelectedSemanticTypes", state.semanticTypes);
-                $scope.$broadcast("setSelectedCodingSystems", state.codingSystems);
+                $scope.$broadcast("setSelectedSemanticTypes", state.mapping.semanticTypes);
+                $scope.$broadcast("setSelectedCodingSystems", state.mapping.codingSystems);
+                $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems);
                 $scope.activateTab("concepts-tab");
                 $scope.setMessage("Coding for " + $scope.caseDefinitionName + " loaded.");
-                inputBlockUi.start("Reset the current coding to edit");
             })
             .finally(function() {
                 blockUI.stop();
@@ -333,8 +210,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     };
     
     /** Ask a summary of recent changes and save/upload the coding. */ 
-    $scope.saveTranslations = function() {
-        if ($scope.state == null) {
+    $scope.saveMapping = function() {
+        if ($scope.state.mapping == null) {
             error("CodeMapperCtrl.expandRelated called without state");
             return;
         }
@@ -345,13 +222,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             resolve: {
                 caseDefinitionName: function() { return $scope.caseDefinitionName; },
                 changes: function() {
-                    var history = $scope.state.history;
+                    var history = $scope.state.mapping.history;
                     return history.slice(history.length - $scope.numberUnsafedChanges);
                 },
             }
           });       
         modalInstance.result.then(function(summary) {
-            console.log("SUMMARY", summary);
             $scope.historyStep("Summarize", summary, null, "Saved with summary: " + summary);
             var data = {
                 state: angular.toJson($scope.state)
@@ -375,7 +251,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         });
     };
     
-    /** Search UMLS concepts in `text` and give results to function `onConcepts`. */
+    /** Search UMLS concepts in `text` and give results to function `onConcepts`. 
     var searchConcepts = function(text, onConcepts) {
         
         if ($scope.state == null) {
@@ -450,45 +326,50 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 blockUI.stop();
             });
     };
+    */
     
-    /**
-     * Index the case definition for concepts, retrieve information about those
-     * concepts and display.
-     */ 
     $scope.createInitalTranslations = function(caseDefinition) {
         $log.info("Create initial coding");
-        if ($scope.state != null) {
-            error("CodeMapperCtrl.searchConcepts called with state");
+        if ($scope.state.mapping != null || $scope.state.indexing == null) {
+            error("CodeMapperCtrl.searchConcepts called with state or without indexing", $scope.state);
             return;
         }
-        $scope.state = {
-            concepts: [],
-            caseDefinition: $scope.caseDefinition,
-            codingSystems: $scope.selected.codingSystems.map(getAbbreviation),
-            semanticTypes: $scope.selected.semanticTypes.map(getType),
+        $scope.state.mapping = {
+            concepts: null,
+            codingSystems: angular.copy($scope.selected.codingSystems).map(getAbbreviation),
+            semanticTypes: angular.copy($scope.selected.semanticTypes).map(getType),
             history: []
         };
-        $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems);
-        searchConcepts(caseDefinition, function(concepts, filteredBySemanticType, filteredByCurrentConcepts) {
-            if (concepts.length > 0) {
-                $scope.state.initialCuis = concepts.map(getCui);
-                $scope.state.concepts = concepts.sort(compareByCodeCount);
-                $scope.conceptsGridOptions.sortInfo = { fields: ["sourceConceptsCount", "preferredName"], directions: [ "desc", "desc" ] };
-                var descr = "Found " + concepts.length + " concepts in case definition";
-                if (filteredBySemanticType.length > 0) {
-                    descr += ", filtered " + filteredBySemanticType.length + " by semantic type";
-                }
-                if (filteredByCurrentConcepts.length > 0) {
-                    descr += ", filtered " + filteredByCurrentConcepts.length + " by current coding";
-                }
-                $scope.historyStep("Automatic coding", null, concepts.map(reduceConcept), descr);
-                inputBlockUi.start("Reset concepts to edit!");
-            } else {
-                $scope.setMessage("No concepts found. Elaborate case definition or broaden semantic types!")
-                $scope.state = null;
-                $scope.conceptsColumnDefs = createConceptsColumnDefs(true, []);
-            }
-        });
+        $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems);
+        var concepts = $scope.state.indexing.concepts
+            .filter(function(concept) {
+                return concept.semanticTypes
+                    .filter(function(type) {
+                        return $scope.state.mapping.semanticTypes.indexOf(type) != -1;
+                    })
+                    .length > 0;
+            });
+        var data = {
+            cuis: concepts.map(getCui),
+            vocabularies: $scope.selected.codingSystems.map(getAbbreviation)
+        };
+        $http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
+            .success(function(concepts) {
+                $scope.state.mapping.concepts = concepts
+                    .map(function(concept) {
+                        var concept = patchConcept(concept, $scope.state.mapping.codingSystems);
+                        console.log(concept);
+                        concept.origin = {
+                            type: "spans",
+                            data: $scope.state.indexing.spans.filter(function(span) {
+                                return cuiOfId(span.id) == concept.cui;
+                            })
+                        };
+                        return concept;
+                    });
+                var descr = "Automatic mapping created.";
+                $scope.historyStep("Automatic coding", null, $scope.state.mapping.concepts.map(reduceConcept), descr);
+            });
     };
     
     /**
@@ -606,14 +487,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     
     /** Reset the coding of the case definition by deleting the state. Re-enable
      * input for case definition, semantic types and coding systems. */
-    $scope.resetConcepts = function() {
-        console.log("RESET");
+    $scope.discardMapping = function() {
+        console.log("DISCARD");
         $scope.$apply(function($scope) {
-            $scope.numberUnsafedChanges = 0;
-            $scope.state = null;
+            $scope.state.mapping = null;
             $scope.conceptsColumnDefs = createConceptsColumnDefs(true, []);
-            $scope.setMessage("Current codings have been reset.");
-            inputBlockUi.reset();
+            $scope.setMessage("Current mapping has been discarded.");
         });
     };
     
@@ -957,49 +836,53 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 }
                 return matchesSemanticTypes;
             })
-            // Patch: adapt concepts for the code mapper application
-            .map(function(concept0) {
-                var concept = angular.copy(concept0);
-                // Add field `codes` that is a mapping from coding systems to
-                // source
-                // concepts
-                concept.codes = {};
-                $scope.state.codingSystems.forEach(function(codingSystem) {
-                    concept.codes[codingSystem] = concept.sourceConcepts
-                        .filter(function(sourceConcept) {
-                            return sourceConcept.vocabulary == codingSystem;
-                        })
-                        .map(function(sourceConcept) {
-                            // Select all codes by default
-                            sourceConcept.selected = true;
-                            return sourceConcept;
-                        });
-                });
-                // Add the count of source codes
-                concept.sourceConceptsCount = concept.sourceConcepts.length; 
-                // Enrich information about semantic types by descriptions and
-                // groups.
-                var types = concept.semanticTypes
-                        .map(function(type) {
-                                return dataService.semanticTypesByType[type].description;
-                        })
-                        .filter(function(v, ix, arr) {
-                                return ix == arr.indexOf(v);
-                        });
-                var groups = concept.semanticTypes
-                        .map(function(type) {
-                                return dataService.semanticTypesByType[type].group;
-                        })
-                        .filter(function(v, ix, arr) {
-                                return ix == arr.indexOf(v);
-                        });
-                concept.semantic = {
-                    types: types,
-                    groups: groups
-                };
-                return concept;
+            .map(function(concept) {
+                patchConcept(concept, $scope.state.codingSystems);
             });
     };
+    
+    // Patch: adapt concepts for the code mapper application
+    function patchConcept(concept0, codingSystems) {
+        var concept = angular.copy(concept0);
+        // Add field `codes` that is a mapping from coding systems to
+        // source
+        // concepts
+        concept.codes = {};
+        codingSystems.forEach(function(codingSystem) {
+            concept.codes[codingSystem] = concept.sourceConcepts
+                .filter(function(sourceConcept) {
+                    return sourceConcept.vocabulary == codingSystem;
+                })
+                .map(function(sourceConcept) {
+                    // Select all codes by default
+                    sourceConcept.selected = true;
+                    return sourceConcept;
+                });
+        });
+        // Add the count of source codes
+        concept.sourceConceptsCount = concept.sourceConcepts.length; 
+        // Enrich information about semantic types by descriptions and
+        // groups.
+        var types = concept.semanticTypes
+            .map(function(type) {
+                return dataService.semanticTypesByType[type].description;
+            })
+            .filter(function(v, ix, arr) {
+                return ix == arr.indexOf(v);
+            });
+        var groups = concept.semanticTypes
+            .map(function(type) {
+                return dataService.semanticTypesByType[type].group;
+            })
+            .filter(function(v, ix, arr) {
+                return ix == arr.indexOf(v);
+            });
+        concept.semantic = {
+            types: types,
+            groups: groups
+        };
+        return concept;
+    }
 
     $scope.trustDefinition = function(definition) {
         return $sce.trustAsHtml(definition);
@@ -1188,7 +1071,7 @@ function createConceptsColumnDefs(showOrigin, codingSystems) {
 var historyColumnDefs = [
      { field: "date", displayName: "Date" },
      { field: "user", displayName: "User" },
-     { field: "name", displayName: "Operation" },
+     { field: "operation", displayName: "Operation" },
      { field: "argument", displayName: "Argument",
          cellTemplate: "<span>{{row.entity[col.field] | historyDatumToString}}</span>" },
      { field: "result", displayName: "Result",

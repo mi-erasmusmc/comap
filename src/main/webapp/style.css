@@ -162,3 +162,15 @@ hr {
 .active a {
 	font-style: italic;
 }
+
+.highlight .concept {
+  display: inline-block;
+  padding: 1px 1px 1px 1px;
+  background-color: #fff091;
+  border: 1px solid grey;
+  border-radius: 5px;
+}
+
+.block {
+  display: block;
+}

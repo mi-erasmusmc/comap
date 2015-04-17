@@ -15,12 +15,12 @@
         <textarea rows=35 cols=200 ng-model="text" class="case-definition"></textarea>
       </div>
       <div ng-if="state.indexing != null">
-        <button ng-if="state.mapping == null" ng-click="resetIndexing()" class="btn btn-primary block">Reset</button>
+        <button ng-if="state.mapping == null" ng-click="resetIndexing()" class="btn btn-primary block">Reset to edit</button>
         <highlight text="state.indexing.caseDefinition" spans="state.indexing.spans" concepts="state.indexing.concepts"></highlight>
       </div>
     </tab>
     
-    <tab id="semantics-tab" heading="2. Semantic types" ng-controller="SemanticTypesCtrl" disabled="state.indexing == null">
+    <tab id="semantics-tab" heading="2. Semantic types" ng-controller="SemanticTypesCtrl" disabled="state.indexing == null" title="{{state.indexing == null ? 'Index case definition first!' : ''}}">
       <div>
         <alert ng-if="state.mapping != null" type="info">
           Discard mapping to edit.
@@ -68,21 +68,21 @@
       </div>
     </tab>
     
-    <tab id="concepts-tab" heading="4. Mapping" disabled="state.indexing == null" ng-click="state.mapping != null || createInitalTranslations(caseDefinition)">
+    <tab id="concepts-tab" heading="4. Mapping" disabled="state.indexing == null" ng-click="state.mapping != null || createInitalTranslations(caseDefinition)" title="{{state.indexing == null ? 'Index case definition first!' : ''}}">
 
       <button title="Create the automatic coding of the case definition"
             ng-click="createInitalTranslations(caseDefinition)"
-            ng-if="state == null"
+            ng-if="state.mapping == null"
             class="btn btn-sm btn-primary center-block"
             id="search-concepts">
         <i class="glyphicon glyphicon-refresh"></i>
         Create initial mapping
       </button>
     
-      <div ng-if="state" class="concepts-controls row">
+      <div ng-if="state.mapping" class="concepts-controls row">
        
        <div class="filters col-md-2">
-         <label>Filter {{state.mapping.concepts.length}} concept<span ng-if="state.concepts.length != 1">s</span></label>
+         <label>Filter {{state.mapping.concepts.length}} concept<span ng-if="state.mapping.concepts.length != 1">s</span></label>
          <i class="glyphicon glyphicon-filter"></i>
          <input title="Filter concepts" placeholder="Query" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
        </div>
@@ -132,29 +132,29 @@
         <div class="on-case-definition col-md-3">
           <label>Mapping for <em ng-bind="caseDefinitionName"></em></label>
           <div class="btn-group">
-            <button title="Save the coding online" ng-click="saveMapping()" ng-if="state" ng-disabled="numberUnsafedChanges == 0" class="btn btn-sm btn-default">
+            <button title="Save the coding online" ng-click="saveMapping()" ng-disabled="numberUnsafedChanges == 0" class="btn btn-sm btn-default">
               <i class="glyphicon glyphicon-cloud-upload"></i>
               Save
             </button>
             <button title="Download as CSV for Excel (after save)"
                 ng-disabled="numberUnsafedChanges > 0"
                 ng-click="downloadConcepts()"
-                ng-if="state" class="btn btn-sm btn-default">
+                class="btn btn-sm btn-default">
               <i class="glyphicon glyphicon-download"></i>
               Download
             </button>
           </div>
-          <button title="Discard the coding - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." ng-if="state" class="btn btn-sm btn-default" id="reset-concepts">
+          <button title="Discard the coding - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." class="btn btn-sm btn-default" id="reset-concepts">
             <i class="glyphicon glyphicon-fire"></i>
             Discard
           </button>
         </div>
       </div>
        
-       <div ng-grid="conceptsGridOptions" class="grid concepts-grid" ng-if="state"></div>
+      <div ng-grid="conceptsGridOptions" class="grid concepts-grid" ng-if="state.mapping"></div>
     </tab>
     
-    <tab id="history-tab" heading="5. History" disabled="state.mapping == null" select="updateHistoryGridStyle()">
+    <tab id="history-tab" heading="5. History" disabled="state.mapping == null" select="updateHistoryGridStyle()" title="{{state.mapping == null ? 'Create mapping first!' : ''}}">
       <div ng-grid="historyGridOptions" class="grid history-grid"></div>
     </tab>
   </tabset>

@@ -69,13 +69,12 @@
       ng-click="state.mapping != null || createInitalTranslations(caseDefinition)"
       title="{{state.indexing == null ? 'Index case definition first!' : ''}}">
 
-      <button title="Create the automatic coding of the case definition"
-            ng-click="createInitalTranslations(caseDefinition)"
+      <button ng-click="createInitalTranslations(caseDefinition)"
             ng-if="state.mapping == null"
             class="btn btn-sm btn-primary center-block"
             id="search-concepts">
         <i class="glyphicon glyphicon-refresh"></i>
-        Create initial mapping
+        Generate initial mapping
       </button>
     
       <div ng-if="state.mapping" class="concepts-controls row">
@@ -131,11 +130,11 @@
         <div class="on-case-definition col-md-3">
           <label>Mapping for <em ng-bind="caseDefinitionName"></em></label>
           <div class="btn-group">
-            <button title="Save the coding online" ng-click="saveMapping()" ng-disabled="numberUnsafedChanges == 0" class="btn btn-sm btn-default">
+            <button title="Save the mapping online" ng-click="saveMapping()" ng-disabled="numberUnsafedChanges == 0" class="btn btn-sm btn-default">
               <i class="glyphicon glyphicon-cloud-upload"></i>
               Save
             </button>
-            <button title="Download as CSV for Excel (after save)"
+            <button title="Download the mapping as CSV for Excel (save first)"
                 ng-disabled="numberUnsafedChanges > 0"
                 ng-click="downloadConcepts()"
                 class="btn btn-sm btn-default">
@@ -143,7 +142,7 @@
               Download
             </button>
           </div>
-          <button title="Discard the coding - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to reset the current coding? All manual changes are lost." class="btn btn-sm btn-default" id="reset-concepts">
+          <button title="Discard the mapping - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to reset the current mapping? All manual changes are lost." class="btn btn-sm btn-default" id="reset-concepts">
             <i class="glyphicon glyphicon-fire"></i>
             Discard
           </button>

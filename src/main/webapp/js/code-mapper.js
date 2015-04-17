@@ -245,7 +245,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                         $scope.caseDefinition = "" + INITIAL.caseDefinition;
                         $scope.$broadcast("setSelectedSemanticTypes", INITIAL.semanticTypes);
                         $scope.$broadcast("setSelectedCodingSystems", INITIAL.codingSystems);
-                        $scope.setMessage("Coding for " + $scope.caseDefinitionName + " initialized.");
+                        $scope.setMessage("Mapping for " + $scope.caseDefinitionName + " initialized.");
                         break;
                 } 
             })
@@ -258,9 +258,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 $scope.$broadcast("setSelectedCodingSystems", state.mapping.codingSystems);
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems);
                 $scope.activateTab("concepts-tab");
-                $timeout(function() {
-                    $scope.setMessage("Coding for " + $scope.caseDefinitionName + " loaded.");
-                }, 0);
+                $scope.setMessage("Mapping for " + $scope.caseDefinitionName + " loaded.");
             })
             .finally(function() {
                 $scope.numberUnsafedChanges = 0;
@@ -645,7 +643,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         var data = [];
         
         [ ["CASE DEFINITION"], 
-          [$scope.caseDefinitionName, "(Coding generated with ADVANCE Code Mapper)"]
+          [$scope.caseDefinitionName, "(Mapping created with ADVANCE Code Mapper)"]
         ].forEach(function(row) { data.push(row); });
         
         [ [],

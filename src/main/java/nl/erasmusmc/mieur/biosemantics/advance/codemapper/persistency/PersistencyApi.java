@@ -125,7 +125,6 @@ public class PersistencyApi {
 			statement.setString(2, stateJson);
 			statement.setString(3, project);
 			statement.setString(4, stateJson);
-			System.out.println(statement);
 			statement.executeUpdate();
 		} catch (SQLException e) {
 			throw CodeMapperException.server("Cannot execute query to set case definition", e);

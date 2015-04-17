@@ -336,9 +336,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                         console.log(concept);
                         concept.origin = {
                             type: "spans",
-                            data: $scope.state.indexing.spans.filter(function(span) {
-                                return cuiOfId(span.id) == concept.cui;
-                            })
+                            data: $scope.state.indexing.spans
+                                .filter(function(span) {
+                                    return cuiOfId(span.id) == concept.cui;
+                                })[0]
                         };
                         return concept;
                     });
@@ -907,7 +908,7 @@ var originColumnDef = {
     field: 'origin',
     cellTemplate:
       "<div ng-if='row.entity.origin.type == \"spans\"' class='spans' title='Found in case definition'>" +
-        "<span class=span ng-repeat='span in row.entity.origin.data' ng-bind='span.text'></span>" +
+        "<span class='span' ng-bind='row.entity.origin.data.text'></span>" +
       "</div>" +
       "<div ng-if='row.entity.origin.type == \"hypernym\"'>" +
         "<span title='More general than {{row.entity.origin.data.preferredName}}'>" +

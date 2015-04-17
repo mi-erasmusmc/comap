@@ -665,17 +665,25 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         
         [ [],
           ["CODES"],
-          ["CODING SYSTEMS", "CODE", "NAME IN CODING SYSTEM", "CONCEPT NAME", "CONCEPT ID", "Origin"]
+          ["CODING SYSTEMS", "CODE", "NAME IN CODING SYSTEM", "CONCEPT NAME", "UMLS ID", "Origin"]
         ].forEach(function(row) { data.push(row); });
         $scope.state.mapping.codingSystems.forEach(function(vocabulary) {
             $scope.state.mapping.concepts.forEach(function(concept) {
-                var origin = concept.origin.type + ": ";
+                var origin = "?";
                 if (concept.origin.type == "spans") {
-                    origin += concept.origin.data.map(function(s) { return s.text; }).join(", ");
-                } else if (concept.origin.type == "hyponym" || concept.origin.type == "hypernym") {
-                    origin += concept.origin.data.cui;
-                } else if (concept.origin.type == "search") {
-                    origin += concept.origin.data;
+                    origin = "Found in case definition (\"" + concept.origin.data.text + "\")";
+                }
+                if (concept.origin.type == "hyponym") {
+                    origin = "Expanded more specific than " + concept.origin.data.preferredName;
+                }
+                if (concept.origin.type == "hypernym") {
+                    origin = "Expanded more general than " + concept.origin.data.preferredName;
+                }
+                if (concept.origin.type == "search") {
+                    origin = "Search with query \"" + concept.origin.data + "\"";
+                }
+                if (concept.origin.type == "add") {
+                    origin = "Added";
                 }
                 concept.codes[vocabulary].forEach(function(code) {
                     if (code.selected) {

@@ -143,12 +143,17 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         enableCellSelection: true,
         filterOptions: { filterText: '' }
     };
-    $scope.$watch('state', function(newState) {
-        if (newState == null) {
+    
+    $scope.$watch('state.mapping', function(mapping) {
+        if (mapping == null) {
             $scope.selectedConcepts = [];
         } else {
             $timeout(function() {
-                $scope.selectedConcepts = $scope.conceptsGridOptions.$gridScope.selectedItems;
+                if (angular.isObject(mapping)) {
+                    $scope.selectedConcepts = $scope.conceptsGridOptions.$gridScope.selectedItems;
+                } else {
+                    $scope.selectedConcepts = [];
+                }
             }, 0);
         }
     });

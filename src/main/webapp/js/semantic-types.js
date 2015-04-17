@@ -19,6 +19,14 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
          ]
     };
 
+    $scope.$watch('state.mapping', function(mapping) {
+        // WORKAROUND https://github.com/angular-ui/ng-grid/issues/855#issuecomment-47254073
+        $timeout(function() {
+            $scope.gridOptions.$gridServices.DomUtilityService.RebuildGrid(
+                $scope.gridOptions.$gridScope,  $scope.gridOptions.ngGrid);
+        }, 100);
+    });
+
     dataService.semanticTypesPromise.then(function() {
         $scope.semanticTypes = dataService.semanticTypes;
         $timeout(function() {

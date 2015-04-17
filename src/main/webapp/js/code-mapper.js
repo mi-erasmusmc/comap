@@ -439,8 +439,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 if (filteredByCurrentConcepts.length > 0) {
                     message += ", filtered " + filteredByCurrentConcepts.length + " by current coding"; 
                 } 
-                selectConceptsInDialog(concepts, title, true, message, $scope.state.mapping.codingSystems,
-                    function(selectedConcepts) {
+                selectConceptsInDialog($modal, concepts, title, true, message, $scope.state.mapping.codingSystems)
+                    .then(function(selectedConcepts) {
                         if (angular.isArray(selectedConcepts)) {
                             selectedConcepts.forEach(function(concept) {
                                 concept.origin = {
@@ -585,8 +585,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             hyponymsNotHypernyms: hyponymsNotHypernyms,
             codingSystems: $scope.state.mapping.codingSystems
         };
+        var currentCuis = $scope.state.mapping.concepts.map(getCui);
         // Retrieve related concepts from the API
-
         $http.post(urls.relatedConcepts, data, FORM_ENCODED_POST)
             .error(function(err, status) {
                 if (status == 401) {
@@ -604,7 +604,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                     var relatedConceptsCuis = relatedConcepts.map(getCui);
                     relatedConceptsForCui = relatedConceptsForCui
                         .filter(function(c, ix, a) {
-                            return isFirstOccurrence(c, ix, a) && relatedConceptsCuis.indexOf(c.cui) == -1 && $scope.conceptHasSelectedSemanticType(c);
+                            return currentCuis.indexOf(c.cui) == -1 // Not yet in mapping
+                                && relatedConceptsCuis.indexOf(c.cui) == -1 // Not a duplication for another CUI  
+                                && isFirstOccurrence(c, ix, a) // Not a duplication for this CUI
+                                && $scope.conceptHasSelectedSemanticType(c); // Right semantic types
                         })
                         .map(function(concept) {
                             return patchConcept(concept, $scope.state.mapping.codingSystems);
@@ -625,31 +628,32 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 var specificOrGeneral = hyponymsNotHypernyms ? "specific" : "general";
                 var message = null;//"Found " + relatedConcepts.length + " that are more " + specificOrGeneral;
                 var title = "Concepts that are more " + specificOrGeneral + " than " + conceptNames;
-                selectConceptsInDialog(relatedConcepts, title, true, message, $scope.state.mapping.codingSystems, function(selectedRelatedConcepts) {
+                selectConceptsInDialog($modal, relatedConcepts, title, true, message, $scope.state.mapping.codingSystems)
+                    .then(function(selectedRelatedConcepts) {
                     
-                    // Search position of original inital concepts
-                    var conceptOffsets = {};
-                    cuis.forEach(function(cui) {
-                        $scope.state.mapping.concepts.forEach(function(c, cIx) {
-                            if (c.cui == cui) {
-                                conceptOffsets[cui] = cIx;
-                            }
+                        // Search position of original inital concepts
+                        var conceptOffsets = {};
+                        cuis.forEach(function(cui) {
+                            $scope.state.mapping.concepts.forEach(function(c, cIx) {
+                                if (c.cui == cui) {
+                                    conceptOffsets[cui] = cIx;
+                                }
+                            });
                         });
+    
+                        // Insert each related concept in list of concepts
+                        selectedRelatedConcepts.forEach(function(related, ix) {
+                            var offset = ++conceptOffsets[related.origin.data.cui];
+                            $scope.state.mapping.concepts.splice(offset, 0, related);
+                        });
+                        $scope.setSelectedConcepts(selectedRelatedConcepts.map(getCui));
+                        
+                        var descr = "Expanded " + conceptNames +
+                            " with " + selectedRelatedConcepts.length + 
+                            " " + pluralize(hyponymOrHypernym, selectedRelatedConcepts);
+                        var operation = hyponymsNotHypernyms ? "Expand to more specific" : "Expand to more general";
+                        $scope.historyStep(operation, concepts.map(reduceConcept), selectedRelatedConcepts.map(reduceConcept), descr);
                     });
-
-                    // Insert each related concept in list of concepts
-                    selectedRelatedConcepts.forEach(function(related, ix) {
-                        var offset = ++conceptOffsets[related.origin.data.cui];
-                        $scope.state.mapping.concepts.splice(offset, 0, related);
-                    });
-                    $scope.setSelectedConcepts(selectedRelatedConcepts.map(getCui));
-                    
-                    var descr = "Expanded " + conceptNames +
-                        " with " + selectedRelatedConcepts.length + 
-                        " " + pluralize(hyponymOrHypernym, selectedRelatedConcepts);
-                    var operation = hyponymsNotHypernyms ? "Expand to more specific" : "Expand to more general";
-                    $scope.historyStep(operation, concepts.map(reduceConcept), selectedRelatedConcepts.map(reduceConcept), descr);
-                });
             })
             .finally(function() {
                 blockUI.stop();
@@ -657,97 +661,57 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     };
     
     $scope.operationEditCodes = function(concepts) {
-        $modal.open({
-            templateUrl: 'partials/EditCodes.html',
-            controller: 'EditCodesCtrl',
-            size: 'lg',
-            resolve: {
-                concepts: function() {
-                    return concepts;
-                },
-                codes: function() { 
-                    var codes = [];
-                    concepts.forEach(function(concept) {
-                        $scope.state.mapping.codingSystems.forEach(function(codingSystem) {
-                            concept.codes[codingSystem].forEach(function(code0) {
-                                var code = angular.copy(code0);
-                                code.concept = concept;
-                                codes.push(code);
-                            });
+        editCodes($modal, concepts, $scope.state.mapping.codingSystems)
+            .then(function(codes) {
+                function isSelected(cui, vocabulary, id) {
+                    return codes.filter(function(code) {
+                        return code.cui == cui && code.vocabulary == vocabulary && code.id == id;
+                    }).length != 0
+                };
+                var added = [];
+                var removed = [];
+                concepts.forEach(function(concept) {
+                    $scope.state.mapping.codingSystems.forEach(function(codingSystem) {
+                        concept.codes[codingSystem].forEach(function(code) {
+                            var selected = isSelected(code.cui, code.vocabulary, code.id);
+                            if (!code.selected && selected) {
+                                added.push({
+                                    code: code,
+                                    concept: concept
+                                });
+                            }
+                            if (code.selected && !selected) {
+                                removed.push({
+                                    code: code,
+                                    concept: concept
+                                });
+                            }
+                            code.selected = selected;
                         });
                     });
-                    return codes;
-                }
-            }
-        })
-        .result.then(function(codes) {
-            function isSelected(cui, vocabulary, id) {
-                return codes.filter(function(code) {
-                    return code.cui == cui && code.vocabulary == vocabulary && code.id == id;
-                }).length != 0
-            };
-            var added = [];
-            var removed = [];
-            concepts.forEach(function(concept) {
-                $scope.state.mapping.codingSystems.forEach(function(codingSystem) {
-                    concept.codes[codingSystem].forEach(function(code) {
-                        var selected = isSelected(code.cui, code.vocabulary, code.id);
-                        if (!code.selected && selected) {
-                            added.push({
-                                code: code,
-                                concept: concept
-                            });
-                        }
-                        if (code.selected && !selected) {
-                            removed.push({
-                                code: code,
-                                concept: concept
-                            });
-                        }
-                        code.selected = selected;
-                    });
                 });
-            });
-            if (added.length == 0 && removed.length == 0) {
-                $scope.setMessage("No codes changed");                    
-            } else {
-                var descr, result;
-                var resultCodes = function(codes, preposition) {
-                    return codes.map(function(cc) {
-                        return cc.code.id + " (" + cc.code.vocabulary + ") " + preposition + " " + cc.concept.preferredName;
-                    }).join(", ");
-                };
-                if (removed.length == 0) {
-                    descr = "Added " + added.length + " codes";
-                    result = "added: " + resultCodes(added, "to");
-                } else if (added.length == 0) {
-                    descr = "Removed " + removed.length + " codes";
-                    result = "removed: " + resultCodes(removed, "from");
+                if (added.length == 0 && removed.length == 0) {
+                    $scope.setMessage("No codes changed");                    
                 } else {
-                    descr = "Added " + added.length + " and removed " + removed.length + " codes";
-                    result = "added: " + resultCodes(added, "to") + ", removed: " + resultCodes(removed, "from");
+                    var descr, result;
+                    var resultCodes = function(codes, preposition) {
+                        return codes.map(function(cc) {
+                            return cc.code.id + " (" + cc.code.vocabulary + ") " + preposition + " " + cc.concept.preferredName;
+                        }).join(", ");
+                    };
+                    if (removed.length == 0) {
+                        descr = "Added " + added.length + " codes";
+                        result = "added: " + resultCodes(added, "to");
+                    } else if (added.length == 0) {
+                        descr = "Removed " + removed.length + " codes";
+                        result = "removed: " + resultCodes(removed, "from");
+                    } else {
+                        descr = "Added " + added.length + " and removed " + removed.length + " codes";
+                        result = "added: " + resultCodes(added, "to") + ", removed: " + resultCodes(removed, "from");
+                    }
+                    $scope.historyStep("Edit codes", concepts.map(reduceConcept), result, descr);
                 }
-                $scope.historyStep("Edit codes", concepts.map(reduceConcept), result, descr);
-            }
-        });
-    };
-    
-    function selectConceptsInDialog(concepts, title, selectable, message, codingSystems, onSelectedConcepts) {
-        
-        // Display retrieved concepts in a dialog
-        var modalInstance = $modal.open({
-          templateUrl: 'partials/ShowConcepts.html',
-          controller: 'ShowConceptsCtrl',
-          size: 'lg',
-          resolve: {
-            title: function() { return title; },
-            concepts: function() { return concepts.sort(compareByCodeCount); },
-            codingSystems: function() { return codingSystems; },
-            selectable: function() { return selectable; },
-            message: function() { return message; }
-          }
-        });
-        modalInstance.result.then(onSelectedConcepts);
+            });
     };
 
     $scope.downloadConcepts = function() {
@@ -906,6 +870,23 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
     };
 };
 
+function selectConceptsInDialog($modal, concepts, title, selectable, message, codingSystems, onSelectedConcepts) {
+    // Display retrieved concepts in a dialog
+    var dialog = $modal.open({
+      templateUrl: 'partials/ShowConcepts.html',
+      controller: 'ShowConceptsCtrl',
+      size: 'lg',
+      resolve: {
+        title: function() { return title; },
+        concepts: function() { return concepts.sort(compareByCodeCount); },
+        codingSystems: function() { return codingSystems; },
+        selectable: function() { return selectable; },
+        message: function() { return message; }
+      }
+    });
+    return dialog.result;
+};
+
 function EditCodesCtrl($scope, $modalInstance, $timeout, concepts, codes) {
     $scope.concepts = concepts;
     $scope.codes = codes.map(function(code) {
@@ -939,6 +920,33 @@ function EditCodesCtrl($scope, $modalInstance, $timeout, concepts, codes) {
     $scope.cancel = function() {
         $modalInstance.dismiss('cancel');
     };
+}
+
+function editCodes($modal, concepts, codingSystems) {
+    var dialog = $modal.open({
+        templateUrl: 'partials/EditCodes.html',
+        controller: 'EditCodesCtrl',
+        size: 'lg',
+        resolve: {
+            concepts: function() {
+                return concepts;
+            },
+            codes: function() { 
+                var codes = [];
+                concepts.forEach(function(concept) {
+                    codingSystems.forEach(function(codingSystem) {
+                        concept.codes[codingSystem].forEach(function(code0) {
+                            var code = angular.copy(code0);
+                            code.concept = concept;
+                            codes.push(code);
+                        });
+                    });
+                });
+                return codes;
+            }
+        }
+    });
+    return dialog.result;
 }
 
 function AskChangesSummaryCtrl($scope, $http, $modalInstance, $timeout, caseDefinitionName, changes) {

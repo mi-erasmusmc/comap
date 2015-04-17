@@ -44,7 +44,7 @@ function handleError(err, status) {
     }
 }
 
-function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $log, $routeParams, $location, blockUI, urls, dataService, user) {
+function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $log, $routeParams, $location, urls, dataService, user) {
     
     $scope.user = user;
     $scope.project = $routeParams.project;
@@ -59,10 +59,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         semanticTypes: null
     };
     
-    blockUI.start("Loading configuration ...");
     dataService.completed
         .then(function() {
-            blockUI.stop();
             $scope.loadTranslations();
         });
     
@@ -235,7 +233,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     
     /** Load coding or create new coding. */
     $scope.loadTranslations = function() {
-        blockUI.start("Loading codings ...");
         $http.get(urls.caseDefinition($scope.project, $scope.caseDefinitionName))
             .error(function(err, code, a2) {
                 switch (code) {
@@ -262,7 +259,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 $scope.setMessage("Coding for " + $scope.caseDefinitionName + " loaded.");
             })
             .finally(function() {
-                blockUI.stop();
                 $scope.numberUnsafedChanges = 0;
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems);
             });

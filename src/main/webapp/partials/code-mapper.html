@@ -21,7 +21,7 @@
     </tab>
     
     <tab id="semantics-tab" heading="2. Semantic types" ng-controller="SemanticTypesCtrl" disabled="state.indexing == null">
-      <div block-ui="inputBlockUi">
+      <div>
         <alert ng-if="state.mapping != null" type="info">
           Discard mapping to edit.
         </alert>
@@ -44,7 +44,7 @@
     
     <tab id="coding-systems-tab" heading="3. Coding systems" ng-controller="CodingSystemsCtrl">
       
-      <div block-ui="inputBlockUi">
+      <div>
         <alert ng-if="state.mapping != null" type="info">
           Discard mapping to edit.
         </alert>

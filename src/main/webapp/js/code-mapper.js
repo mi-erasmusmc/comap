@@ -36,6 +36,14 @@ function historyDatumToString(data) {
     }
 }
 
+function handleError(err, status) {
+    if (status == 401) {
+        alert("Your session has timed out :( You have to re-login!")
+    } else {
+        alert(err, status);
+    }
+}
+
 function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $log, $routeParams, $location, blockUI, urls, dataService, user) {
     
     $scope.user = user;
@@ -302,83 +310,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         });
     };
     
-    /** Search UMLS concepts in `text` and give results to function `onConcepts`. 
-    var searchConcepts = function(text, onConcepts) {
-        
-        if ($scope.state == null) {
-            error("CodeMapperCtrl.searchConcepts called without state");
-            return;
-        }
-
-        // Index case definition with peregrine
-        var data = {
-            text: text
-        };
-        blockUI.start("Indexing ...");
-        $http.post(dataService.peregrineResource + "/index", data, FORM_ENCODED_POST)
-            .error(function(err, status) {
-                if (status == 401) {
-                    alert("Your session has timed out :( You have to re-login!")
-                } else {
-                    var msg = "ERROR: Couldn't search concepts in case definition at " + dataService.peregrineResource;
-                    console.log(msg, err);
-                    alert(msg);
-                }
-            })
-            .success(function(result) { 
-                var spans = result.spans.filter(function(span) {
-                    var isStopword = dataService.stopwords.indexOf(span.text.toUpperCase()) != -1;
-                    var isFiltered = STOPWORDS_REGEX.test(span.text);
-                    if (isStopword || isFiltered) {
-                        console.log("Filter span", span.text, isStopword ? "as stopword" : "", isFiltered ? "as regex" : "");
-                    }
-                    return !(isStopword || isFiltered);
-                });
-                var cuis = [];
-                spans.forEach(function(span) {
-                    var cui = cuiOfId(span.id);
-                    if (cuis.indexOf(cui) == -1) {
-                        cuis.push(cui);
-                    }
-                });
-                var data = {
-                    cuis : cuis,
-                    codingSystems : $scope.state.codingSystems
-                };
-                blockUI.start("Loading concept ...");
-                $http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
-                    .error(function(err, status) {
-                        if (status == 401) {
-                            alert("Your session has timed out :( You have to re-login!")
-                        } else {
-                            var msg = "ERROR: Couldn't lookup concepts";
-                            alert(msg, err);
-                        }
-                    })
-                    .success(function(concepts0) {
-                        var filteredBySemanticType = [],
-                            filteredByCurrentConcepts = [];
-                        var concepts = $scope.filterAndPatch(concepts0, null, filteredBySemanticType, filteredByCurrentConcepts);
-                        concepts.forEach(function(concept) {
-                            concept.origin = {
-                                type: "spans",
-                                data: spans.filter(function(span) {
-                                    return cuiOfId(span.id) == concept.cui;
-                                })
-                            };
-                        });
-                        onConcepts(concepts, filteredBySemanticType, filteredByCurrentConcepts);
-                    })
-                    .finally(function() {
-                        blockUI.stop();
-                    });
-            })
-            .finally(function() {
-                blockUI.stop();
-            });
-    };
-    */
-    
     $scope.createInitalTranslations = function(caseDefinition) {
         $log.info("Create initial coding");
         if ($scope.state.mapping != null || $scope.state.indexing == null) {
@@ -416,110 +347,20 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             });
     };
     
-    /**
-     * Index a given query string for concepts, retrieve information and select
-     * concepts in a dialog for inclusion.
-     */
-    $scope.searchAndAddConcepts = function(searchQuery) {
-        $log.info("Search and add concepts", searchQuery, $scope);
-        if ($scope.state == null) {
-            error("CodeMapperCtrl.searchAndAddConcepts called without state");
-            return;
-        }
-        searchConcepts(searchQuery, function(concepts, filteredBySemanticType, filteredByCurrentConcepts) {
-            console.log(searchQuery, concepts, filteredBySemanticType, filteredByCurrentConcepts);
-            if (concepts.length == 0) {
-                  $scope.setMessage("No concepts found for query \"" + searchQuery + "\".");
-            } else {
-                var title = "Concepts for search \"" + searchQuery + "\"";
-                var message = "Found " + concepts.length + " concepts";
-                if (filteredBySemanticType.length > 0) {
-                    message  += ", filtered " + filteredBySemanticType.length + " by semantic types";
-                }
-                if (filteredByCurrentConcepts.length > 0) {
-                    message += ", filtered " + filteredByCurrentConcepts.length + " by current coding"; 
-                } 
-                selectConceptsInDialog($modal, concepts, title, true, message, $scope.state.mapping.codingSystems)
-                    .then(function(selectedConcepts) {
-                        if (angular.isArray(selectedConcepts)) {
-                            selectedConcepts.forEach(function(concept) {
-                                concept.origin = {
-                                    type: "search",
-                                    data: searchQuery
-                                };
-                            });
-                            $scope.state.concepts = selectedConcepts.concat($scope.state.concepts);
-                            $scope.setSelectedConcepts(selectedConcepts.map(getCui));
-                            var descr = "Added " + selectedConcepts.length + " concepts by search on \"" + searchQuery + "\"";
-                            $scope.historyStep("Search", search, selectedConcepts.map(reduceConcept), descr);
-                            $scope.searchQuery = "";
-                        }
-                    });
-            }
-        });
-    };
-    
-    $scope.searchAndAddConceptDirect = function(concept0) {
-        console.log("Search&add direct", concept0);
-        var data = {
-            cuis : [concept0.cui],
-            codingSystems : $scope.state.codingSystems
-        };
-        blockUI.start("Search concept ...");
-        $http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
-            .error(function(err, status) {
-                if (status == 401) {
-                    alert("Your session has timed out :( You have to re-login!")
-                } else {
-                    var msg = "ERROR: Couldn't lookup concepts";
-                    alert(msg, err);
-                }
-            })
-            .success(function(concepts0) {
-                var filteredBySemanticType = [],
-                    filteredByCurrentConcepts = [];
-                var concepts = $scope.filterAndPatch(concepts0, null, filteredBySemanticType, filteredByCurrentConcepts);
-                if (concepts.length == 0) {
-                    var message = "Concept not found";
-                    if (filteredBySemanticTypes.length > 0) {
-                        message  += "(filtered  by semantic types)";
-                    }
-                    if (filteredByCurrentConcepts.length > 0) {
-                        message += "(filtered by current coding)"; 
-                    } 
-                    $scope.setMessage(message);
-                } else {
-                    var concept = concepts[0];
-                    concept.origin = {
-                        type: "add",
-                        data: concept.preferredName
-                    };
-                    $scope.state.concepts = [concept].concat($scope.state.concepts);
-                    $scope.setSelectedConcepts([concept.cui]);
-                    var descr = "Added concept " + concept.preferredName;
-                    $scope.historyStep("Add", null, reduceConcept(concept), descr);
-                    $scope.searchQuery = "";
-                }
-            })
-            .finally(function() {
-                blockUI.stop();
-            });
-    };
-    
     /** Generate a list of UMLS concept names with a given prefix. */
-    $scope.autocompleteConcepts= function(str) {
+    $scope.autocompleteConcepts = function(str) {
         var params = {
             str: str,
-            codingSystems: $scope.state.codingSystems,
-            semanticTypes: $scope.state.semanticTypes
+            codingSystems: $scope.state.mapping.codingSystems,
+            semanticTypes: $scope.state.mapping.semanticTypes
         };
         return $http.get(urls.autocomplete, { params: params })
             .then(function(completions) {
                 if (completions.status == 200) {
-                    var currentCuis = $scope.state.concepts.map(getCui);
+                    var currentCuis = $scope.state.mapping.concepts.map(getCui);
                     return completions.data
                         .filter(function(c) {
-                            return currentCuis.indexOf(c.cui) == -1;
+                            return currentCuis.indexOf(c.cui) == -1; 
                         })
                         .sort(function(s1, s2) {
                             return s1.preferredName.length - s2.preferredName.length
@@ -527,7 +368,97 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                         });
                 }
             });
-    }
+    };
+    
+    /**
+     * Index a given query string for concepts, retrieve information and select
+     * concepts in a dialog for inclusion.
+     */
+    $scope.searchAndAddConcepts = function(searchQuery) {
+        if ($scope.state.mapping == null) {
+            error("CodeMapperCtrl.searchAndAddConcepts called without mapping");
+            return;
+        }
+        var currentCuis = $scope.state.mapping.concepts.map(getCui);
+        var filteredBySemanticType = [], filteredByCurrentConcepts = [];
+        indexText($http, dataService.peregrineResource, dataService.stopwords, urls.umlsConcepts, searchQuery)
+            .then(function(item) {
+                return item.concepts
+                    .filter(function(c, ix, a) {
+                        var newInMapping = currentCuis.indexOf(c.cui) == -1;
+                        if (!newInMapping) {
+                            filteredByCurrentConcepts.push(c);
+                        }
+                        var hasSelectedSemanticType = $scope.conceptHasSelectedSemanticType(c);
+                        if (!hasSelectedSemanticType) {
+                            filteredBySemanticType.push(c);
+                        }
+                        return newInMapping && hasSelectedSemanticType;
+                    })
+                    .map(getCui);
+            })
+            .then(function(cuis) {
+                var data = {
+                    cuis: cuis,
+                    vocabularies: $scope.state.mapping.codingSystems
+                };
+                return $http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
+                    .then(function(result) {
+                        var concepts = result.data;
+                        concepts = concepts
+                            .map(function(concept) {
+                                var concept = patchConcept(concept, $scope.state.mapping.codingSystems);
+                                concept.origin = {
+                                    type: "search",
+                                    data: searchQuery
+                                };
+                                return concept;
+                            });
+                        var title = "Concepts for search query \"" + searchQuery + "\"";
+                        var message = "Found " + concepts.length + " concepts";
+                        var comments = [];
+                        if (filteredBySemanticType.length > 0) {
+                            comments.push("filtered " + filteredBySemanticType.length + " by semantic types");
+                        }
+                        if (filteredByCurrentConcepts.length > 0) {
+                            comments.push("filtered " + filteredByCurrentConcepts.length + " by current coding"); 
+                        } 
+                        message += comments.length > 0 ? " (" + comments.join(", ") + ")" : "";
+                        return selectConceptsInDialog($modal, concepts, title, true, message, $scope.state.mapping.codingSystems);
+                    });
+            })
+            .then(function(selectedConcepts) {
+                if (angular.isArray(selectedConcepts)) {
+                    $scope.state.mapping.concepts = [].concat(selectedConcepts, $scope.state.mapping.concepts);
+                    $scope.setSelectedConcepts(selectedConcepts.map(getCui));
+                    var descr = "Added " + selectedConcepts.length + " concepts by search on \"" + searchQuery + "\"";
+                    $scope.historyStep("Search", searchQuery, selectedConcepts.map(reduceConcept), descr);
+                    $scope.searchQuery = "";
+                }
+            });
+    };
+    
+    $scope.searchAndAddConceptDirect = function(concept0) {
+        console.log("Search&add direct", concept0);
+        var data = {
+            cuis : [concept0.cui],
+            codingSystems : $scope.state.mapping.codingSystems
+        };
+        $http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
+            .error(handleError)
+            .success(function(concepts) {
+                var concept = patchConcept(concepts[0], $scope.state.mapping.codingSystems);
+                concept.origin = {
+                    type: "add",
+                    data: concept.preferredName
+                };
+                $scope.state.mapping.concepts = [].concat([concept], $scope.state.mapping.concepts);
+                $scope.setSelectedConcepts([concept.cui]);
+                var descr = "Added concept " + concept.preferredName;
+                $scope.historyStep("Add", null, reduceConcept(concept), descr);
+                $scope.searchQuery = "";
+            });
+    };
     
     /** Reset the coding of the case definition by deleting the state. Re-enable
      * input for case definition, semantic types and coding systems. */
@@ -715,16 +646,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     };
 
     $scope.downloadConcepts = function() {
-        if ($scope.state == null) {
+        if ($scope.state.mapping == null) {
             error("CodeMapperCtrl.downloadConcepts called without state");
             return;
         }
         console.log("Download concepts");
-        var selectedCodingSystemsAbbreviations = $scope.selected.codingSystems
-            .map(function(voc) {
-                return voc.abbreviation;
-            });
-        
+
         var data = [];
         
         [ ["CASE DEFINITION"], 
@@ -735,8 +662,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
           ["CODES"],
           ["CODING SYSTEMS", "CODE", "NAME IN CODING SYSTEM", "CONCEPT NAME", "CONCEPT ID", "Origin"]
         ].forEach(function(row) { data.push(row); });
-        selectedCodingSystemsAbbreviations.forEach(function(vocabulary) {
-            $scope.state.concepts.forEach(function(concept) {
+        $scope.state.mapping.codingSystems.forEach(function(vocabulary) {
+            $scope.state.mapping.concepts.forEach(function(concept) {
                 var origin = concept.origin.type + ": ";
                 if (concept.origin.type == "spans") {
                     origin += concept.origin.data.map(function(s) { return s.text; }).join(", ");
@@ -757,8 +684,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
           ["HISTORY"],
           ["DATE", "STEP", "ARGUMENT", "RESULT"]
         ].forEach(function(row) { data.push(row); });
-        if ($scope.state.history) {
-            $scope.state.history.forEach(function(step) {
+        if ($scope.state.mapping.history) {
+            $scope.state.mapping.history.forEach(function(step) {
                 data.push([step.date,
                            step.name,
                            historyDatumToString(step.argument), 
@@ -769,7 +696,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         [ [],
           ["CASE DEFINITION TEXT"]
         ].forEach(function(row) { data.push(row); });
-        $scope.state.caseDefinition.split("\n").forEach(function(line) {
+        $scope.state.indexing.caseDefinition.split("\n").forEach(function(line) {
             data.push([line]);
         });
         

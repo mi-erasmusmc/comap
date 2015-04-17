@@ -1,6 +1,6 @@
 function CaseDefinitionCtrl($scope, $http, urls, dataService, blockUI) {
 
-    $scope.text = "headache and fever and case definition";
+    $scope.text = "";
 
     $scope.createIndexing = function(caseDefinition) {
         indexText($http, dataService.peregrineResource, dataService.stopwords, urls.umlsConcepts, caseDefinition)

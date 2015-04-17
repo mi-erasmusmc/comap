@@ -153,12 +153,6 @@ hr {
 	margin-top: 10px;
 	margin-bottom: 10px;
 }
-#concepts-tab > a, #history-tab > a {
- background-color: rgb(237, 233, 255);
-}
-#concepts-tab.active > a, #history-tab.active > a {
-  background-color: rgb(245, 242, 255);
-}
 .active a {
 	font-style: italic;
 }

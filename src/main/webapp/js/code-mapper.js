@@ -575,7 +575,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             error("CodeMapperCtrl.expandRelated called without mapping");
             return;
         }
-        var conceptNames = concepts.map(function(c) { return c.preferredName; }).join(", ");
+        var conceptNames =concepts.length <= 3
+            ? concepts.map(function(c) { return c.preferredName; }).join(", ")
+            : concepts.length + " " + pluralize("concept", concepts);
         var hyponymOrHypernym = hyponymsNotHypernyms ? "hyponym" : "hypernym";
         var cuis = concepts.map(getCui);
         var data = {
@@ -584,7 +586,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             codingSystems: $scope.state.mapping.codingSystems
         };
         // Retrieve related concepts from the API
-        blockUI.start("Load related concept ...");
+
         $http.post(urls.relatedConcepts, data, FORM_ENCODED_POST)
             .error(function(err, status) {
                 if (status == 401) {
@@ -620,9 +622,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                     });
                     relatedConcepts = relatedConcepts.concat(relatedConceptsForCui);
                 });
-                    
-                var message = "Found " + relatedConcepts.length + " " + pluralize(hyponymOrHypernym, relatedConcepts);
-                var title = "H" + hyponymOrHypernym.slice(1) + "s of " + conceptNames;
+                var specificOrGeneral = hyponymsNotHypernyms ? "specific" : "general";
+                var message = null;//"Found " + relatedConcepts.length + " that are more " + specificOrGeneral;
+                var title = "Concepts that are more " + specificOrGeneral + " than " + conceptNames;
                 selectConceptsInDialog(relatedConcepts, title, true, message, $scope.state.mapping.codingSystems, function(selectedRelatedConcepts) {
                     
                     // Search position of original inital concepts
@@ -642,10 +644,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                     });
                     $scope.setSelectedConcepts(selectedRelatedConcepts.map(getCui));
                     
-                    var descr = "Expanded " +
-                        (concepts.length <= 3 
-                                ? pluralize("concept", concepts) + " " + conceptNames
-                                : concepts.length + " " + pluralize("concept", concepts)) +
+                    var descr = "Expanded " + conceptNames +
                         " with " + selectedRelatedConcepts.length + 
                         " " + pluralize(hyponymOrHypernym, selectedRelatedConcepts);
                     var operation = hyponymsNotHypernyms ? "Expand to more specific" : "Expand to more general";

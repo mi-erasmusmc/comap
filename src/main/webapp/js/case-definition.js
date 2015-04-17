@@ -21,7 +21,7 @@ function normalize(text) {
     // Python: print "".join(r"\u%x" % ord(c) for c in u"–—")
     return text
         .replace(/[\u201e\u201c\u201d]/g, '"')
-        .replace(/[\u201a\u2018\u2019\u60]/g, "'")
+        .replace(/[\u201a\u2018\u2019\u0060]/g, "'")
         .replace(/[\u2013\u2014]/g, "-");
 }
 

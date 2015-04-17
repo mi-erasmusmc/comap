@@ -10,10 +10,12 @@
       <label>Free text case definition</label>
       <div ng-if="state.indexing == null">
         <button ng-click="createIndexing(text)" class="btn btn-primary block">Index</button>
+        <hr/>
         <textarea rows=35 cols=200 ng-model="text" class="case-definition"></textarea>
       </div>
       <div ng-if="state.indexing != null">
         <button ng-if="state.mapping == null" ng-click="resetIndexing()" class="btn btn-primary block">Reset to edit</button>
+        <hr/>
         <div id="highlightedCaseDefinition"></div>
       </div>
     </tab>

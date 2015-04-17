@@ -168,3 +168,7 @@ hr {
 .block {
   display: block;
 }
+.info {
+	font-style: italic;
+	margin-left: 1em;
+}

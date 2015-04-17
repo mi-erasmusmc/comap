@@ -414,27 +414,31 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                                 };
                                 return concept;
                             });
-                        var title = "Concepts for search query \"" + searchQuery + "\"";
-                        var message = "Found " + concepts.length + " concepts";
                         var comments = [];
                         if (filteredBySemanticType.length > 0) {
                             comments.push("filtered " + filteredBySemanticType.length + " by semantic types");
                         }
                         if (filteredByCurrentConcepts.length > 0) {
                             comments.push("filtered " + filteredByCurrentConcepts.length + " by current coding"); 
-                        } 
-                        message += comments.length > 0 ? " (" + comments.join(", ") + ")" : "";
-                        return selectConceptsInDialog($modal, concepts, title, true, message, $scope.state.mapping.codingSystems);
+                        }
+                        comments = comments.length > 0 ? " (" + comments.join(", ") + ")" : ""
+                        if (concepts.length == 0) {
+                            $scope.setMessage("No concepts found" + comments);
+                        } else {
+                            var title = "Concepts for search query \"" + searchQuery + "\"";
+                            var message = "Found " + concepts.length + " concepts" + comments;
+                            return selectConceptsInDialog($modal, concepts, title, true, message, $scope.state.mapping.codingSystems)
+                                .then(function(selectedConcepts) {
+                                    if (angular.isArray(selectedConcepts)) {
+                                        $scope.state.mapping.concepts = [].concat(selectedConcepts, $scope.state.mapping.concepts);
+                                        $scope.setSelectedConcepts(selectedConcepts.map(getCui));
+                                        var descr = "Added " + selectedConcepts.length + " concepts by search on \"" + searchQuery + "\"";
+                                        $scope.historyStep("Search", searchQuery, selectedConcepts.map(reduceConcept), descr);
+                                        $scope.searchQuery = "";
+                                    }
+                                });
+                        }
                     });
-            })
-            .then(function(selectedConcepts) {
-                if (angular.isArray(selectedConcepts)) {
-                    $scope.state.mapping.concepts = [].concat(selectedConcepts, $scope.state.mapping.concepts);
-                    $scope.setSelectedConcepts(selectedConcepts.map(getCui));
-                    var descr = "Added " + selectedConcepts.length + " concepts by search on \"" + searchQuery + "\"";
-                    $scope.historyStep("Search", searchQuery, selectedConcepts.map(reduceConcept), descr);
-                    $scope.searchQuery = "";
-                }
             });
     };
     

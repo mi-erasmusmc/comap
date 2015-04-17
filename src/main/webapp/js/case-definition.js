@@ -18,9 +18,11 @@ function CaseDefinitionCtrl($scope, $http, urls, dataService, blockUI) {
 }
 
 function normalize(text) {
+    // Python: print "".join(r"\u%x" % ord(c) for c in u"–—")
     return text
-        .replace(/[„“”]/g, '"')
-        .replace(/[‚‘’]/g, "'");
+        .replace(/[\u201e\u201c\u201d]/g, '"')
+        .replace(/[\u201a\u2018\u2019\u60]/g, "'")
+        .replace(/[\u2013\u2014]/g, "-");
 }
 
 function indexText($http, peregrineResource, stopwords, umlsConceptsResource, text) {

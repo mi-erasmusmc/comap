@@ -7,7 +7,7 @@
 
     <tab id="case-definition-tab" heading="1. Case definition" ng-controller="CaseDefinitionCtrl">
       <alert ng-if="state.mapping != null" type="info">
-        Discard mapping to edit.
+        Discard the mapping to edit the case definition.
       </alert>
       <label>Free text case definition</label>
       <div ng-if="state.indexing == null">
@@ -23,7 +23,7 @@
     <tab id="semantics-tab" heading="2. Semantic types" ng-controller="SemanticTypesCtrl" disabled="state.indexing == null" title="{{state.indexing == null ? 'Index case definition first!' : ''}}">
       <div>
         <alert ng-if="state.mapping != null" type="info">
-          Discard mapping to edit.
+          Discard the mapping to edit semantic types.
         </alert>
         <div class="row">
           <div class="col-md-2" ng-show="state.mapping == null">
@@ -46,7 +46,7 @@
       
       <div>
         <alert ng-if="state.mapping != null" type="info">
-          Discard mapping to edit.
+          Discard the mapping to edit the coding systems.
         </alert>
         <div class="row">
         

@@ -8,11 +8,11 @@ function confirmClickDirective() {
           var clickAction = attr.ngClick;
           element.bind('click',function () {
             if ( window.confirm(msg) ) {
-              scope.$eval(clickAction)
+              scope.$eval(clickAction);
             }
           });
         }
-      }
+      };
 };
 
 /** Provide the URLs that are called from the application. */

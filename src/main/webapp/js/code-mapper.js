@@ -85,21 +85,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         48 /* 0 */: function() {
             console.log("State", $scope.state);
         },
-        49 /* 1 */: function() {
-            $scope.activateTab("case-definition-tab");
-        },
-        50 /* 2 */: function() {
-            $scope.activateTab("semantics-tab");
-        },
-        51 /* 3 */: function() {
-            $scope.activateTab("coding-systems-tab");
-        },
-        52 /* 4 */: function() {
-            $scope.activateTab("concepts-tab");
-        },
-        53 /* 5 */: function() {
-            $scope.activateTab("history-tab");
-        }      
     };
     
     $rootScope.onKeydown = function(event) {
@@ -270,40 +255,26 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             error("CodeMapperCtrl.expandRelated called without state");
             return;
         }
-        var modalInstance = $modal.open({
-            templateUrl: 'partials/AskChangesSummary.html',
-            controller: 'AskChangesSummaryCtrl',
-            size: 'lg',
-            resolve: {
-                caseDefinitionName: function() { return $scope.caseDefinitionName; },
-                changes: function() {
-                    var history = $scope.state.mapping.history;
-                    return history.slice(history.length - $scope.numberUnsafedChanges);
-                },
-            }
-          });       
-        modalInstance.result.then(function(summary) {
-            $scope.historyStep("Summarize", summary, null, "Saved with summary: " + summary);
-            var data = {
-                state: angular.toJson($scope.state)
-            };
-            blockUI.start("Saving ...");
-            $http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)
-                .error(function(e, status) {
-                    if (status == 401) {
-                        alert("Your session has timed out :( You have to re-login!")
-                    } else {
-                        var msg = "ERROR: An error occurred while saving";
-                        alert(msg, err);
-                    }
-                })
-                .success(function() {
-                    $scope.numberUnsafedChanges = 0;
-                })
-                .finally(function() {
-                   blockUI.stop(); 
-                });
-        });
+        askSummary($modal, $scope.caseDefinitionName, $scope.state.mapping.history, $scope.numberUnsafedChanges)
+            .then(function(summary) {
+                $scope.historyStep("Summarize", summary, null);
+                var data = {
+                    state: angular.toJson($scope.state)
+                };
+                $http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)
+                    .error(function(e, status) {
+                        if (status == 401) {
+                            alert("Your session has timed out :( You have to re-login!")
+                        } else {
+                            var msg = "ERROR: An error occurred while saving";
+                            alert(msg, err);
+                        }
+                    })
+                    .success(function() {
+                        $scope.setMessage("Saved with summary: " + summary);
+                        $scope.numberUnsafedChanges = 0;
+                    });
+            });
     };
     
     $scope.createInitalTranslations = function(caseDefinition) {
@@ -806,7 +777,7 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
     };
 };
 
-function selectConceptsInDialog($modal, concepts, title, selectable, message, codingSystems, onSelectedConcepts) {
+function selectConceptsInDialog($modal, concepts, title, selectable, message, codingSystems) {
     // Display retrieved concepts in a dialog
     var dialog = $modal.open({
       templateUrl: 'partials/ShowConcepts.html',
@@ -904,6 +875,22 @@ function AskChangesSummaryCtrl($scope, $http, $modalInstance, $timeout, caseDefi
     $scope.cancel = function () {
         $modalInstance.dismiss();
     };
+}
+
+function askSummary($modal, caseDefinitionName, history, numberUnsafedChanges) {
+
+    var dialog = $modal.open({
+        templateUrl: 'partials/AskChangesSummary.html',
+        controller: 'AskChangesSummaryCtrl',
+        size: 'lg',
+        resolve: {
+            caseDefinitionName: function() { return caseDefinitionName; },
+            changes: function() {
+                return history.slice(history.length - numberUnsafedChanges);
+            },
+        }
+      });       
+    return dialog.result;
 }
 
 var originColumnDef = {

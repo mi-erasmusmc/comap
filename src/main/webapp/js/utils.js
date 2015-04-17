@@ -193,7 +193,7 @@ function highlight(dataService, text, spans, concepts) {
                     return concept.preferredName + " (" + typeNames.join(", ") + ")";
                 })
                 .join(", ");
-            result += "<div class='concept' title='" + title.replace("'", "\\'") + "'>";
+            result += "<div class='concept' title='" + title.replace("'", "&#39;") + "'>";
             ends.push(end);
         });
         if (c == '\n') {

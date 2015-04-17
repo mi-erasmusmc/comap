@@ -669,7 +669,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 codes: function() { 
                     var codes = [];
                     concepts.forEach(function(concept) {
-                        $scope.state.codingSystems.forEach(function(codingSystem) {
+                        $scope.state.mapping.codingSystems.forEach(function(codingSystem) {
                             concept.codes[codingSystem].forEach(function(code0) {
                                 var code = angular.copy(code0);
                                 code.concept = concept;
@@ -680,7 +680,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                     return codes;
                 }
             }
-        }).result.then(function(codes) {
+        })
+        .result.then(function(codes) {
             function isSelected(cui, vocabulary, id) {
                 return codes.filter(function(code) {
                     return code.cui == cui && code.vocabulary == vocabulary && code.id == id;
@@ -689,7 +690,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             var added = [];
             var removed = [];
             concepts.forEach(function(concept) {
-                $scope.state.codingSystems.forEach(function(codingSystem) {
+                $scope.state.mapping.codingSystems.forEach(function(codingSystem) {
                     concept.codes[codingSystem].forEach(function(code) {
                         var selected = isSelected(code.cui, code.vocabulary, code.id);
                         if (!code.selected && selected) {
@@ -712,7 +713,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 $scope.setMessage("No codes changed");                    
             } else {
                 var descr, result;
-                console.log(added, removed);
                 var resultCodes = function(codes, preposition) {
                     return codes.map(function(cc) {
                         return cc.code.id + " (" + cc.code.vocabulary + ") " + preposition + " " + cc.concept.preferredName;

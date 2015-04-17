@@ -16,7 +16,7 @@
       </div>
       <div ng-if="state.indexing != null">
         <button ng-if="state.mapping == null" ng-click="resetIndexing()" class="btn btn-primary block">Reset to edit</button>
-        <highlight text="state.indexing.caseDefinition" spans="state.indexing.spans" concepts="state.indexing.concepts"></highlight>
+        <div id="highlightedCaseDefinition"></div>
       </div>
     </tab>
     

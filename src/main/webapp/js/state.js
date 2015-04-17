@@ -1,3 +1,4 @@
+
 var State =
     (function() {
         "use strict";
@@ -15,21 +16,6 @@ var State =
                             codes: { SAB: [{id: CODE, selected: boolean}] }
                     } */
                 };
-            },
-            json: function(state) {
-                state = angular.clone(state);
-                delete state.mapping.numberUnsafedChanges;
-                return angular.json(state);
-            },
-            setIndexing: function(state, caseDefinition, spans, concepts) {
-                state.indexing = {
-                    caseDefinition: caseDefinition,
-                    spans: spans,
-                    concepts: concepts
-                };
-            },
-            resetIndexing: function(state) {
-              state.indexing = null;   
             }
         };
     })();

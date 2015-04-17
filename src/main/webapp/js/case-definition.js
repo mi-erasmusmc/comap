@@ -1,20 +1,37 @@
-function CaseDefinitionCtrl($scope, $http, urls, dataService, blockUI) {
+function CaseDefinitionCtrl($scope, $timeout, $http, urls, dataService, blockUI) {
 
     $scope.text = "";
 
     $scope.createIndexing = function(caseDefinition) {
         indexText($http, dataService.peregrineResource, dataService.stopwords, urls.umlsConcepts, caseDefinition)
             .then(function(item) {
+                var spans = item.spans, concepts = item.concepts;
                 console.log(item);
-                State.setIndexing($scope.state, caseDefinition, item.spans, item.concepts);
+                $scope.state.indexing = {
+                    caseDefinition: caseDefinition,
+                    spans: spans,
+                    concepts: concepts
+                };
             });
     };
     
     $scope.resetIndexing = function() {
-        var text = $scope.state.indexing.caseDefinition;
-        State.resetIndexing($scope.state);
-        $scope.text = text;
+        $scope.text = angular.copy($scope.state.indexing.caseDefinition);
+        $scope.state.indexing = null;
     }
+    
+    $scope.$watch('state.indexing', function(indexing) {
+        $timeout(function() {
+            console.log('### state.indexing changed', indexing);
+            if (angular.isObject(indexing)) {
+                var highlighting = highlight(dataService, indexing.caseDefinition, indexing.spans, indexing.concepts);
+                console.log("Set highlightigh", highlighting);
+                jQuery('#highlightedCaseDefinition').html(highlighting);
+            } else {
+                jQuery('#highlightedCaseDefinition').html("");
+            }
+        }, 0);
+    });
 }
 
 function normalize(text) {

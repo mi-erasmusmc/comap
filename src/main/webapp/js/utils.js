@@ -157,77 +157,60 @@ function order(orders) {
     };
 }
 
-function highlightDirective() {
-    return {
-      restrict: 'E',
-      scope: {
-        spans: '=spans',
-        text: '=text',
-        concepts: '=concepts'
-      },
-      controller: function($scope, $sce, dataService) {
-          $scope.render = function(text, spans, concepts) {
-              
-              var conceptsByCui = byKey(concepts, getCui);
-              var spansByStart = group(spans, function(span) { return span.start; });
-              
-              var result = "";
-              var ends = [];
-              var here = 0;
-              angular.forEach(text, function(c) {
-                  var hereStartSpans = spansByStart[here] || [];
-                  hereStartSpansByEnd = group(hereStartSpans, function(span) { return span.end; });
-                  angular.forEach(hereStartSpansByEnd, function(spans, end) {
-                      var cuis = spans
-                          .map(function(span) {
-                              return cuiOfId(span.id);
-                          });
-                      var types = []
-                          .concat.apply([], cuis.map(function(cui) {
-                              return conceptsByCui[cui].semanticTypes;
-                          }))
-                          .filter(isFirstOccurrence);
-                      var groups = types
-                          .map(function(type) {
-                              return dataService.semanticTypesByType[type].group;
-                          })
-                          .filter(isFirstOccurrence);
-                      var title = cuis
-                          .map(function(cui) {
-                              var concept = conceptsByCui[cui];
-                              var typeNames = concept.semanticTypes
-                                  .map(function(type) {
-                                      return dataService.semanticTypesByType[type].description;
-                                  });
-                              return concept.preferredName + " (" + typeNames.join(", ") + ")";
-                          })
-                          .join(", ");
-                      result += "<div class='concept' " +
-                          "title='" + title + "' " +
-                          "data-cuis='" + cuis.join(" ") + "' " +
-                          "data-semantic-groups='" + groups.join(" ") + "' " +
-                          "data-semantic-types='" + types.join(" ") + "'>";
-                      ends.push(end);
-                  });
-                  if (c == '\n') {
-                      result += "<br/>";
-                  } else {
-                      result += $('<div/>').text(c).html();
-                  }
-                  ends.sort();
-                  while (ends.length > 0 && ends[0] == here) {
-                      result += "</div>"
-                      ends.shift();
-                  }
-                  here += 1;
-              });
-              while (ends.length > 0) {  
-                  result += "</div>"
-                  ends.shift();
-              }
-              return $sce.trustAsHtml(result);
-          };
-      },
-      template: '<div class="highlight" ng-bind-html="render(text, spans, concepts)"></div>'
-    };
+function highlight(dataService, text, spans, concepts) {
+    console.log("RENDER", text && text.length);
+    var conceptsByCui = byKey(concepts, getCui);
+    var spansByStart = group(spans, function(span) { return span.start; });
+    
+    var result = "";
+    var ends = [];
+    var here = 0;
+    angular.forEach(text, function(c) {
+        var hereStartSpans = spansByStart[here] || [];
+        hereStartSpansByEnd = group(hereStartSpans, function(span) { return span.end; });
+        angular.forEach(hereStartSpansByEnd, function(spans, end) {
+            var cuis = spans
+                .map(function(span) {
+                    return cuiOfId(span.id);
+                });
+            var types = []
+                .concat.apply([], cuis.map(function(cui) {
+                    return conceptsByCui[cui].semanticTypes;
+                }))
+                .filter(isFirstOccurrence);
+            var groups = types
+                .map(function(type) {
+                    return dataService.semanticTypesByType[type].group;
+                })
+                .filter(isFirstOccurrence);
+            var title = cuis
+                .map(function(cui) {
+                    var concept = conceptsByCui[cui];
+                    var typeNames = concept.semanticTypes
+                        .map(function(type) {
+                            return dataService.semanticTypesByType[type].description;
+                        });
+                    return concept.preferredName + " (" + typeNames.join(", ") + ")";
+                })
+                .join(", ");
+            result += "<div class='concept' title='" + title.replace("'", "\\'") + "'>";
+            ends.push(end);
+        });
+        if (c == '\n') {
+            result += "<br/>";
+        } else {
+            result += $('<div/>').text(c).html();
+        }
+        ends.sort();
+        while (ends.length > 0 && ends[0] == here) {
+            result += "</div>"
+            ends.shift();
+        }
+        here += 1;
+    });
+    while (ends.length > 0) {  
+        result += "</div>"
+        ends.shift();
+    }
+    return "<div class='highlight'>" + result + "</div>";
 }

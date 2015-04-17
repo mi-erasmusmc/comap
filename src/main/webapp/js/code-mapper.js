@@ -100,8 +100,17 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     /* MESSAGE */
     
     $scope.message = null;
-    $scope.setMessage = function(message) {
+    var timeout = null;
+    $scope.setMessage = function(message, timeout) {
         $scope.message = message;
+        if (timeout) {
+            if (timeout != null) {
+                $timeout.cancel(timeout);
+            }
+            timeout = $timeout(function() {
+                $scope.unsetMessage();
+            }, timeout);
+        }
     };
     $scope.unsetMessage = function() {
         $scope.message = null;
@@ -231,22 +240,27 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                         $location.path('/projects');
                         break;
                     case 404:
-                        $scope.state = State.empty();
+                        $scope.state.mapping = null;
+                        $scope.state.indexing = null;
+                        $scope.caseDefinition = "" + INITIAL.caseDefinition;
                         $scope.$broadcast("setSelectedSemanticTypes", INITIAL.semanticTypes);
                         $scope.$broadcast("setSelectedCodingSystems", INITIAL.codingSystems);
-                        $scope.caseDefinition = "" + INITIAL.caseDefinition;
                         $scope.setMessage("Coding for " + $scope.caseDefinitionName + " initialized.");
                         break;
                 } 
             })
             .success(function(state) {
                 console.log("Loaded", state);
-                $scope.state = state;
+                $scope.state.indexing = state.indexing;
+                $scope.state.mapping = state.mapping;
+                $scope.$broadcast("indexingUpdated", state.indexing);
                 $scope.$broadcast("setSelectedSemanticTypes", state.mapping.semanticTypes);
                 $scope.$broadcast("setSelectedCodingSystems", state.mapping.codingSystems);
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems);
                 $scope.activateTab("concepts-tab");
-                $scope.setMessage("Coding for " + $scope.caseDefinitionName + " loaded.");
+                $timeout(function() {
+                    $scope.setMessage("Coding for " + $scope.caseDefinitionName + " loaded.");
+                }, 0);
             })
             .finally(function() {
                 $scope.numberUnsafedChanges = 0;
@@ -534,9 +548,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                     relatedConcepts = relatedConcepts.concat(relatedConceptsForCui);
                 });
                 var specificOrGeneral = hyponymsNotHypernyms ? "specific" : "general";
-                var message = null;//"Found " + relatedConcepts.length + " that are more " + specificOrGeneral;
                 var title = "Concepts that are more " + specificOrGeneral + " than " + conceptNames;
-                selectConceptsInDialog($modal, relatedConcepts, title, true, message, $scope.state.mapping.codingSystems)
+                selectConceptsInDialog($modal, relatedConcepts, title, true, null, $scope.state.mapping.codingSystems)
                     .then(function(selectedRelatedConcepts) {
                     
                         // Search position of original inital concepts
@@ -704,45 +717,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     /* AUXILIARIES */
     /** ************ */
 
-    /** Filters the list of `concepts` and adapts the data for the application. */
-    $scope.filterAndPatch = function(concepts, additionalCurrentCuis, filteredBySemanticType, filteredByCurrentConcepts) {
-        
-        var currentCuis = $scope.state.concepts.map(getCui)
-            .concat(additionalCurrentCuis || []);
-        
-        // Record concepts that are not yet available but filtered out due to
-        // its semantic type:
-
-        return concepts
-            // Filter out concepts that are already available
-            .filter(function(concept) {
-                var isNovel = currentCuis.indexOf(concept.cui) == -1;
-                if (!isNovel && filteredByCurrentConcepts != undefined) {
-                    filteredByCurrentConcepts.push(concept);
-                }
-                return isNovel;
-            })
-            // Filter out concepts by semantic type
-            .filter(function(concept) {
-                var matchesSemanticTypes =
-                    concept.semanticTypes
-                        .filter(function(type) {
-                            return $scope.state.semanticTypes.indexOf(type) != -1;
-                        })
-                        .length > 0;
-                if (!matchesSemanticTypes && filteredBySemanticType != undefined) {
-                    filteredBySemanticType.push(concept);
-                }
-                return matchesSemanticTypes;
-            })
-            .map(function(concept) {
-                patchConcept(concept, $scope.state.codingSystems);
-            });
-    };
-
-    $scope.trustDefinition = function(definition) {
-        return $sce.trustAsHtml(definition);
-    };
 };
 
 /** The controller for the dialog to select hyper-/hyponyms. */

@@ -38,7 +38,6 @@ var codeMapperApp =
         .service("urls", UrlsService)
         .service("dataService", DataService)
         .directive("confirmClick", confirmClickDirective)
-        .directive("highlight", highlightDirective)
         .filter('encodeUriComponent', function() {
           return window.encodeURIComponent;
         })

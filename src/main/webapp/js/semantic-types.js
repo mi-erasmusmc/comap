@@ -37,7 +37,6 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
     
     $scope.$watch('state.indexing', function(indexing) {
         if (angular.isObject(indexing)) {
-            console.log("Updated indexing", indexing);
             var occurringTypes = [].concat
                 .apply([], indexing.concepts.map(function(c) { return c.semanticTypes; }))
                 .filter(isFirstOccurrence);
@@ -57,7 +56,6 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
     });
     
     function setSelection(types) {
-        console.log($scope);
         $scope.gridOptions.selectAll(false);
         $scope.semanticTypes.forEach(function(semanticType, index) {
             var selected = types.indexOf(semanticType.type) != -1;

@@ -42,8 +42,10 @@ insert into users_projects (user_id, project_id) values
 drop table if exists case_definitions;
 
 create table case_definitions (
+  id int not null auto_increment,
   project_id int not null references projects(id),
   name char(255) not null,
   state mediumtext not null,
-  primary key (project_id, name)
+  unique (project_id, name),
+  primary key (id)
 );

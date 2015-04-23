@@ -35,7 +35,12 @@
           
           <div class="col-md-10">
             <label for='selectedsemanticTypesList'>Selected ({{selected.semanticTypes.length}})</label>
-            <span ng-repeat="type in selected.semanticTypes" ng-bind="type.description" ng-disabled="state.mapping" ng-dblclick="state.mapping == null && unselect(type)" class="semantic-type noselect" id='selectedsemanticTypesList'></span>
+            <span ng-repeat="type in selected.semanticTypes"
+              ng-disabled="state.mapping"
+              class="semantic-type noselect" id='selectedsemanticTypesList'>
+              {{type.description}} 
+              <i class="glyphicon glyphicon-remove" ng-click="state.mapping == null && unselect(type)"></i>
+            </span>
           </div>
         </div>
         
@@ -56,7 +61,10 @@
           <div class="col-md-10">
             <label for='selectedVocabulariesList'>Selected ({{selected.codingSystems.length}})</label>
             <div id='selectedVocabulariesList'>
-              <span ng-repeat="voc in selected.codingSystems" ng-bind="voc.abbreviation" ng-dblclick="state.mapping == null && unselect(voc.abbreviation)" class="vocabulary noselect"></span>
+              <span ng-repeat="voc in selected.codingSystems" class="vocabulary noselect">
+                {{voc.abbreviation}}
+                <i class="glyphicon glyphicon-remove" ng-click="state.mapping == null && unselect(voc.abbreviation)"></i>
+              </span>
             </div>
           </div>
         </div>

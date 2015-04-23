@@ -9,7 +9,7 @@
       <div ng-if="state.mapping != null" class="info"><i class="glyphicon glyphicon-info-sign"></i> Discard the mapping to edit the case definition.</div>
       <label>Free text case definition</label>
       <div ng-if="state.indexing == null">
-        <button ng-click="createIndexing(text)" class="btn btn-primary block">Index</button>
+        <button ng-click="createIndexing(text)" class="btn btn-primary block">Search concepts</button>
         <hr/>
         <textarea rows=35 cols=200 ng-model="text" class="case-definition"></textarea>
       </div>
@@ -142,7 +142,7 @@
               <i class="glyphicon glyphicon-cloud-upload"></i>
               Save
             </button>
-            <button title="Download the mapping as CSV for Excel (save first)"
+            <button title="Download the mapping as CSV for Excel"
                 ng-disabled="numberUnsafedChanges > 0"
                 ng-click="downloadConcepts()"
                 class="btn btn-sm btn-default">

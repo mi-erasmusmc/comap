@@ -38,7 +38,9 @@ function normalize(text) {
     return text
         .replace(/[\u201e\u201c\u201d]/g, '"')
         .replace(/[\u201a\u2018\u2019\u0060]/g, "'")
-        .replace(/[\u2013\u2014]/g, "-");
+        .replace(/[\u2013\u2014]/g, "-")
+        .replace(/[\u2265]/g, '>')
+        .replace(/[\u2264]/g, '<');
 }
 
 function indexText($http, peregrineResource, stopwords, umlsConceptsResource, text) {

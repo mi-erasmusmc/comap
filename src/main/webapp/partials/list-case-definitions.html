@@ -3,10 +3,8 @@
     <h3>Project {{project}}</h3>
     <p>
       <h4>Members</h4>
-      <ul class="inline">
-        <li ng-repeat="user in usersForProject[project]">
-          <span ng-bind="user"></span>
-        </li>
+      <ul class="comma-separated">
+        <li ng-repeat="user in usersForProject[project]"><span ng-bind="user"></span></li>
       </ul>
     </p>
     <p>

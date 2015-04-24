@@ -72,6 +72,10 @@ function compareByCodeCount(c1, c2) {
     return c2.sourceConceptsCount - c1.sourceConceptsCount;
 }
 
+function intersection(a1, a2) {
+    return a1.filter(function(v) { return a2.indexOf(v) != -1; });
+}
+
 /** Encodes an 2-D array of data to CSV. */
 function csvEncode(data) {
     function escape(field) {
@@ -157,60 +161,14 @@ function order(orders) {
     };
 }
 
-function highlight(dataService, text, spans, concepts) {
-    console.log("RENDER", text && text.length);
-    var conceptsByCui = byKey(concepts, getCui);
-    var spansByStart = group(spans, function(span) { return span.start; });
-    
-    var result = "";
-    var ends = [];
-    var here = 0;
-    angular.forEach(text, function(c) {
-        var hereStartSpans = spansByStart[here] || [];
-        hereStartSpansByEnd = group(hereStartSpans, function(span) { return span.end; });
-        angular.forEach(hereStartSpansByEnd, function(spans, end) {
-            var cuis = spans
-                .map(function(span) {
-                    return cuiOfId(span.id);
-                });
-            var types = []
-                .concat.apply([], cuis.map(function(cui) {
-                    return conceptsByCui[cui].semanticTypes;
-                }))
-                .filter(isFirstOccurrence);
-            var groups = types
-                .map(function(type) {
-                    return dataService.semanticTypesByType[type].group;
-                })
-                .filter(isFirstOccurrence);
-            var title = cuis
-                .map(function(cui) {
-                    var concept = conceptsByCui[cui];
-                    var typeNames = concept.semanticTypes
-                        .map(function(type) {
-                            return dataService.semanticTypesByType[type].description;
-                        });
-                    return concept.preferredName + " (" + typeNames.join(", ") + ")";
-                })
-                .join(", ");
-            result += "<div class='concept' title='" + title.replace("'", "&#39;") + "'>";
-            ends.push(end);
-        });
-        if (c == '\n') {
-            result += "<br/>";
-        } else {
-            result += $('<div/>').text(c).html();
-        }
-        ends.sort();
-        while (ends.length > 0 && ends[0] == here) {
-            result += "</div>"
-            ends.shift();
-        }
-        here += 1;
-    });
-    while (ends.length > 0) {  
-        result += "</div>"
-        ends.shift();
-    }
-    return "<div class='highlight'>" + result + "</div>";
-}
+if (!String.prototype.format) {
+    String.prototype.format = function() {
+      var args = arguments;
+      return this.replace(/{(\d+)}/g, function(match, number) { 
+        return typeof args[number] != 'undefined'
+          ? args[number]
+          : match
+        ;
+      });
+    };
+  }

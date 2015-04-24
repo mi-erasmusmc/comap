@@ -132,20 +132,20 @@ label {
 	overflow-y: scroll;
   overflow: -moz-scrollbars-none;
 }
-
 div[block-ui=inputBlockUi] .block-ui-container {
 	cursor: not-allowed;
 }
-ul.flat {
+ul.comma-separated {
+	padding-left: 0;
 }
-ul.flat li {
+ul.comma-separated li {
 	display: inline;
 }
-ul.flat li::before {
-	content: " \2022 ";
+ul.comma-separated li:before {
+	content: ", ";
 }
-ul.flat li::first::before {
-  content: " X";
+ul.comma-separated li:first-child:before {
+  content: "";
 }
 
 .username {
@@ -173,9 +173,16 @@ hr {
 .highlight .concept {
   display: inline-block;
   padding: 1px 1px 1px 1px;
-  background-color: #fff091;
-  border: 1px solid grey;
   border-radius: 5px;
+}
+
+.highlight .concept.disabled {
+  border: 1px solid #d3d3d3;
+}
+
+.highlight .concept.enabled {
+	background-color: #fff091;
+  border: 1px solid grey;
 }
 
 .block {

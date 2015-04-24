@@ -12,11 +12,11 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
          showSelectionCheckbox: true,
          filterOptions: { filterText: '' },
          columnDefs: [
-             { displayName: 'In case definition (number of concepts)', field: 'concepts',
-                 cellTemplate: '<ul class="flat"><li ng-repeat="c in row.entity[col.field]" ng-bind="c.preferredName"</li></div>',
-                 sortFn: function(o1, o2) { return o2.length - o1.length; } },
              { displayName: 'Semantic type', field: 'description' },
              { displayName: 'Group', field: 'semantic_group' },
+             { displayName: 'Concepts in case definition', field: 'concepts',
+                 cellTemplate: '<ul class="comma-separated"><li ng-repeat="c in row.entity[col.field]" ng-bind="c.preferredName"</li></div>',
+                 sortFn: function(o1, o2) { return o2.length - o1.length; } }
          ]
     };
 
@@ -40,22 +40,22 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
                 .filter(isFirstOccurrence);
             console.log(occurringTypes);
             $scope.semanticTypes.length = 0;
-            $scope.allSemanticTypes.forEach(function(semanticType, ix) {
-                var concepts = indexing.concepts
-                    .filter(function(concept) {
-                        return concept.semanticTypes.indexOf(semanticType.type) != -1;
-                    });
-                if (concepts.length > 0) {
-                    var semanticType1 = angular.copy(semanticType);
-                    semanticType1.concepts = concepts;
-                    $scope.semanticTypes.push(semanticType1);
-                }
-            });
             $timeout(function() {
+                $scope.$apply(function() {
+                    $scope.allSemanticTypes.forEach(function(semanticType, ix) {
+                        var concepts = indexing.concepts
+                            .filter(function(concept) {
+                                return concept.semanticTypes.indexOf(semanticType.type) != -1;
+                            });
+                        if (concepts.length > 0) {
+                            var semanticType1 = angular.copy(semanticType);
+                            semanticType1.concepts = concepts;
+                            $scope.semanticTypes.push(semanticType1);
+                        }
+                    });
+                });
                 $scope.selected.semanticTypes =
                     $scope.gridOptions.$gridScope.selectedItems;
-                $scope.gridOptions.sortBy('numConcepts');
-
                 $scope.gridOptions.selectAll(false);
                 $scope.semanticTypes.forEach(function(st, ix) {
                     if (INITIAL.semanticTypes.indexOf(st.type) != -1) {

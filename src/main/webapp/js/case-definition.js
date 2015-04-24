@@ -59,7 +59,7 @@ function indexText($http, peregrineResource, stopwords, umlsConceptsResource, te
         .then(function(result) { 
             var spans = result.data.spans
                 .filter(function(span) {
-                    var isStopword = stopwords.indexOf(span.text.toUpperCase()) != -1;
+                    var isStopword = FILTER_BY_STOPWORDS && stopwords.indexOf(span.text.toUpperCase()) != -1;
                     var isFiltered = STOPWORDS_REGEX.test(span.text);
                     if (isStopword || isFiltered) {
                         console.log("Filter span", span.text, isStopword ? "as stopword" : "", isFiltered ? "as regex" : "");

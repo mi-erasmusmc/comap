@@ -17,6 +17,7 @@ var INITIAL = {
 };
 
 var SHOW_UMLS_COLUMN = false;
+var FILTER_BY_STOPWORDS = false;
 
 /**
  * Concepts found by Peregrine are filtered by a stopword list and by the

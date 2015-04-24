@@ -3,6 +3,7 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
 
     "use strict";
 
+    $scope.allSemanticTypes = [];
     $scope.semanticTypes = [];
 
     $scope.gridOptions = {
@@ -11,16 +12,17 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
          showSelectionCheckbox: true,
          filterOptions: { filterText: '' },
          columnDefs: [
-             { displayName: 'In case definition (number of concepts)', field: 'numConcepts',
-                 cellTemplate: '<div ng-if="row.entity[col.field] > 0"><i class="glyphicon glyphicon-ok"></i> ({{row.entity[col.field]}})</div>',
-                 sortFn: function(o1, o2) { return o2 - o1; } },
+             { displayName: 'In case definition (number of concepts)', field: 'concepts',
+                 cellTemplate: '<ul class="flat"><li ng-repeat="c in row.entity[col.field]" ng-bind="c.preferredName"</li></div>',
+                 sortFn: function(o1, o2) { return o2.length - o1.length; } },
              { displayName: 'Semantic type', field: 'description' },
              { displayName: 'Group', field: 'semantic_group' },
          ]
     };
 
     $scope.$watch('state.mapping', function(mapping) {
-        // WORKAROUND https://github.com/angular-ui/ng-grid/issues/855#issuecomment-47254073
+        // WORKAROUND Grid not rendered correctly when using ng-show / ng-hide
+        // https://github.com/angular-ui/ng-grid/issues/855#issuecomment-47254073
         $timeout(function() {
             $scope.gridOptions.$gridServices.DomUtilityService.RebuildGrid(
                 $scope.gridOptions.$gridScope,  $scope.gridOptions.ngGrid);
@@ -28,11 +30,7 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
     });
 
     dataService.semanticTypesPromise.then(function() {
-        $scope.semanticTypes = dataService.semanticTypes;
-        $timeout(function() {
-            $scope.selected.semanticTypes =
-                $scope.gridOptions.$gridScope.selectedItems;
-            }, 0);
+        $scope.allSemanticTypes = dataService.semanticTypes;
     });
     
     $scope.$watch('state.indexing', function(indexing) {
@@ -41,17 +39,30 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
                 .apply([], indexing.concepts.map(function(c) { return c.semanticTypes; }))
                 .filter(isFirstOccurrence);
             console.log(occurringTypes);
-            $scope.semanticTypes.forEach(function(semanticType, ix) {
-                var numConcepts = indexing.concepts
+            $scope.semanticTypes.length = 0;
+            $scope.allSemanticTypes.forEach(function(semanticType, ix) {
+                var concepts = indexing.concepts
                     .filter(function(concept) {
                         return concept.semanticTypes.indexOf(semanticType.type) != -1;
-                    })
-                    .length;
-                $scope.gridOptions.selectItem(ix, numConcepts > 0);
-                semanticType.numConcepts = numConcepts;
+                    });
+                if (concepts.length > 0) {
+                    var semanticType1 = angular.copy(semanticType);
+                    semanticType1.concepts = concepts;
+                    $scope.semanticTypes.push(semanticType1);
+                }
             });
-            $scope.gridOptions.sortBy('semantic_group');
-            $scope.gridOptions.sortBy('numConcepts');
+            $timeout(function() {
+                $scope.selected.semanticTypes =
+                    $scope.gridOptions.$gridScope.selectedItems;
+                $scope.gridOptions.sortBy('numConcepts');
+
+                $scope.gridOptions.selectAll(false);
+                $scope.semanticTypes.forEach(function(st, ix) {
+                    if (INITIAL.semanticTypes.indexOf(st.type) != -1) {
+                        $scope.gridOptions.selectItem(ix, true);
+                    }
+                });
+            }, 0);
         }
     });
     

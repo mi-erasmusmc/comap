@@ -136,9 +136,18 @@ label {
 div[block-ui=inputBlockUi] .block-ui-container {
 	cursor: not-allowed;
 }
-ul.inline li {
+ul.flat {
+}
+ul.flat li {
 	display: inline;
 }
+ul.flat li::before {
+	content: " \2022 ";
+}
+ul.flat li::first::before {
+  content: " X";
+}
+
 .username {
 	font-style: italic;
 }

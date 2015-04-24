@@ -318,13 +318,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 $scope.state.mapping.concepts = concepts
                     .map(function(concept) {
                         var concept = patchConcept(concept, $scope.state.mapping.codingSystems);
-                        console.log(concept);
                         concept.origin = {
                             type: "spans",
                             data: $scope.state.indexing.spans
                                 .filter(function(span) {
                                     return cuiOfId(span.id) == concept.cui;
-                                })[0]
+                                })[0],
+                            root: null
                         };
                         return concept;
                     });
@@ -396,7 +396,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                                 var concept = patchConcept(concept, $scope.state.mapping.codingSystems);
                                 concept.origin = {
                                     type: "search",
-                                    data: searchQuery
+                                    data: searchQuery,
+                                    root: null
                                 };
                                 return concept;
                             });
@@ -440,7 +441,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 var concept = patchConcept(concepts[0], $scope.state.mapping.codingSystems);
                 concept.origin = {
                     type: "add",
-                    data: concept.preferredName
+                    data: concept.preferredName,
+                    root: null
                 };
                 $scope.state.mapping.concepts = [].concat([concept], $scope.state.mapping.concepts);
                 $scope.setSelectedConcepts([concept.cui]);
@@ -541,7 +543,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                             data: {
                                 cui: forCui,
                                 preferredName: concepts.filter(function(c1) { return forCui == c1.cui; })[0].preferredName
-                            }
+                            },
+                            root: reduceConcept(concepts[concepts.map(getCui).indexOf(forCui)])
                         };
                     });
                     relatedConcepts = relatedConcepts.concat(relatedConceptsForCui);
@@ -649,7 +652,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         
         [ [],
           ["CODES"],
-          ["CODING SYSTEMS", "CODE", "NAME IN CODING SYSTEM", "CONCEPT NAME", "UMLS ID", "Origin"]
+          ["CODING SYSTEMS", "CODE", "NAME IN CODING SYSTEM", "CONCEPT NAME", "UMLS ID", "ORIGIN", "ROOT CONCEPT"]
         ].forEach(function(row) { data.push(row); });
         $scope.state.mapping.codingSystems.forEach(function(vocabulary) {
             $scope.state.mapping.concepts.forEach(function(concept) {
@@ -669,9 +672,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 if (concept.origin.type == "add") {
                     origin = "Added";
                 }
+                var root = angular.isObject(concept.origin.root) ? concept.origin.root.preferredName : "";
                 concept.codes[vocabulary].forEach(function(code) {
                     if (code.selected) {
-                        data.push([vocabulary, code.id, code.preferredTerm, concept.preferredName, concept.cui, origin]);
+                        data.push([vocabulary, code.id, code.preferredTerm, concept.preferredName, concept.cui, origin, root]);
                     }
                 })
             });

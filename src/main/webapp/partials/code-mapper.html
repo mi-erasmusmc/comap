@@ -39,7 +39,7 @@
               ng-disabled="state.mapping"
               class="semantic-type noselect" id='selectedsemanticTypesList'>
               {{type.description}} 
-              <i class="glyphicon glyphicon-remove"
+              <i ng-if="state.mapping == null" class="glyphicon glyphicon-remove"
                 ng-click="state.mapping == null && unselect(type)"
                 title="Unselect"></i>
             </span>
@@ -65,7 +65,7 @@
             <div id='selectedVocabulariesList'>
               <span ng-repeat="voc in selected.codingSystems" class="vocabulary noselect" title="{{voc.name}}">
                 {{voc.abbreviation}}
-                <i class="glyphicon glyphicon-remove"
+                <i ng-if="state.mapping == null" class="glyphicon glyphicon-remove"
                   ng-click="state.mapping == null && unselect(voc.abbreviation)"
                   title="Unselect"></i>
               </span>

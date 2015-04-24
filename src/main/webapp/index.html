@@ -2,7 +2,7 @@
 <html ng-app="CodeMapperApp">
   <head>
     <meta charset="utf-8">
-    <title>ADVANCE Code Mapper</title>
+    <title>CoMap &ndash; The ADVANCE Code Mapper</title>
     
     <link type="text/css" rel="stylesheet" href="lib/bootstrap-theme.min.css">
     <link type="text/css" rel="stylesheet" href="lib/bootstrap.min.css" />
@@ -35,14 +35,14 @@
     <div class="row">
       <div class="col-md-4 text-left">
         <div ng-controller="LoggedInCtrl" ng-if="user">
-          Logged in as <span ng-bind="user.username" class="username"></span>
-          (<a href="#/projects">my projects</a>)
+          Hello, <span ng-bind="user.username" class="username"></span>
+          (<a href="#/projects">projects</a>)
           <button ng-click="logout()" class="btn btn-primary btn-xs">Logout</button>
         </div>
         <h2 class="subtitle" ng-bind="subtitle"></h2>
       </div>
       <div class="col-md-4 text-center">
-        <h3 class="advance-code-mapper-title">ADVANCE Code Mapper</h3>
+        <h3 class="advance-code-mapper-title">CoMap</h3>
         <a class="center-block" href="mailto:b.becker@erasmusmc.nl?subject=AdvanceCodeMapper">Help? Suggestions?</a>
       </div>
       <div class="col-md-4 text-right">

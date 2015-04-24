@@ -14,7 +14,7 @@
         <textarea rows=35 cols=200 ng-model="text" class="case-definition"></textarea>
       </div>
       <div ng-if="state.indexing != null">
-        <button ng-if="state.mapping == null" ng-click="resetIndexing()" class="btn btn-primary block">Reset to edit</button>
+        <button ng-if="state.mapping == null" ng-click="resetIndexing()" class="btn btn-primary block">Reset and edit</button>
         <hr/>
         <div id="highlightedCaseDefinition"></div>
       </div>
@@ -39,7 +39,9 @@
               ng-disabled="state.mapping"
               class="semantic-type noselect" id='selectedsemanticTypesList'>
               {{type.description}} 
-              <i class="glyphicon glyphicon-remove" ng-click="state.mapping == null && unselect(type)"></i>
+              <i class="glyphicon glyphicon-remove"
+                ng-click="state.mapping == null && unselect(type)"
+                title="Unselect"></i>
             </span>
           </div>
         </div>
@@ -61,9 +63,11 @@
           <div class="col-md-10">
             <label for='selectedVocabulariesList'>Selected ({{selected.codingSystems.length}})</label>
             <div id='selectedVocabulariesList'>
-              <span ng-repeat="voc in selected.codingSystems" class="vocabulary noselect">
+              <span ng-repeat="voc in selected.codingSystems" class="vocabulary noselect" title="{{voc.name}}">
                 {{voc.abbreviation}}
-                <i class="glyphicon glyphicon-remove" ng-click="state.mapping == null && unselect(voc.abbreviation)"></i>
+                <i class="glyphicon glyphicon-remove"
+                  ng-click="state.mapping == null && unselect(voc.abbreviation)"
+                  title="Unselect"></i>
               </span>
             </div>
           </div>
@@ -79,7 +83,7 @@
 
       <button ng-click="createInitalTranslations(caseDefinition)"
             ng-if="state.mapping == null"
-            class="btn btn-sm btn-primary center-block"
+            class="btn btn-primary center-block"
             id="search-concepts">
         <i class="glyphicon glyphicon-refresh"></i>
         Generate initial mapping

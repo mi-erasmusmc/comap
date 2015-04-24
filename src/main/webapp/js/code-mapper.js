@@ -920,7 +920,7 @@ function createConceptsColumnDefs(showOrigin, codingSystems) {
     var name = 
         { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip',
             cellTemplate: 
-                "<span tooltip-html-unsafe='{{row.entity.preferredName}}<br/><br/>{{row.entity.definition || \"(no definition available)\"}}' " +
+                "<span tooltip-html-unsafe='{{row.entity.preferredName}} ({{row.entity.cui}})<br/><br/>{{row.entity.definition || \"(no definition available)\"}}' " +
                 "tooltip-placement='right' ng-bind='row.entity.preferredName' class='concept-name'></span>" };
     
     var origin = showOrigin ? [originColumnDef] : [];

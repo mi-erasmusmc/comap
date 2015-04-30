@@ -9,7 +9,7 @@
 	<url>http://biosemantics.org</url>
 
 	<build>
-    <finalName>AdvanceCodeMapper</finalName>
+    <finalName>CoMap</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

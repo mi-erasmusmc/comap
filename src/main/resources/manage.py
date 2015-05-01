@@ -8,7 +8,7 @@ import argparse
 import sys
 from itertools import groupby
 
-db = MySQLdb.connect("mi-bios1","root","","code-mapper")
+db = MySQLdb.connect("localhost","root","root","code-mapper")
 cur = db.cursor(MySQLdb.cursors.DictCursor)
 
 def sha256(password):
@@ -49,28 +49,44 @@ def add_user_to_project(username, project):
           (user_id, project_id, db.insert_id()))
     db.commit()
 
-def show():
-    print("# USERS")
+def show(users, projects):
+
+    if users == None and projects == None:
+        users = True
+        projects = True
+
     cur.execute('SELECT * FROM users ORDER BY id')
-    for user in cur.fetchall():
-        print("%s (%d)" % (user['username'], user['id']))
-    print()
-    print("# PROJECTS")
+    all_users = list(cur.fetchall())
+
     cur.execute('SELECT users.username, projects.name, projects.id FROM users_projects '
                 'INNER JOIN users ON users_projects.user_id = users.id '
                 'INNER JOIN projects ON users_projects.project_id = projects.id '
                 'ORDER BY project_id')
     ups = list(cur.fetchall())
-    longest = max(len(up['name']) for up in ups)
-    grouper = lambda up: {'name': up['name'], 'id': up['id']}
-    for project, ups_in_project in groupby(ups, grouper):
-        prefix = " " * (longest - len(project['name']))
-        print("\n## %s (%d)" % (project['name'], project['id']))
-        print("\nUsers: %s" % ", ".join(up['username'] for up in ups_in_project))
-        print("\nCase definitions\n")
-        cur.execute('SELECT * FROM case_definitions WHERE project_id = %s', [project['id']])
-        for cd in cur.fetchall():
-            print(" - %s" % cd['name'])
+
+    if users:
+        print("# USERS")
+        for user in all_users:
+            print("%s (%d)" % (user['username'], user['id']))
+            for up in ups:
+               if up['username'] == user['username']:
+                   print(" - %s" % up['name'])
+
+    if users and projects:
+        print()
+
+    if projects:
+        print("# PROJECTS")
+        longest = max(len(up['name']) for up in ups)
+        grouper = lambda up: {'name': up['name'], 'id': up['id']}
+        for project, ups_in_project in groupby(ups, grouper):
+            prefix = " " * (longest - len(project['name']))
+            print("\n## %s (%d)" % (project['name'], project['id']))
+            print("\nUsers: %s" % ", ".join(up['username'] for up in ups_in_project))
+            print("\nCase definitions\n")
+            cur.execute('SELECT * FROM case_definitions WHERE project_id = %s', [project['id']])
+            for cd in cur.fetchall():
+                print(" - %s" % cd['name'])
         
 
     
@@ -93,6 +109,8 @@ def main():
     parser_add_user_to_project.set_defaults(func=add_user_to_project)
 
     parser_show = subparsers.add_parser('show')
+    parser_show.add_argument("--users", action='store_true', default=None)
+    parser_show.add_argument("--projects", action='store_true', default=None)
     parser_show.set_defaults(func=show)
 
     args = parser.parse_args()

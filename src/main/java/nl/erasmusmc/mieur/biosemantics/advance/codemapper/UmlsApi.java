@@ -6,6 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -14,6 +16,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext.ExtCodingSystem;
 
 import org.apache.log4j.Logger;
 
@@ -49,14 +53,21 @@ public class UmlsApi  {
 		return connection;
 	}
 
+	private Map<String, ExtCodingSystem> extCodingSystems = new HashMap<>();
+
+	public void registerCodingSystemsExtension(ExtCodingSystem ext) {
+		extCodingSystems.put(ext.getCodingSystem().getAbbreviation(), ext);
 	}
 
 	public List<CodingSystem> getCodingSystems() throws CodeMapperException {
 
+		List<CodingSystem> codingSystems = new LinkedList<>();
+		for (ExtCodingSystem ext: extCodingSystems.values())
+			codingSystems.add(ext.getCodingSystem());
+
 		String query = "SELECT DISTINCT rsab, son, sf FROM MRSAB WHERE CURVER = 'Y'";
 		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 			ResultSet result = statement.executeQuery();
-			List<CodingSystem> codingSystems = new LinkedList<>();
 			while (result.next()) {
 				String rsab = result.getString(1);
 				String name = result.getString(2);
@@ -93,7 +104,6 @@ public class UmlsApi  {
 				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
 					statement.setString(offset, iter.next());
 
-				logger.debug(statement);
 				ResultSet result = statement.executeQuery();
 
 				Map<String, String> names = new TreeMap<>();
@@ -114,10 +124,18 @@ public class UmlsApi  {
 		}
 	}
 
-	public List<UmlsConcept> getCompletions(String q, List<String> vocabularies, List<String> semanticTypes) throws CodeMapperException {
+	public List<UmlsConcept> getCompletions(String q, List<String> codingSystems0, List<String> semanticTypes) throws CodeMapperException {
 		if (q.length() < 3) {
 			throw CodeMapperException.user("Completions query too short");
 		} else {
+
+			Set<String> codingSystems = new HashSet<>();
+			for (String abbr: codingSystems0)
+				if (extCodingSystems.containsKey(abbr))
+					codingSystems.add(extCodingSystems.get(abbr).getCodingSystem().getAbbreviation());
+				else
+					codingSystems.add(abbr);
+
 			String queryFmt =
 					"SELECT DISTINCT m1.cui, m1.str " // Get the distinct MRCONSO.str
 					+ "FROM MRCONSO AS m1 "
@@ -137,7 +155,7 @@ public class UmlsApi  {
 			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 				int offset = 1;
 				statement.setString(offset++, q + "%");
-				for (Iterator<String> iter = vocabularies.iterator(); iter.hasNext(); offset++)
+				for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
 					statement.setString(offset, iter.next());
 				for (Iterator<String> iter = semanticTypes.iterator(); iter.hasNext(); offset++)
 					statement.setString(offset, iter.next());
@@ -192,12 +210,23 @@ public class UmlsApi  {
 		}
 	}
 
-	public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> vocabularies)
+	public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> codingSystems0)
 			throws CodeMapperException {
 
-		if (cuis.isEmpty() || vocabularies == null)
+		if (cuis.isEmpty() || codingSystems0 == null)
 			return new TreeMap<>();
 		else {
+
+			// Translate extended coding systems to normal coding systems
+			Set<String> codingSystems = new HashSet<>();
+			List<String> extAbbrs = new LinkedList<>();
+			for (String abbr: codingSystems0)
+				if (extCodingSystems.containsKey(abbr)) {
+					extAbbrs.add(abbr);
+					codingSystems.add(extCodingSystems.get(abbr).getCodingSystem().getAbbreviation());
+				}
+				else
+					codingSystems.add(abbr);
 
 			String sabPlaceholders = "";
 			if (!codingSystems.isEmpty())
@@ -216,8 +245,8 @@ public class UmlsApi  {
 				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
 					statement.setString(offset, iter.next());
 
-				if (vocabularies != null)
-					for (Iterator<String> iter = vocabularies.iterator(); iter.hasNext(); offset++)
+				if (codingSystems != null)
+					for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
 						statement.setString(offset, iter.next());
 
                 logger.debug(statement);
@@ -247,6 +276,31 @@ public class UmlsApi  {
 					lastCui = cui;
 					lastSab = sab;
 					lastCode = code;
+				}
+
+				// Create extended source codes
+				for (String extAbbr: extAbbrs) {
+
+					ExtCodingSystem extCodingSystem = extCodingSystems.get(extAbbr);
+
+					Map<String, List<SourceConcept>> referenceSourceConcepts = new HashMap<>();
+					for (String cui: sourceConcepts.keySet()) {
+						referenceSourceConcepts.put(cui, new LinkedList<SourceConcept>());
+						for (SourceConcept sourceConcept: sourceConcepts.get(cui))
+							if (extCodingSystem.getReferenceCodingSystem()
+									.equals(sourceConcept.getCodingSystem()))
+								referenceSourceConcepts.get(cui).add(sourceConcept);
+					}
+
+					Map<String, Map<String, List<SourceConcept>>> extSourceConcepts =
+							extCodingSystem.mapCodes(referenceSourceConcepts);
+
+					for (String cui: sourceConcepts.keySet()) {
+						Set<SourceConcept> extSourceConceptsForCui = new HashSet<>();
+						for (List<SourceConcept> extSourceConceptForCui: extSourceConcepts.get(cui).values())
+							extSourceConceptsForCui.addAll(extSourceConceptForCui);
+						sourceConcepts.get(cui).addAll(extSourceConceptsForCui);
+					}
 				}
 
 				Set<String> missings = new TreeSet<>(cuis);

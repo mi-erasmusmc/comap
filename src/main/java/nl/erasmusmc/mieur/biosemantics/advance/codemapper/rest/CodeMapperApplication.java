@@ -18,6 +18,7 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.AuthentificationApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.PersistencyApi;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext.Rcd2CodingSystem;
 
 @ApplicationPath("rest")
 public class CodeMapperApplication extends ResourceConfig {
@@ -75,6 +76,13 @@ public class CodeMapperApplication extends ResourceConfig {
 			umlsConnectionProperties.setProperty("password", umlsDatabasePassword);
 
 			umlsApi = new UmlsApi(umlsDatabaseUri, umlsConnectionProperties, availableCodingSystems, codingSystemsWithDefinition);
+
+			String umlsExtDatabaseUri = properties.getProperty("umls-ext-db-uri");
+			Properties umlsExtConnectionProperties = new Properties();
+			umlsExtConnectionProperties.setProperty("user", properties.getProperty("umls-ext-db-username"));
+			umlsExtConnectionProperties.setProperty("password", properties.getProperty("umls-ext-db-password"));
+			umlsApi.registerCodingSystemsExtension(new Rcd2CodingSystem(umlsExtDatabaseUri, umlsExtConnectionProperties));
+
 			String codeMapperDatabaseUri = properties.getProperty("code-mapper-db-uri");
 			String codeMapperConnectionUsername = properties.getProperty("code-mapper-db-username");
 			String codeMapperConnectionPassword = properties.getProperty("code-mapper-db-password");

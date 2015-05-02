@@ -111,7 +111,6 @@ public class AuthentificationApi {
 		String query = "SELECT password FROM users WHERE username = ?";
 		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 			statement.setString(1, username);
-			System.out.println(statement);
 			ResultSet result = statement.executeQuery();
 			if (result.next()) {
 				String passwordHash = result.getString(1);

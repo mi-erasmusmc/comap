@@ -32,15 +32,15 @@ public class UmlsApi  {
 	private Connection connection;
 	private String uri;
 	private Properties connectionProperties;
-	private List<String> vocabulariesWithDefinition;
-	private List<String> availableVocabularies;
+	private List<String> codingSystemsWithDefinition;
+	private List<String> availableCodingSystems;
 	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
 
-	public UmlsApi(String uri, Properties connectionProperties, List<String> availableVocabularies, List<String> vocabulariesWithDefinition) {
+	public UmlsApi(String uri, Properties connectionProperties, List<String> availableCodingSystems, List<String> codingSystemsWithDefinition) {
 		this.uri = uri;
 		this.connectionProperties = connectionProperties;
-		this.availableVocabularies = availableVocabularies;
-		this.vocabulariesWithDefinition = vocabulariesWithDefinition;
+		this.availableCodingSystems = availableCodingSystems;
+		this.codingSystemsWithDefinition = codingSystemsWithDefinition;
 	}
 
 	private Connection getConnection() throws SQLException {
@@ -69,7 +69,7 @@ public class UmlsApi  {
 				String rsab = result.getString(1);
 				String name = result.getString(2);
 				String family = result.getString(2);
-				if (availableVocabularies == null || availableVocabularies.contains(rsab)) {
+				if (availableCodingSystems == null || availableCodingSystems.contains(rsab)) {
 					CodingSystem codingSystem = new CodingSystem(rsab, name, family);
 					codingSystems.add(codingSystem);
 				}
@@ -138,7 +138,7 @@ public class UmlsApi  {
 					+ "AND m1.ispref = 'Y' "
 					+ "AND m1.lat = 'ENG' "
 					+ "AND m1.str LIKE ? " // that match the query string
-					+ "AND m2.sab IN (%s) " // that are in selected vocabularies
+					+ "AND m2.sab IN (%s) " // that are in selected coding systems
 					+ "AND sty.tui IN (%s)"; // that have the selected semantic types
 			String query = String.format(queryFmt, placeholders(vocabularies.size()), placeholders(semanticTypes.size()));
 			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
@@ -242,7 +242,7 @@ public class UmlsApi  {
 					if (!cui.equals(lastCui) || !sab.equals(lastSab) || !code.equals(lastCode)) {
 						currentSourceConcept = new SourceConcept();
 						currentSourceConcept.setCui(cui);
-						currentSourceConcept.setVocabulary(sab);
+						currentSourceConcept.setCodingSystem(sab);
 						currentSourceConcept.setId(code);
 						currentSourceConcept.setPreferredTerm(str);
 						if (!sourceConcepts.containsKey(cui))
@@ -267,7 +267,7 @@ public class UmlsApi  {
 		}
 	}
 
-	public Map<String, List<UmlsConcept>> getRelated(List<String> cuis, List<String> vocabularies, boolean hyponymsNotHypernyms) throws CodeMapperException {
+	public Map<String, List<UmlsConcept>> getRelated(List<String> cuis, List<String> codingSystems, boolean hyponymsNotHypernyms) throws CodeMapperException {
 
 		if (cuis.isEmpty())
 			return new TreeMap<>();
@@ -306,7 +306,7 @@ public class UmlsApi  {
 				for (Collection<String> cs : related.values())
 					relatedCuis.addAll(cs);
 
-				Map<String, UmlsConcept> relatedConcepts = getConcepts(relatedCuis, vocabularies);
+				Map<String, UmlsConcept> relatedConcepts = getConcepts(relatedCuis, codingSystems);
 
 				Map<String, List<UmlsConcept>> relatedByReference = new TreeMap<>();
 				for (String cui: cuis) {
@@ -357,7 +357,7 @@ public class UmlsApi  {
 					if (!definitionsByVocabularies.containsKey(cui))
 						definitions.put(cui, "");
 					else
-						for (String voc : vocabulariesWithDefinition)
+						for (String voc : codingSystemsWithDefinition)
 							if (definitionsByVocabularies.get(cui).containsKey(voc)) {
 								definitions.put(cui, definitionsByVocabularies.get(cui).get(voc));
 								break;

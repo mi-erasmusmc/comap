@@ -59,11 +59,11 @@ public class CodeMapperApplication extends ResourceConfig {
 			Properties properties = new Properties();
 			properties.load(context.getResourceAsStream(CODE_MAPPER_PROPERTIES));
 
-			List<String> availableVocabularies = Arrays.asList(
-					properties.getProperty("available-vocabularies").split(",\\s*"));
+			List<String> availableCodingSystems = Arrays.asList(
+					properties.getProperty("available-coding-systems").split(",\\s*"));
 
-			List<String> vocabulariesWithDefinition = Arrays.asList(
-					properties.getProperty("vocabularies-with-definition").split(",\\s*"));
+			List<String> codingSystemsWithDefinition = Arrays.asList(
+					properties.getProperty("coding-systems-with-definition").split(",\\s*"));
 
 			peregrineResourceUrl = properties.getProperty("peregrine-resource-url");
 
@@ -73,8 +73,8 @@ public class CodeMapperApplication extends ResourceConfig {
 			Properties umlsConnectionProperties = new Properties();
 			umlsConnectionProperties.setProperty("user", umlsDatabaseUsername);
 			umlsConnectionProperties.setProperty("password", umlsDatabasePassword);
-			umlsApi = new UmlsApi(umlsDatabaseUri, umlsConnectionProperties, availableVocabularies, vocabulariesWithDefinition);
 
+			umlsApi = new UmlsApi(umlsDatabaseUri, umlsConnectionProperties, availableCodingSystems, codingSystemsWithDefinition);
 			String codeMapperDatabaseUri = properties.getProperty("code-mapper-db-uri");
 			String codeMapperConnectionUsername = properties.getProperty("code-mapper-db-username");
 			String codeMapperConnectionPassword = properties.getProperty("code-mapper-db-password");

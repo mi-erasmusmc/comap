@@ -5,32 +5,32 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class SourceConcept {
     private String cui = null;
-    private String vocabulary = null;
+    private String codingSystem = null;
     private String id = null;
     private String preferredTerm = null;
 
     public SourceConcept() {
     }
 
-    public SourceConcept(String cui, String vocabulary, String id, String preferredTerm) {
+    public SourceConcept(String cui, String codingSystem, String id, String preferredTerm) {
         this.cui = cui;
-        this.vocabulary = vocabulary;
+        this.codingSystem = codingSystem;
         this.id = id;
         this.preferredTerm = preferredTerm;
     }
 
-    public SourceConcept(String cui, String vocabulary, String id) {
+    public SourceConcept(String cui, String codingSystem, String id) {
         this.cui = cui;
-        this.vocabulary = vocabulary;
+        this.codingSystem = codingSystem;
         this.id = id;
     }
 
-    public String getVocabulary() {
-        return vocabulary;
+    public String getCodingSystem() {
+        return codingSystem;
     }
 
-    public void setVocabulary(String source) {
-        this.vocabulary = source;
+    public void setCodingSystem(String codingSystem) {
+        this.codingSystem = codingSystem;
     }
 
     public String getId() {

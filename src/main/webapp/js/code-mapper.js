@@ -188,7 +188,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         codingSystems.forEach(function(codingSystem) {
             concept.codes[codingSystem] = concept.sourceConcepts
                 .filter(function(sourceConcept) {
-                    return sourceConcept.vocabulary == codingSystem;
+                    return sourceConcept.codingSystem == codingSystem;
                 })
                 .map(function(sourceConcept) {
                     // Select all codes by default
@@ -311,7 +311,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
         var concepts = $scope.state.indexing.concepts.filter($scope.conceptHasSelectedSemanticType);
         var data = {
             cuis: concepts.map(getCui),
-            vocabularies: $scope.selected.codingSystems.map(getAbbreviation)
+            codingSystems: $scope.selected.codingSystems.map(getAbbreviation)
         };
         $http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
             .success(function(concepts) {
@@ -386,7 +386,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             .then(function(cuis) {
                 var data = {
                     cuis: cuis,
-                    vocabularies: $scope.state.mapping.codingSystems
+                    codingSystems: $scope.state.mapping.codingSystems
                 };
                 return $http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
                     .then(function(result) {
@@ -586,9 +586,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     $scope.operationEditCodes = function(concepts) {
         editCodes($modal, concepts, $scope.state.mapping.codingSystems)
             .then(function(codes) {
-                function isSelected(cui, vocabulary, id) {
+                function isSelected(cui, codingSystem, id) {
                     return codes.filter(function(code) {
-                        return code.cui == cui && code.vocabulary == vocabulary && code.id == id;
+                        return code.cui == cui && code.codingSystem == codingSystem && code.id == id;
                     }).length != 0
                 };
                 var added = [];
@@ -596,7 +596,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 concepts.forEach(function(concept) {
                     $scope.state.mapping.codingSystems.forEach(function(codingSystem) {
                         concept.codes[codingSystem].forEach(function(code) {
-                            var selected = isSelected(code.cui, code.vocabulary, code.id);
+                            var selected = isSelected(code.cui, code.codingSystem, code.id);
                             if (!code.selected && selected) {
                                 added.push({
                                     code: code,
@@ -619,7 +619,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                     var descr, result;
                     var resultCodes = function(codes, preposition) {
                         return codes.map(function(cc) {
-                            return cc.code.id + " (" + cc.code.vocabulary + ") " + preposition + " " + cc.concept.preferredName;
+                            return cc.code.id + " (" + cc.code.codingSystem + ") " + preposition + " " + cc.concept.preferredName;
                         }).join(", ");
                     };
                     if (removed.length == 0) {
@@ -654,7 +654,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
           ["CODES"],
           ["CODING SYSTEMS", "CODE", "NAME IN CODING SYSTEM", "CONCEPT NAME", "UMLS ID", "ORIGIN", "ROOT CONCEPT"]
         ].forEach(function(row) { data.push(row); });
-        $scope.state.mapping.codingSystems.forEach(function(vocabulary) {
+        $scope.state.mapping.codingSystems.forEach(function(codingSystem) {
             $scope.state.mapping.concepts.forEach(function(concept) {
                 var origin = "?";
                 if (concept.origin.type == "spans") {
@@ -673,9 +673,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                     origin = "Added";
                 }
                 var root = angular.isObject(concept.origin.root) ? concept.origin.root.preferredName : "";
-                concept.codes[vocabulary].forEach(function(code) {
+                concept.codes[codingSystem].forEach(function(code) {
                     if (code.selected) {
-                        data.push([vocabulary, code.id, code.preferredTerm, concept.preferredName, concept.cui, origin, root]);
+                        data.push([codingSystem, code.id, code.preferredTerm, concept.preferredName, concept.cui, origin, root]);
                     }
                 })
             });
@@ -788,7 +788,7 @@ function EditCodesCtrl($scope, $modalInstance, $timeout, concepts, codes) {
         enableRowSelection: true,
         showSelectionCheckbox: true,
         columnDefs: [
-            { displayName: 'Coding system', field: 'vocabulary' },
+            { displayName: 'Coding system', field: 'codingSystem' },
             { displayName: 'Code', field: 'id',
                 cellTemplate:
                     "<span ng-bind='row.getProperty(col.field)' title='{{row.entity.preferredTerm}}' " +

@@ -49,14 +49,6 @@ public class UmlsApi  {
 		return connection;
 	}
 
-	private String placeholders(int number) {
-		StringBuilder sb = new StringBuilder();
-		for (int ix = 0; ix < number; ix++) {
-			if (ix > 0)
-				sb.append(", ");
-			sb.append("?");
-		}
-		return sb.toString();
 	}
 
 	public List<CodingSystem> getCodingSystems() throws CodeMapperException {
@@ -93,7 +85,7 @@ public class UmlsApi  {
 					+ "AND ispref = 'Y' "
 					+ "AND ts = 'P' "
 					+ "AND stt = 'PF'";
-			String query = String.format(queryFmt, placeholders(cuis.size()));
+			String query = String.format(queryFmt, Utils.sqlPlaceholders(cuis.size()));
 
 			try (PreparedStatement statement = connection.prepareStatement(query)) {
 
@@ -140,7 +132,8 @@ public class UmlsApi  {
 					+ "AND m1.str LIKE ? " // that match the query string
 					+ "AND m2.sab IN (%s) " // that are in selected coding systems
 					+ "AND sty.tui IN (%s)"; // that have the selected semantic types
-			String query = String.format(queryFmt, placeholders(vocabularies.size()), placeholders(semanticTypes.size()));
+
+			String query = String.format(queryFmt, Utils.sqlPlaceholders(codingSystems.size()), Utils.sqlPlaceholders(semanticTypes.size()));
 			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 				int offset = 1;
 				statement.setString(offset++, q + "%");
@@ -172,7 +165,7 @@ public class UmlsApi  {
 					+ "FROM MRSTY "
 					+ "WHERE cui in (%s) "
 					+ "ORDER BY cui, tui";
-			String query = String.format(queryFmt, placeholders(cuis.size()));
+			String query = String.format(queryFmt, Utils.sqlPlaceholders(cuis.size()));
 
 			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 
@@ -207,14 +200,14 @@ public class UmlsApi  {
 		else {
 
 			String sabPlaceholders = "";
-			if (!vocabularies.isEmpty())
-				sabPlaceholders = String.format("AND sab IN (%s)", placeholders(vocabularies.size()));
+			if (!codingSystems.isEmpty())
+				sabPlaceholders = String.format("AND sab IN (%s)", Utils.sqlPlaceholders(codingSystems.size()));
 
 			String queryFmt =
 				  	"SELECT DISTINCT cui, sab, code, str, tty "
 					+ "FROM MRCONSO "
 					+ "WHERE cui IN (%s) %s ORDER BY cui, sab, code, str";
-			String query = String.format(queryFmt, placeholders(cuis.size()), sabPlaceholders);
+			String query = String.format(queryFmt, Utils.sqlPlaceholders(cuis.size()), sabPlaceholders);
 
 			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 
@@ -282,7 +275,7 @@ public class UmlsApi  {
 					+ "AND (rela IS NULL OR rela = 'isa')";
 			String selection = hyponymsNotHypernyms ? "cui1, cui2" : "cui2, cui1";
 			String selector = hyponymsNotHypernyms ? "cui1" : "cui2";
-			String query = String.format(queryFmt, selection, selector, placeholders(cuis.size()));
+			String query = String.format(queryFmt, selection, selector, Utils.sqlPlaceholders(cuis.size()));
 
 			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 
@@ -331,7 +324,7 @@ public class UmlsApi  {
 		else {
 
 			String queryFmt = "SELECT DISTINCT cui, sab, def FROM MRDEF WHERE cui IN (%s)";
-			String query = String.format(queryFmt, placeholders(cuis.size()));
+			String query = String.format(queryFmt, Utils.sqlPlaceholders(cuis.size()));
 
 			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 

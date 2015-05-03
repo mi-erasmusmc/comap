@@ -3,25 +3,20 @@ import pickle
 import os
 import yaml
 
-#COMAP_API_URL = 'http://euadr:8080/CoMap/rest/'
-#PEREGRINE_API_URL = 'http://euadr:8080/UMLS2014AB_ADVANCE/rest/'
-COMAP_API_URL = 'http://localhost:8080/AdvanceCodeMapper/rest/'
-PEREGRINE_API_URL = 'http://euadr.erasmusmc.nl:8080/UMLS2014AB_ADVANCE/rest/'
-
 CASE_DEFINITIONS_FOLDER = 'case-definitions'
 COMAP_COOKIES_FILE = '.comap-cookies'
 
-def get_cookies():
+def get_cookies(comap_api_url):
     try:
         with open(COMAP_COOKIES_FILE, 'rb') as f:
             cookies = pickle.load(f)
-        r = requests.post(COMAP_API_URL+'authentification/user', cookies=cookies)
+        r = requests.post(comap_api_url + '/authentification/user', cookies=cookies)
         if not r.json():
             raise
         return cookie
     except:
         data = dict(username='b.becker', password='Codemapper2015')
-        r = requests.post(COMAP_API_URL+'authentification/login', data=data)
+        r = requests.post(comap_api_url + '/authentification/login', data=data)
         with open(COMAP_COOKIES_FILE, 'wb') as f:
             pickle.dump(r.cookies, f)
         return r.cookies
@@ -30,26 +25,32 @@ def get_cookies():
 def cui_of_id(id):
     return "C{:0>7s}".format(id)
 
-def load_casedef(id):
-    path = os.path.join(CASE_DEFINITIONS_FOLDER, id + '.yaml')
-    casedef = yaml.load(open(path))
-    return casedef['definition'].strip()
-
-def peregrine_index(text):
-    r = requests.get(PEREGRINE_API_URL+'index', params=dict(text=text))
+def peregrine_index(text, peregrine_api_url):
+    r = requests.get(peregrine_api_url + '/index', params=dict(text=text))
     return r.json()['spans']
 
     
 class ComapClient(object):
 
-    def __init__(self):
-        self.cookies = get_cookies()
+    def __init__(self, comap_api_url):
+        self.comap_api_url = comap_api_url
+        self.cookies = get_cookies(self.comap_api_url)
 
     def coding_systems(self):
-        r = requests.get(COMAP_API_URL+'code-mapper/coding-systems', cookies=self.cookies)
+        r = requests.get(self.comap_api_url + '/code-mapper/coding-systems', cookies=self.cookies)
         return r.json()
         
     def umls_concepts(self, cuis, codingSystems):
         data = data=dict(cuis=cuis, codingSystems=codingSystems)
-        r = requests.post(COMAP_API_URL+'code-mapper/umls-concepts', data=data, cookies=self.cookies)
+        r = requests.post(self.comap_api_url + '/code-mapper/umls-concepts', data=data, cookies=self.cookies)
         return r.json()
+
+    def hyponyms(self, cuis, codingSystems):
+        data = {
+            'cuis': cuis,
+            'codingSystems': codingSystems
+        }
+        r = requests.post(self.comap_api_url + '/code-mapper/related/hyponyms', data=data, cookies=self.cookies)
+        self.r = r
+        return r.json()
+    

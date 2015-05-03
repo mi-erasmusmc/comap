@@ -3,26 +3,37 @@
 import os
 import sys
 import json
+import yaml
 import comap
 
 (_, REDO_TARGET, REDO_BASE, REDO_TEMP) = sys.argv
 
-VOCABULARIES = ['RCD', 'RCD2']
-SEMANTIC_TYPES = [ "T020", "T190", "T049", "T019", "T047", "T050",
-                   "T037", "T048", "T191", "T046", "T184", "T033", "T005", "T004",
-                   "T204", "T007" ]
+coding_systems_file = 'config/coding_systems.yaml'
+semantic_types_file = 'config/semantic_types.yaml'
+comap_config_file = 'config/comap.yaml'
+index_file = REDO_BASE + '.index.json'
+casedef_file = os.path.join('case-definitions', REDO_BASE + '.yaml')
 
-os.system('redo-ifchange comap.py {}.index.json'.format(REDO_BASE))
+os.system('redo-ifchange comap.py "{comap_config_file}" "{semantic_types_file}" "{coding_systems_file}" "{index_file}"'\
+          .format(**locals()))
 
-casedef = comap.load_casedef(REDO_BASE)
-with open(REDO_BASE + '.index.json') as f:
+casedef = yaml.load(open(casedef_file))['definition'].strip()
+
+coding_systems = yaml.load(open(coding_systems_file))
+
+semantic_types = yaml.load(open(semantic_types_file))
+
+comap_api_url = yaml.load(open(comap_config_file))['api']['url']
+
+with open(index_file) as f:
     index = json.load(f)
 
-client = comap.ComapClient()
+client = comap.ComapClient(comap_api_url)
 
 concepts = [
-    concept for concept in client.umls_concepts(index['cuis'], VOCABULARIES)
-    if set(concept['semanticTypes']) & set(SEMANTIC_TYPES)
+    concept
+    for concept in client.umls_concepts(index['cuis'], coding_systems)
+    if set(concept['semanticTypes']) & set(semantic_types)
 ]
 
 with open(REDO_TEMP, 'w') as f:

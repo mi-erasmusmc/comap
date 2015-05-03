@@ -1,0 +1,10 @@
+---
+id: mi
+name: Myocardial Infarction
+definition: >
+
+  Cell death of cardiac myocytes caused by ischemia, which is the
+  result of a perfusion imbalance between supply and demand.
+
+  NOTE: AMI secondary to a coronary revascularization procedure should
+  be excluded in the operational definition

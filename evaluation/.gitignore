@@ -1,0 +1,7 @@
+.redo
+.comap-cookies
+py3-env
+*.index.json
+*.concepts.json
+config.yaml
+__pycache__

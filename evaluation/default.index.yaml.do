@@ -8,7 +8,8 @@ import comap
 import redo
 
 peregrine_config_filename = 'config/peregrine.yaml'
-casedef_path = Path('case-definitions') / (redo.base + '.yaml')
+(project, casedef_id) = redo.base.split('.')
+casedef_path = Path('case-definitions') / project / (casedef_id + '.yaml')
 
 with redo.ifchange(peregrine_config_filename, casedef_path.as_posix()) \
      as (peregrine_config_file, casedef_file):

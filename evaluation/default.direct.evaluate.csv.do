@@ -17,31 +17,36 @@ database_coding_systems = {
     ]
 }
 
-project = redo.base
 coding_systems_filename = 'config/coding_systems.yaml'
+project = redo.base
+casedefs_path = Path('case-definitions') / project
+outcome_ids = [ p.name.split('.')[0] for p in casedefs_path.glob('*.yaml') ]
 references_path = Path('reference') / (project + '.yaml')
-outcomes = [ p.name.split('.')[0] for p in Path('case-definitions').glob('*.yaml') ]
-concept_filenames = ['{}.concepts.yaml'.format(outcome) for outcome in outcomes]
+concept_filenames = ['{}.{}.concepts.yaml'.format(project, outcome) for outcome in outcome_ids]
 
 with redo.ifchange(coding_systems_filename, references_path.as_posix(), concept_filenames) as \
      (coding_system_file, references_file, concept_files):
     coding_systems = yaml.load(coding_system_file)
     references = yaml.load(references_file)
+    concepts_by_outcome = {}
+    for outcome_id, concept_file in zip(outcome_ids, concept_files):
+        concepts_by_outcome[outcome_id] = yaml.load(concept_file)
 
-concepts_by_outcome = {}
-for outcome in outcomes:
-    with open(outcome + '.concepts.yaml') as f:
-        concepts_by_outcome[outcome] = yaml.load(f)
+outcomes = []
+for outcome_id in outcome_ids:
+    path = casedefs_path / (outcome_id + '.yaml')
+    with open(path.as_posix()) as f:
+        outcomes.append(yaml.load(f))
 
 results = {}
 for outcome in outcomes:
-    results[outcome] = {}
+    results[outcome['id']] = {}
     for database, coding_system in database_coding_systems[project]:
-        reference = next(r for r in references if r['database'] == database)['mappings'][outcome]
+        reference = next(r for r in references if r['database'] == database)['mappings'][outcome['id']]
         reference_codes = reference.get('inclusion')
         generated_codes = [
             code['id']
-            for concept in concepts_by_outcome[outcome]
+            for concept in concepts_by_outcome[outcome['id']]
             for code in concept['sourceConcepts']
             if code['codingSystem'] == coding_system
         ]
@@ -69,13 +74,14 @@ for outcome in outcomes:
         else:
             comparison = None
             
-        results[outcome][database] = {
+        results[outcome['id']][database] = {
             'generated': generated_codes,
             'reference': reference.get('comment') or reference_codes,
             'comparison': comparison,
         }
 
 with open(redo.temp, 'w') as f:
+    index = [ outcome['name'] for outcome in outcomes ]
     columns = pd.MultiIndex.from_tuples([
         (database, c)
         for database, _ in database_coding_systems[project]
@@ -84,7 +90,7 @@ with open(redo.temp, 'w') as f:
     p = lambda v: ', '.join(v) if type(v) == list else v
     data = [
         [ value
-          for database, result in results[outcome].items()
+          for database, result in results[outcome['id']].items()
           for comparison in [ result.get('comparison', {}) ]
           for value in ([ p(comparison['true-positives']),
                           p(comparison['false-positives']),
@@ -94,6 +100,6 @@ with open(redo.temp, 'w') as f:
                           comparison.get('f-score') ] if comparison != None else [None]*6) ]
         for outcome in outcomes
     ]
-    pd.DataFrame(data, index=outcomes, columns=columns).to_csv(f)    
+    pd.DataFrame(data, index=index, columns=columns).to_csv(f)    
 
 

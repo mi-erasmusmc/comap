@@ -4,7 +4,6 @@ import os
 import sys
 import yaml
 
-CASE_DEFINITIONS_FOLDER = 'case-definitions'
 COMAP_COOKIES_FILE = '.comap-cookies'
 
 def get_cookies(comap_api_url):

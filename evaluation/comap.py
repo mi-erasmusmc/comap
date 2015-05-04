@@ -1,6 +1,7 @@
 import requests
 import pickle
 import os
+import sys
 import yaml
 
 CASE_DEFINITIONS_FOLDER = 'case-definitions'
@@ -40,17 +41,26 @@ class ComapClient(object):
         r = requests.get(self.comap_api_url + '/code-mapper/coding-systems', cookies=self.cookies)
         return r.json()
         
-    def umls_concepts(self, cuis, codingSystems):
-        data = data=dict(cuis=cuis, codingSystems=codingSystems)
-        r = requests.post(self.comap_api_url + '/code-mapper/umls-concepts', data=data, cookies=self.cookies)
-        return r.json()
-
-    def hyponyms(self, cuis, codingSystems):
+    def umls_concepts(self, cuis, coding_systems):
         data = {
             'cuis': cuis,
-            'codingSystems': codingSystems
+            'codingSystems': coding_systems
+        }
+        r = requests.post(self.comap_api_url + '/code-mapper/umls-concepts', data=data, cookies=self.cookies)
+        if r.ok:
+            return r.json()
+        else:
+            print("Couldn't post {}.".format(r.url), file=sys.stderr)            
+    
+
+    def hyponyms(self, cuis, coding_systems):
+        data = {
+            'cuis': cuis,
+            'codingSystems': coding_systems
         }
         r = requests.post(self.comap_api_url + '/code-mapper/related/hyponyms', data=data, cookies=self.cookies)
-        self.r = r
-        return r.json()
+        if r.ok:
+            return r.json()
+        else:
+            print("Couldn't get {}.".format(r.request.path_url), file=sys.stderr)
     

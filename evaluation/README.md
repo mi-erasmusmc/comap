@@ -27,5 +27,5 @@ pip install -r requirements.txt
 ## Evaluate Comap
 
 ```shell
-redo all
+redo
 ```

@@ -59,6 +59,9 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 	@Override
 	public Map<String, Map<String, List<SourceConcept>>> mapCodes(Map<String, List<SourceConcept>> referenceCodes) throws CodeMapperException {
 
+		if (referenceCodes.isEmpty())
+			return new HashMap<>();
+
 		/** referenceCodes {CUI: [SourceConcept3]} */
 
 		Set<String> codes = new HashSet<>();

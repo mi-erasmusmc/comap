@@ -9,10 +9,6 @@ target = sys.argv[1]
 base = sys.argv[2]
 temp = sys.argv[3]
 
-def _redo_command(command, files):
-    cmd = command + ' ' + ' '.join('"{}"'.format(f) for f in files)
-    os.system(cmd)
-
 class RedoCommand(object):
 
     def __init__(self, command_name, filenames):

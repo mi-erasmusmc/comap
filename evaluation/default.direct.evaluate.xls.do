@@ -19,9 +19,10 @@ database_coding_systems = {
 
 coding_systems_filename = 'config/coding_systems.yaml'
 project = redo.base
-casedefs_path = Path('case-definitions') / project
+project_path = Path('projects') / project
+references_path = project_path / 'reference.yaml'
+casedefs_path = project_path / 'case-definitions'
 outcome_ids = [ p.name.split('.')[0] for p in casedefs_path.glob('*.yaml') ]
-references_path = Path('reference') / (project + '.yaml')
 concept_filenames = ['{}.{}.concepts.yaml'.format(project, outcome) for outcome in outcome_ids]
 
 with redo.ifchange(coding_systems_filename, references_path.as_posix(), concept_filenames) as \

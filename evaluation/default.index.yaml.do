@@ -9,7 +9,7 @@ import redo
 
 peregrine_config_filename = 'config/peregrine.yaml'
 (project, casedef_id) = redo.base.split('.')
-casedef_path = Path('case-definitions') / project / (casedef_id + '.yaml')
+casedef_path = Path('projects') / project / 'case-definitions' / (casedef_id + '.yaml')
 
 with redo.ifchange(peregrine_config_filename, casedef_path.as_posix()) \
      as (peregrine_config_file, casedef_file):

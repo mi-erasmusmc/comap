@@ -81,26 +81,28 @@ for outcome in outcomes:
             'comparison': comparison,
         }
 
-with open(redo.temp, 'w') as f:
-    index = [ outcome['name'] for outcome in outcomes ]
-    columns = pd.MultiIndex.from_tuples([
-        (database, c)
-        for database, _ in database_coding_systems[project]
-        for c in [ 'TP', 'FP', 'FN', 'recall', 'precision', 'f-score' ]
-    ])
-    p = lambda v: ', '.join(v) if type(v) == list else v
-    data = [
-        [ value
-          for database, result in results[outcome['id']].items()
-          for comparison in [ result.get('comparison', {}) ]
-          for value in ([ p(comparison['true-positives']),
-                          p(comparison['false-positives']),
-                          p(comparison['false-negatives']),                         
-                          comparison.get('recall'),
-                          comparison.get('precision'),
-                          comparison.get('f-score') ] if comparison != None else [None]*6) ]
-        for outcome in outcomes
-    ]
-    pd.DataFrame(data, index=index, columns=columns).to_csv(f)    
+index = pd.Index([ outcome['name'] for outcome in outcomes ], name='Outcome')
+columns = pd.MultiIndex.from_tuples([
+    (database, c)
+    for database, _ in database_coding_systems[project]
+    for c in [ 'TP', 'FP', 'FN', 'recall', 'precision', 'f-score' ]
+])
+p = lambda v: ', '.join(v) if type(v) == list else v
+data = [
+    [ value
+      for database, result in results[outcome['id']].items()
+      for comparison in [ result.get('comparison', {}) ]
+      for value in ([ p(comparison['true-positives']),
+                      p(comparison['false-positives']),
+                      p(comparison['false-negatives']),
+                      comparison.get('recall'),
+                      comparison.get('precision'),
+                      comparison.get('f-score') ] if comparison != None else [None]*6) ]
+    for outcome in outcomes
+]
+df = pd.DataFrame(data, index=index, columns=columns)
 
+writer = pd.ExcelWriter(redo.temp)
+df.to_excel(writer, 'Sheet1')
+writer.save()
 

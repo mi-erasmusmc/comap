@@ -4,3 +4,7 @@ py3-env
 *.index.yaml
 *.concepts.yaml
 __pycache__
+*.yaml
+\#*\#
+.\#*
+.~*

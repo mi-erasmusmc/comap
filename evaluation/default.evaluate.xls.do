@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import json
 import yaml
 from pathlib import Path
 import pandas as pd
@@ -28,11 +28,11 @@ outcome_ids = [
 project = redo.base
 project_path = Path('projects') / project
 concept_filenames = {
-    outcome_id: '{}.{}.concepts.yaml'.format(project, outcome_id)
+    outcome_id: '{}.{}.concepts.json'.format(project, outcome_id)
     for outcome_id in outcome_ids
 }
 child_concept_filenames = {
-    outcome_id: '{}.{}.child-concepts.yaml'.format(project, outcome_id)
+    outcome_id: '{}.{}.child-concepts.json'.format(project, outcome_id)
     for outcome_id in outcome_ids
 }
 casedef_paths = {
@@ -49,10 +49,10 @@ with redo.ifchange(coding_systems='config/coding_systems.yaml',
     references = yaml.load(files['references'])
     concepts_by_outcome = {}
     for outcome_id, f in files['concepts'].items():
-        concepts_by_outcome[outcome_id] = yaml.load(f)
+        concepts_by_outcome[outcome_id] = json.load(f)
     child_concepts_by_outcome = {}
     for outcome_id, f in files['child_concepts'].items():
-        child_concepts_by_outcome[outcome_id] = yaml.load(f).items()
+        child_concepts_by_outcome[outcome_id] = json.load(f).items()
     outcomes = {
         outcome_id: yaml.load(f)
         for outcome_id, f in files['casedefs'].items()
@@ -147,10 +147,6 @@ varied_results = [
      create_results(normalize_code=upper_and_ignore_suffix_dot,
                     with_children=True)),
 ]
-
-with open(redo.target.replace('.xls', '.plain.yaml'), 'w') as f:
-    yaml.dump(varied_results[0][1], f)
-
 
 # Output Excel via Pandas
 

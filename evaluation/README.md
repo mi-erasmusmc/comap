@@ -29,3 +29,11 @@ pip install -r requirements.txt
 ```shell
 redo
 ```
+
+## Notes
+
+### YAML vs JSON
+
+Manually created (input) files are encoded in YAML because it's easy
+readable/writable. Generated (temporary) files are encoded in JSON
+because it's fast.

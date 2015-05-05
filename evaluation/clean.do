@@ -1,1 +1,1 @@
-rm -rf *.index.yaml *.concepts.yaml *.pyc __pycache__
+rm -rf *.index.json *.concepts.json *.pyc *.child-concepts.json __pycache__

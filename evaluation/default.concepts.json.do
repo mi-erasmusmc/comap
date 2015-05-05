@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import yaml
 import comap
 import redo
@@ -7,11 +8,11 @@ import redo
 with redo.ifchange(comap_config='config/comap.yaml',
                    semantic_types='config/semantic_types.yaml',
                    coding_systems='config/coding_systems.yaml',
-                   index=redo.base + '.index.yaml') as files:
+                   index=redo.base + '.index.json') as files:
     coding_systems = yaml.load(files['coding_systems'])
     semantic_types = yaml.load(files['semantic_types'])
     comap_api_url = yaml.load(files['comap_config'])['api']['url']
-    index = yaml.load(files['index'])
+    index = json.load(files['index'])
 
 cuis = [s['cui'] for s in index['spans']]
 
@@ -24,4 +25,4 @@ concepts = [
 ]
 
 with redo.output() as f:
-    yaml.dump(concepts, f)
+    json.dump(concepts, f)

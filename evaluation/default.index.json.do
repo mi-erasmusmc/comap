@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import yaml
+import json
 import comap
 import redo
 
@@ -26,4 +27,4 @@ result = {
 }
 
 with redo.output() as f:
-    yaml.dump(result, f)
+    json.dump(result, f)

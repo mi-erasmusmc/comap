@@ -54,88 +54,107 @@ with redo.ifchange(coding_systems = 'config/coding_systems.yaml',
         for outcome_id, f in files['casedefs'].items()
     }
 
-def results(normalize_code):
-    res = {}
-    for outcome in outcomes:
-        res[outcome['id']] = {}
-        for database, coding_system in database_coding_systems[project]:
-            reference = next(r for r in references if r['database'] == database)['mappings'][outcome['id']]
-            reference_codes = reference.get('inclusion')
+def compare_codes(generated_codes, reference_codes):
+
+    true_positives  = set(generated_codes) & set(reference_codes)
+    false_positives = set(generated_codes) - set(reference_codes)
+    false_negatives = set(reference_codes) - set(generated_codes)
+
+    recall    = len(true_positives) / len(reference_codes) if reference_codes else None
+    precision = len(true_positives) / len(generated_codes) if generated_codes else None
+    f_score   = 2 * recall * precision / (recall + precision) \
+                if recall != None and precision != None and recall + precision > 0 \
+                else None
+    return {
+        'generated': list(generated_codes),
+        'references': list(reference_codes),
+        'true-positives': list(true_positives),
+        'false-positives': list(false_positives),
+        'false-negatives': list(false_negatives),
+        'recall': recall,
+        'precision': precision,
+        'f-score': f_score,
+    }
+
+
+def create_results(normalize_code=lambda code: code):
+
+    def make_comparison(reference, outcome, coding_system):
+        reference_mapping = reference['mappings'].get(outcome['id'])
+        if reference_mapping != None:
             generated_codes = [
-                code['id']
+                normalize_code(code['id'])
                 for concept in concepts_by_outcome[outcome['id']]
                 for code in concept['sourceConcepts']
                 if code['codingSystem'] == coding_system
             ]
-            if reference_codes != None:
-                generated_codes = set(normalize_code(code) for code in generated_codes)
-                reference_codes = set(normalize_code(code) for code in reference_codes)
-                true_positives  = set(generated_codes) & set(reference_codes)
-                false_positives = set(generated_codes) - set(reference_codes)
-                false_negatives = set(reference_codes) - set(generated_codes)
+            reference_codes = set(normalize_code(code)
+                                  for code in reference_mapping['inclusion'] + \
+                                  reference_mapping.get('exclusion', []))
+            return compare_codes(generated_codes, reference_codes)
+        else:
+            return None
 
-                recall    = len(true_positives) / len(reference_codes) if reference_codes else None
-                precision = len(true_positives) / len(generated_codes) if generated_codes else None
-                f_score   = 2 * recall * precision / (recall + precision) \
-                            if recall != None and precision != None and recall + precision > 0 \
-                            else None
-                comparison = {
-                    'generated': list(generated_codes),
-                    'references': list(reference_codes),
-                    'true-positives': list(true_positives),
-                    'false-positives': list(false_positives),
-                    'false-negatives': list(false_negatives),
-                    'recall': recall,
-                    'precision': precision,
-                    'f-score': f_score,
-                }
-            else:
-                comparison = None
-
-            res[outcome['id']][database] = {
-                'comment': reference.get('comment'),
-                'comparison': comparison,
+    return {
+        outcome_id: {
+            database: {
+                'comment': references.get('comment'),
+                'comparison': make_comparison(references[database], outcome, coding_system),
             }
-    return res
+            for database, coding_system in database_coding_systems[project]
+        }
+        for outcome_id, outcome in outcomes.items()
+    }
 
-def lower_and_no_suffix_dot(code):
-    code = code.lower()
+
+def upper_and_ignore_suffix_dot(code):
+    code = code.upper()
     if code[-1] == '.':
         return code[:-1]
     else:
         return code
 
 results = [
-    ('plain', results(lambda x: x)),
-    ('lower_and_no_suffix_dot', results(lower_and_no_suffix_dot)),
+    ('plain', create_results(lambda x: x)),
+    ('upper_and_ignore_suffix_dot', create_results(upper_and_ignore_suffix_dot)),
 ]
 
-index = pd.Index([ outcome['name'] for outcome in outcomes ], name='Outcome')
+with open(redo.target.replace('.xls', '.plain.yaml'), 'w') as f:
+    yaml.dump(results[0][1], f)
+
+
+# Output Excel via Pandas
+
+index = pd.Index([ outcomes[outcome_id]['name'] for outcome_id in outcome_ids ], name='Outcome')
+
 columns = pd.MultiIndex.from_tuples([
     ('{} ({})'.format(database, coding_system), c)
     for database, coding_system in database_coding_systems[project]
-    for c in [ 'TP', 'FP', 'FN', 'recall', 'precision', 'f-score' ]
+    for c in [ 'TP', 'FP', 'FN', 'recall', 'precision' ]
 ])
 
 def data(results):
-    """ The data of a sheet. """
-    p = lambda v: ' '.join(str(v0) for v0 in v) if type(v) == list else v
+    """A row for each outcome with columns for values and measuges for
+    each database."""
+    def str_of_list(v):
+        return ' '.join(str(v0) for v0 in v)
     return [
         [ value
-          for database, result in results[outcome['id']].items()
-          for comparison in [ result.get('comparison', {}) ]
-          for value in ([ p(comparison['true-positives']),
-                          p(comparison['false-positives']),
-                          p(comparison['false-negatives']),
+          for database, _ in database_coding_systems[project]
+          for result in [ results[outcome_id][database] ]
+          for comparison in [ result.get('comparison') ]
+          for value in ([ str_of_list(comparison['true-positives']),
+                          str_of_list(comparison['false-positives']),
+                          str_of_list(comparison['false-negatives']),
                           comparison.get('recall'),
-                          comparison.get('precision'),
-                          comparison.get('f-score') ] if comparison != None else [None]*6) ]
-        for outcome in outcomes
+                          comparison.get('precision') ]
+                        if comparison != None else [None]*5) ]
+        for outcome_id in outcome_ids
     ]
 
 writer = pd.ExcelWriter(redo.temp)
 for sheet_name, sheet_results in results:
     df = pd.DataFrame(data(sheet_results), index=index, columns=columns)
-    df.to_excel(writer, sheet_name)
+    df.to_excel(writer, sheet_name, float_format='%.2f')
 writer.save()
 

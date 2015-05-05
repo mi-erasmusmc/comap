@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-import os
-import sys
-import requests
+#!/usr/bin/env python3
+
 from pathlib import Path
 import yaml
 import comap
@@ -9,10 +7,11 @@ import redo
 
 (project, casedef_id) = redo.base.split('.')
 
-casedef_path = Path('projects') / project / 'case-definitions' / (casedef_id + '.yaml')
-with redo.ifchange(peregrine_config = 'config/peregrine.yaml',
-                   casedef = casedef_path.as_posix()) as files:
-    print(files)
+casedef_path = Path('projects') / project / 'case-definitions' / \
+    (casedef_id + '.yaml')
+
+with redo.ifchange(peregrine_config='config/peregrine.yaml',
+                   casedef=casedef_path) as files:
     peregrine_config = yaml.load(files['peregrine_config'])
     casedef = yaml.load(files['casedef'])
 
@@ -28,4 +27,3 @@ result = {
 
 with redo.output() as f:
     yaml.dump(result, f)
-

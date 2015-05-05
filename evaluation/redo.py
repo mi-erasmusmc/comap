@@ -26,11 +26,11 @@ class RedoCommand(object):
         """(Recursively) map the values of a list, dict or tuple., applying
         `f` on all values that are not list, dict or tuple. """
         if type(value) == list:
-            return [ cls.map_list_or_dict(value0, f)
-                     for value0 in value ]
+            return [cls.map_list_or_dict(value0, f)
+                    for value0 in value]
         elif type(value) == dict:
-            return { key: cls.map_list_or_dict(value0, f)
-                     for key, value0 in value.items() }
+            return {key: cls.map_list_or_dict(value0, f)
+                    for key, value0 in value.items()}
         elif type(value) == tuple:
             return tuple(cls.map_list_or_dict(value0, f)
                          for value0 in value)
@@ -46,7 +46,8 @@ class RedoCommand(object):
         os.system(command)
 
     def __enter__(self):
-        self.files = self.map_list_or_dict(self.filenames, lambda f: open(str(f)))
+        f = lambda filename: open(str(filename))
+        self.files = self.map_list_or_dict(self.filenames, f)
         (files, kw_files) = self.files
         if len(files) and len(kw_files):
             return (files, kw_files)
@@ -58,8 +59,10 @@ class RedoCommand(object):
     def __exit__(self, type_, value, traceback):
         self.map_list_or_dict(self.files, lambda f: f.close())
 
+
 def ifchange(*filenames, **kwfilenames):
     return RedoCommand('redo-ifchange', filenames, kwfilenames)
+
 
 def ifcreate(*filenames, **kwfilenames):
     return RedoCommand('redo-ifcreate', filenames, kwfilenames)

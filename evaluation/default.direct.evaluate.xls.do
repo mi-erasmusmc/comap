@@ -17,27 +17,42 @@ database_coding_systems = {
     ]
 }
 
-coding_systems_filename = 'config/coding_systems.yaml'
+outcome_ids = [
+    "ap",
+    "scd",
+    "pc",
+    "is",
+    "va",
+    "bc",
+    "mi",
+    "hf",
+    "hs"
+]
+
 project = redo.base
 project_path = Path('projects') / project
-references_path = project_path / 'reference.yaml'
-casedefs_path = project_path / 'case-definitions'
-outcome_ids = [ p.name.split('.')[0] for p in casedefs_path.glob('*.yaml') ]
-concept_filenames = ['{}.{}.concepts.yaml'.format(project, outcome) for outcome in outcome_ids]
+concept_filenames = {
+    outcome_id: '{}.{}.concepts.yaml'.format(project, outcome_id)
+    for outcome_id in outcome_ids
+}
+casedef_paths = {
+    outcome_id: project_path / 'case-definitions' / (outcome_id + '.yaml')
+    for outcome_id in outcome_ids
+}
 
-with redo.ifchange(coding_systems_filename, references_path.as_posix(), concept_filenames) as \
-     (coding_system_file, references_file, concept_files):
-    coding_systems = yaml.load(coding_system_file)
-    references = yaml.load(references_file)
+with redo.ifchange(coding_systems = 'config/coding_systems.yaml',
+                   references = (project_path / 'reference.yaml').as_posix(),
+                   concepts = concept_filenames,
+                   casedefs = casedef_paths) as files:
+    coding_systems = yaml.load(files['coding_systems'])
+    references = yaml.load(files['references'])
     concepts_by_outcome = {}
-    for outcome_id, concept_file in zip(outcome_ids, concept_files):
-        concepts_by_outcome[outcome_id] = yaml.load(concept_file)
-
-outcomes = []
-for outcome_id in outcome_ids:
-    path = casedefs_path / (outcome_id + '.yaml')
-    with open(path.as_posix()) as f:
-        outcomes.append(yaml.load(f))
+    for outcome_id, f in files['concepts'].items():
+        concepts_by_outcome[outcome_id] = yaml.load(f)
+    outcomes = {
+        outcome_id: yaml.load(f)
+        for outcome_id, f in files['casedefs'].items()
+    }
 
 def results(normalize_code):
     res = {}

@@ -6,18 +6,14 @@ import yaml
 import comap
 import redo
 
-coding_systems_filename = 'config/coding_systems.yaml'
-semantic_types_filename = 'config/semantic_types.yaml'
-comap_config_filename = 'config/comap.yaml'
-index_filename = redo.base + '.index.yaml'
-
-with redo.ifchange(comap_config_filename, semantic_types_filename, coding_systems_filename, index_filename) \
-     as (comap_config_file, semantic_types_file, coding_systems_file, index_file):
-    
-    coding_systems = yaml.load(coding_systems_file)
-    semantic_types = yaml.load(semantic_types_file)
-    comap_api_url = yaml.load(comap_config_file)['api']['url']
-    index = yaml.load(index_file)
+with redo.ifchange(comap_config = 'config/comap.yaml',
+                   semantic_types = 'config/semantic_types.yaml',
+                   coding_systems = 'config/coding_systems.yaml',
+                   index = redo.base + '.index.yaml') as files:
+    coding_systems = yaml.load(files['coding_systems'])
+    semantic_types = yaml.load(files['semantic_types'])
+    comap_api_url = yaml.load(files['comap_config'])['api']['url']
+    index = yaml.load(files['index'])
 
 cuis = [s['cui'] for s in index['spans']]
 
@@ -29,5 +25,5 @@ concepts = [
     if set(concept['semanticTypes']) & set(semantic_types)
 ]
 
-with open(redo.temp, 'w') as f:
+with redo.output() as f:
     yaml.dump(concepts, f)

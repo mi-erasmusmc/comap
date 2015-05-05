@@ -7,17 +7,17 @@ import yaml
 import comap
 import redo
 
-peregrine_config_filename = 'config/peregrine.yaml'
 (project, casedef_id) = redo.base.split('.')
-casedef_path = Path('projects') / project / 'case-definitions' / (casedef_id + '.yaml')
 
-with redo.ifchange(peregrine_config_filename, casedef_path.as_posix()) \
-     as (peregrine_config_file, casedef_file):
-    peregrine_api_url = yaml.load(peregrine_config_file)['api']['url']
-    casedef = yaml.load(casedef_file)
+casedef_path = Path('projects') / project / 'case-definitions' / (casedef_id + '.yaml')
+with redo.ifchange(peregrine_config = 'config/peregrine.yaml',
+                   casedef = casedef_path.as_posix()) as files:
+    print(files)
+    peregrine_config = yaml.load(files['peregrine_config'])
+    casedef = yaml.load(files['casedef'])
 
 text = casedef['name'] + ' ' + casedef['definition']
-spans = comap.peregrine_index(text, peregrine_api_url)
+spans = comap.peregrine_index(text, peregrine_config['api']['url'])
 
 for span in spans:
     span['cui'] = comap.cui_of_id(span['id'])
@@ -26,6 +26,6 @@ result = {
     'spans': spans,
 }
 
-with open(redo.temp, 'w') as f:
+with redo.output() as f:
     yaml.dump(result, f)
 

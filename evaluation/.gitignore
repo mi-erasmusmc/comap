@@ -5,7 +5,6 @@ py3-env
 *.concepts.json
 *.child-concepts.json
 __pycache__
-*.yaml
 \#*\#
 .\#*
 .~*

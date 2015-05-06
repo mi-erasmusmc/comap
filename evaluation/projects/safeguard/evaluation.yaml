@@ -1,0 +1,5 @@
+databases:
+- [Medicare, ICD9CM]
+- [GePaRD, ICD10CM]
+- [IPCI, ICPC]
+outcome_ids: [ap, pc, is, va, bc, mi, hf, hs]

@@ -5,28 +5,15 @@ from pathlib import Path
 import pandas as pd
 import redo
 
-database_coding_systems = {
-    'safeguard': [
-        ('Medicare', 'ICD9CM'),
-        ('GePaRD', 'ICD10CM'),
-        ('IPCI', 'ICPC')
-    ]
-}
-
-outcome_ids = [
-    "ap",
-    "scd",
-    "pc",
-    "is",
-    "va",
-    "bc",
-    "mi",
-    "hf",
-    "hs"
-]
-
 project = redo.base
 project_path = Path('projects') / project
+
+with redo.ifchange(evaluation_config=project_path / 'evaluation.yaml') as files:
+    evaluation_config = yaml.load(files['evaluation_config'])
+
+databases = evaluation_config['databases']
+outcome_ids = evaluation_config['outcome_ids']
+
 concept_filenames = {
     outcome_id: '{}.{}.concepts.json'.format(project, outcome_id)
     for outcome_id in outcome_ids
@@ -123,7 +110,7 @@ def create_results(normalize_code=lambda c: c, with_children=False):
                 'comment': references.get('comment'),
                 'comparison': compare(generated, reference),
             }
-            for database, coding_system in database_coding_systems[project]
+            for database, coding_system in databases
             for generated in [generated_codes(outcome, coding_system)]
             for reference in [reference_codes(database, outcome)]
         }
@@ -150,34 +137,40 @@ varied_results = [
 
 # Output Excel via Pandas
 
-index = pd.Index([
-    outcomes[outcome_id]['name']
-    for outcome_id in outcome_ids
-], name='Outcome')
-
+columns_per_database = ['TP', 'FP', 'FN', 'recall', 'precision']
 columns = pd.MultiIndex.from_tuples([
     ('{} ({})'.format(database, coding_system), c)
-    for database, coding_system in database_coding_systems[project]
-    for c in ['TP', 'FP', 'FN', 'recall', 'precision']
+    for database, coding_system in databases
+    for c in columns_per_database
 ])
 
-writer = pd.ExcelWriter(redo.temp)
-for sheet_name, results in varied_results:
-    df = pd.DataFrame(index=index, columns=columns)
+index, rows = [], []
+for ix, (heading, results) in enumerate(varied_results):
     str_of_list = lambda v: ' '.join(str(v0) for v0 in v)
+    if ix:
+        index.extend(['', ''])
+        rows.extend([[None] * len(columns)] * 2)
+    index.append(heading)
+    rows.append([None] * len(columns))
     for outcome_id in outcome_ids:
-        row_for_outcome = [
-            value
-            for database, _ in database_coding_systems[project]
-            for result in [results[outcome_id][database]]
-            for comparison in [result.get('comparison')]
-            for value in ([str_of_list(comparison['true-positives']),
-                           str_of_list(comparison['false-positives']),
-                           str_of_list(comparison['false-negatives']),
-                           comparison.get('recall'),
-                           comparison.get('precision')]
-                          if comparison is not None else [None]*5)
-        ]
-        df.ix[outcomes[outcome_id]['name']] = row_for_outcome
-    df.to_excel(writer, sheet_name, float_format='%.2f')
+        row = []
+        for database, _ in databases:
+            result = results[outcome_id][database]
+            comparison = result.get('comparison')
+            if comparison is None:
+                row.extend([None] * len(columns_per_database))
+            else:
+                row.extend([
+                    str_of_list(comparison['true-positives']),
+                    str_of_list(comparison['false-positives']),
+                    str_of_list(comparison['false-negatives']),
+                    comparison.get('recall'),
+                    comparison.get('precision')
+                ])
+        index.append(outcomes[outcome_id]['name'])
+        rows.append(row)
+
+writer = pd.ExcelWriter(redo.temp)
+df = pd.DataFrame(rows, index=pd.Index(index), columns=columns)
+df.to_excel(writer, float_format='%.2f')
 writer.save()

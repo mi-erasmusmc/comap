@@ -3,7 +3,31 @@ import sys
 
 """
 A thin wrapper of redo.
+=======================
+
+- Simple declaration of and access to dependencies
+
+   with redo.ifchange(file1="path/to/file1",
+                      files2=["path/to/file2a", "path/to/file2b"])
+           as files:
+       files['file1]' # opened path/to/file1
+       files['files2'][0]  # openend path/to/file2a
+       files['files2'][1]  # openend path/to/file2b
+
+  The keyword arguments might be nested lists, dictionarys and tuples.
+  The return value is a dictionary with exactly the same structure as
+  kwargs but with filenames replaced with files.
+
+- Easy access to the temporary output file via
+
+      with redo.output() as f:
+         ... dump your data to `f` ...
+
+- It provides the redo command line arguments as `redo.target`,
+  `redo.base` and `redo.temp`.
+
 """
+
 
 target = sys.argv[1]
 base = sys.argv[2]
@@ -11,14 +35,20 @@ temp = sys.argv[3]
 
 
 def output(mode='w'):
-    return open(sys.argv[3], mode)
+    """ Create a file for redo's temporary output file. """
+    return open(temp, mode)
+
+
+def ifchange(**filenames):
+    """Run the `redo-ifchange` command on all files in **kwargs. """
+    return RedoCommand('redo-ifchange', filenames)
 
 
 class RedoCommand(object):
 
-    def __init__(self, command_name, filenames, kw_filenames):
+    def __init__(self, command_name, filenames):
         self.command_name = command_name
-        self.filenames = (filenames, kw_filenames)
+        self.filenames = filenames
         self.run()
 
     @classmethod
@@ -48,21 +78,9 @@ class RedoCommand(object):
     def __enter__(self):
         f = lambda filename: open(str(filename))
         self.files = self.map_list_or_dict(self.filenames, f)
-        (files, kw_files) = self.files
-        if len(files) and len(kw_files):
-            return (files, kw_files)
-        elif len(files):
-            return files
-        elif len(kw_files):
-            return kw_files
+        return self.files
 
     def __exit__(self, type_, value, traceback):
         self.map_list_or_dict(self.files, lambda f: f.close())
 
 
-def ifchange(*filenames, **kwfilenames):
-    return RedoCommand('redo-ifchange', filenames, kwfilenames)
-
-
-def ifcreate(*filenames, **kwfilenames):
-    return RedoCommand('redo-ifcreate', filenames, kwfilenames)

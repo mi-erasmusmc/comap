@@ -13,7 +13,7 @@ cd redo
 ```shell
 sed -i 's-#!/usr/bin/env python-#!/usr/bin/env python2-' redo
 ```
-- install it (generate debian package with `./redo deb`, or add the
+- install it (generate package with `./redo package`, or add the
 directory to your PATH).
 
 ## Prepare python

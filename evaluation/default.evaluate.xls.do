@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from collections import OrderedDict
 import json
 import yaml
 from pathlib import Path
@@ -89,25 +90,26 @@ def create_results(normalize_code=lambda c: c, with_children=False):
                 if reference_codes else None
             precision = len(true_positives) / len(generated_codes) \
                 if generated_codes else None
-            f_score = 2 * recall * precision / (recall + precision) \
-                if recall is not None and precision is not None and recall + precision > 0 \
-                else None
+            # f_score = 2 * recall * precision / (recall + precision) \
+            #     if recall is not None and precision is not None and recall + precision > 0 \
+            #     else None
 
             return {
-                'generated': list(generated_codes),
-                'references': list(reference_codes),
-                'true-positives': list(true_positives),
-                'false-positives': list(false_positives),
-                'false-negatives': list(false_negatives),
-                'recall': recall,
-                'precision': precision,
-                'f-score': f_score,
+                'codes': OrderedDict([
+                    ('TP', list(true_positives)),
+                    ('FP', list(false_positives)),
+                    ('FN', list(false_negatives)),
+                ]),
+                'measures': OrderedDict([
+                    ('recall', round(recall, 2)),
+                    ('precision', round(precision, 2)
+                     if precision is not None else None),
+                ]),
             }
 
     return {
         outcome_id: {
             database: {
-                'comment': references.get('comment'),
                 'comparison': compare(generated, reference),
             }
             for database, coding_system in databases
@@ -135,6 +137,14 @@ varied_results = [
                     with_children=True)),
 ]
 
+
+# Output results as YAML
+def represent_OrderedDict(dumper, data):
+    return dumper.represent_dict(list(data.items()))
+yaml.add_representer(OrderedDict, represent_OrderedDict, yaml.SafeDumper)
+with open(redo.target.replace('.xls', '.yaml'), 'w') as f:
+    yaml.dump(dict(varied_results), f, Dumper=yaml.SafeDumper)
+
 # Output Excel via Pandas
 
 columns_per_database = ['TP', 'FP', 'FN', 'recall', 'precision']
@@ -161,11 +171,11 @@ for ix, (heading, results) in enumerate(varied_results):
                 row.extend([None] * len(columns_per_database))
             else:
                 row.extend([
-                    str_of_list(comparison['true-positives']),
-                    str_of_list(comparison['false-positives']),
-                    str_of_list(comparison['false-negatives']),
-                    comparison.get('recall'),
-                    comparison.get('precision')
+                    str_of_list(comparison['codes']['TP']),
+                    str_of_list(comparison['codes']['FP']),
+                    str_of_list(comparison['codes']['FN']),
+                    comparison['measures']['recall'],
+                    comparison['measures']['precision'],
                 ])
         index.append(outcomes[outcome_id]['name'])
         rows.append(row)

@@ -1,4 +1,5 @@
 from collections import OrderedDict, defaultdict
+import pandas as pd
 from itertools import chain
 import requests
 import pickle
@@ -83,7 +84,7 @@ class ComapClient(object):
             print("Couldn't get " + r.request.path_url, file=sys.stderr)
 
 
-def measures(generated=None, reference=None, codes=None, f=lambda x: x):
+def measures(generated=None, reference=None, codes=None):
 
     """
     >>> generated = [1,2,3,4]
@@ -107,19 +108,17 @@ def measures(generated=None, reference=None, codes=None, f=lambda x: x):
     if codes is None:
         assert generated is not None and reference is not None, \
             "Provide either argument `generated` and `reference` or `code`."
-        generated = set(generated)
-        reference = set(reference)
+        generated, reference = set(generated), set(reference)
     else:
         assert generated is None and reference is None, \
             "Provide either argument `generated` and `reference` or `code`."
-        generated = set(chain(codes['TP'], codes['FP']))
-        reference = set(chain(codes['TP'], codes['FN']))
+        generated, reference = from_confusion_table(codes)
 
     TP = generated & reference
 
-    recall = f(len(TP) / len(reference)) \
+    recall = len(TP) / len(reference) \
         if len(reference) else None
-    precision = f(len(TP) / len(generated)) \
+    precision = len(TP) / len(generated) \
         if len(generated) else None
 
     return OrderedDict([
@@ -128,13 +127,30 @@ def measures(generated=None, reference=None, codes=None, f=lambda x: x):
     ])
 
 
+def confusion_table(generated, reference):
+    generated = set(generated)
+    reference = set(reference)
+    return OrderedDict([
+        ('TP', generated & reference),
+        ('FP', generated - reference),
+        ('FN', reference - generated),
+    ])
+
+
+def from_confusion_table(codes):
+    TP = set(codes['TP'])
+    FP = set(codes['FP'])
+    FN = set(codes['FN'])
+    return TP | FP, TP | FN
+
+
 class RegexHierarchy(object):
 
     TYPES = {
         # Letter Digit Digit
-        'LDD': re.compile(r'([A-Z]\d{2})\.(\d)'),
+        'LDD': re.compile(r'(?P<parent>[A-Z]\d{2})\.(\d)'),
         # Digit Digit Digit
-        'DDD': re.compile(r'(\d{3})\.(\d)'),
+        'DDD': re.compile(r'(?P<parent>\d{3})\.(\d)'),
     }
 
 
@@ -154,7 +170,7 @@ class RegexHierarchy(object):
         """
         m = re.match(self.hierarchical_code_re, code)
         if m:
-            return frozenset([m.group(1)])
+            return frozenset([m.group('parent')])
         else:
             return frozenset()
 
@@ -262,7 +278,7 @@ def related(hierarchy, codes1, codes2):
     ])
 
 
-def normalize_related(hierarchy, codes):
+def include_related(hierarchy, codes):
 
     """
     >>> h = comap.RegexHierarchy('LDD')
@@ -274,13 +290,12 @@ def normalize_related(hierarchy, codes):
     >>> expected = OrderedDict([
     ...     ('codes',
     ... ])
-    >>> error_analysis(h, codes)['codes'] == expected_codes
+    >>> include_related(h, codes)['codes'] == expected_codes
     True
     """
 
     TP, FP, FN = [set(codes[key]) for key in ('TP', 'FP', 'FN')]
-    generated = TP | FP
-    reference = TP | FN
+    generated, reference = from_confusion_table(codes)
 
     FP_related_to_reference_by_rel = related(hierarchy, FP, reference)
     FP_related_to_reference = \
@@ -314,28 +329,36 @@ def normalize_related(hierarchy, codes):
     return related_codes, derivated_codes
 
 
-def evaluations_to_xls(evaluations, databases, outcome_ids, filename, outcomes=None):
-    import pandas as pd
+def evaluations_to_xls(filename, evaluations, outcomes=None):
+    """
+    evaluations = \
+      { outcome_id: { database: { variation: { codes: ..., measures: ... }}}}
+    """
+
+    outcome_ids = list(evaluations.keys())
+    database_names = list(evaluations[outcome_ids[0]].keys())
+    variations = list(evaluations[outcome_ids[0]][database_names[0]].keys())
+
     columns_per_database = ['TP', 'FP', 'FN', 'recall', 'precision']
     columns = pd.MultiIndex.from_tuples([
-        (database if type(database) == str else
-         '{} ({})'.format(*database),
-         c)
-        for database in databases
+        (database_name, c)
+        for database_name in database_names
         for c in columns_per_database
     ])
+
+    str_of_list = lambda v: ' '.join(str(v0) for v0 in v)
     index, rows = [], []
-    for ix, (heading, results) in enumerate(evaluations.items()):
-        str_of_list = lambda v: ' '.join(str(v0) for v0 in v)
+
+    for ix, variation in enumerate(variations):
         if ix:
             index.extend(['', ''])
             rows.extend([[None] * len(columns)] * 2)
-        index.append(heading)
+        index.append(variation)
         rows.append([None] * len(columns))
         for outcome_id in outcome_ids:
             row = []
-            for database, _ in databases:
-                comparison = results[outcome_id][database]
+            for database_name in database_names:
+                comparison = evaluations[outcome_id][database_name][variation]
                 if comparison is None:
                     row.extend([None] * len(columns_per_database))
                 else:

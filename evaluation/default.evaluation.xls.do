@@ -27,41 +27,4 @@ with redo.ifchange(casedefs=casedef_paths) as files:
         for outcome_id, f in files['casedefs'].items()
     }
 
-comap.evaluations_to_xls(evaluations, databases, outcome_ids, redo.temp, outcomes)
-
-# columns_per_database = ['TP', 'FP', 'FN', 'recall', 'precision']
-# columns = pd.MultiIndex.from_tuples([
-#     ('{} ({})'.format(database, coding_system), c)
-#     for database, coding_system in databases
-#     for c in columns_per_database
-# ])
-
-# index, rows = [], []
-# for ix, (heading, results) in enumerate(evaluations.items()):
-#     str_of_list = lambda v: ' '.join(str(v0) for v0 in v)
-#     if ix:
-#         index.extend(['', ''])
-#         rows.extend([[None] * len(columns)] * 2)
-#     index.append(heading)
-#     rows.append([None] * len(columns))
-#     for outcome_id in outcome_ids:
-#         row = []
-#         for database, _ in databases:
-#             comparison = results[outcome_id][database]
-#             if comparison is None:
-#                 row.extend([None] * len(columns_per_database))
-#             else:
-#                 row.extend([
-#                     str_of_list(comparison['codes']['TP']),
-#                     str_of_list(comparison['codes']['FP']),
-#                     str_of_list(comparison['codes']['FN']),
-#                     comparison['measures']['recall'],
-#                     comparison['measures']['precision'],
-#                 ])
-#         index.append(outcomes[outcome_id]['name'])
-#         rows.append(row)
-
-# writer = pd.ExcelWriter(redo.temp)
-# df = pd.DataFrame(rows, index=pd.Index(index), columns=columns)
-# df.to_excel(writer, float_format='%.2f')
-# writer.save()
+comap.evaluations_to_xls(redo.temp, evaluations, outcomes=outcomes)

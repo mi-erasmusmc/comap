@@ -2,6 +2,7 @@
 from collections import OrderedDict
 import json
 import yaml
+import re
 from pathlib import Path
 import redo
 redo.ifchange('comap.py'); import comap
@@ -15,7 +16,6 @@ with redo.ifchange(evaluation_config=project_path / 'evaluation-config.yaml') \
 
 databases = evaluation_config['databases']
 outcome_ids = evaluation_config['outcome_ids']
-
 concept_filenames = {
     outcome_id: '{}.{}.concepts.json'.format(project, outcome_id)
     for outcome_id in outcome_ids
@@ -48,87 +48,196 @@ with redo.ifchange(coding_systems='config/coding_systems.yaml',
     }
 
 
-def create_results(normalize_code=lambda c: c, with_children=False):
+def create_results(references, concepts_by_outcome, variations):
 
-    def reference_codes(database, outcome):
-        reference_mapping = references[database]['mappings'].get(outcome['id'])
-        if reference_mapping is not None:
-            return reference_mapping['inclusion'] + \
-                reference_mapping.get('exclusion', [])
+    res = OrderedDict()
+    for outcome_id in outcome_ids:
+        res[outcome_id] = OrderedDict()
+        for database, coding_system in databases:
+            res[outcome_id][database] = OrderedDict()
 
-    def generated_codes(outcome, coding_system):
-        concepts = concepts_by_outcome[outcome['id']]
-        if with_children:
-            child_concepts_by_parent = child_concepts_by_outcome[outcome['id']]
-            child_concepts = [
-                child_concept
-                for parent_id, concepts_for_parent in child_concepts_by_parent
-                if parent_id in [c['cui'] for c in concepts]
-                for child_concept in concepts_for_parent
-            ]
-            concepts = concepts + child_concepts
-        return [
-            code['id']
-            for concept in concepts
-            for code in concept['sourceConcepts']
-            if code['codingSystem'] == coding_system
+            mapping = references[database]['mappings'].get(outcome_id)
+            if mapping is None:
+                print("No mapping for {} in {}".format(outcome_id, database))
+                reference = None
+            else:
+                reference = mapping['inclusion'] + mapping.get('exclusion', [])
+
+            for make_variation in variations:
+                if reference is not None:
+                    variation = make_variation(outcome_id, coding_system)
+                    generated_concepts = variation.vary_concepts(
+                        concepts_by_outcome[outcome_id], reference)
+                    generated = [
+                        code['id']
+                        for concept in generated_concepts
+                        for code in concept['sourceConcepts']
+                        if code['codingSystem'] == coding_system
+                    ]
+                    varied_generated, varied_reference = \
+                        variation.vary_codes(generated, reference)
+                    codes = comap.confusion_table(generated=varied_generated,
+                                                  reference=varied_reference)
+                    measures = comap.measures(codes=codes)
+                    comparison = OrderedDict([
+                        ('codes', OrderedDict([
+                            (key, sorted(value))
+                            for key, value in codes.items()
+                        ])),
+                        ('measures', OrderedDict([
+                            (key, value and round(value, 2))
+                            for key, value in measures.items()
+                        ])),
+                    ])
+                else:
+                    comparison = None
+                res[outcome_id][database][variation.description()] = comparison
+    return res
+
+
+class AbstractVariation(object):
+
+    def __init__(self, outcome_id, coding_system):
+        self.outcome_id = outcome_id
+        self.coding_system = coding_system
+
+    def description(self):
+        return self.__doc__
+
+    def vary_codes(self, generated, reference):
+        return generated, reference
+
+    def vary_concepts(self, concepts, reference):
+        return concepts
+
+
+def variation_chain(*variations):
+
+    class VariationChain(AbstractVariation):
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.variations = [v(*args, **kwargs) for v in variations]
+
+        def description(self):
+            return ' -> '.join(v.description() for v in self.variations)
+
+        def vary_codes(self, generated, reference):
+            for variation in self.variations:
+                generated, reference = variation.vary_codes(generated, reference)
+            return generated, reference
+
+        def vary_concepts(self, concepts, reference):
+            for variation in self.variations:
+                concepts = variation.vary_concepts(concepts, reference)
+            return concepts
+
+    return VariationChain
+
+
+class VariationIdentity(AbstractVariation):
+
+    """Identity"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class VariationNormalizeDotAndCase(AbstractVariation):
+
+    """Normalize codes (dot suffix and case)"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def normalize(cls, code):
+        code = code.upper()
+        if code[-1] == '.':
+            return code[:-1]
+        else:
+            return code
+
+    def vary_codes(self, generated, reference):
+        return [self.normalize(c) for c in generated], \
+            [self.normalize(c) for c in reference]
+
+
+class VariationNormalizeCaseLdd(AbstractVariation):
+
+    """Normalize codes (case and to XDD)"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def normalize(cls, code):
+        code = code.upper()
+        m1 = re.match(comap.RegexHierarchy.TYPES['LDD'], code)
+        try:
+            return m1.group('parent')
+        except:
+            m2 = re.match(comap.RegexHierarchy.TYPES['DDD'], code)
+            try:
+                return m2.group('parent')
+            except:
+                return code
+
+    def vary_codes(self, generated, reference):
+        return [self.normalize(c) for c in generated], \
+            [self.normalize(c) for c in reference]
+
+
+class VariationIncludeRelatedCodes(AbstractVariation):
+
+    """Include related codes"""
+
+    hierarchies = {
+        'ICD9CM': comap.RegexHierarchy('DDD'),
+        'ICD10CM': comap.RegexHierarchy('LDD'),
+        'ICPC': comap.RegexHierarchy('LDD'),
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def vary_codes(self, generated, reference):
+        hierarchy = self.hierarchies[self.coding_system]
+        codes = comap.confusion_table(generated, reference)
+        related_codes, derivated_codes = comap.include_related(hierarchy, codes=codes)
+        return comap.from_confusion_table(related_codes)
+
+
+class VariationIncludeChildConcepts(AbstractVariation):
+
+    """Include child concepts"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def vary_concepts(self, concepts, reference):
+        cuis = [c['cui'] for c in concepts]
+        child_concepts_by_parent = child_concepts_by_outcome[self.outcome_id]
+        child_concepts = [
+            child_concept
+            for parent_id, concepts_for_parent in child_concepts_by_parent
+            for child_concept in concepts_for_parent
+            if child_concept not in cuis
         ]
-
-    def compare(generated_codes, reference_codes):
-
-        if reference_codes is not None:
-
-            generated_codes = set(normalize_code(code)
-                                  for code in generated_codes)
-            reference_codes = set(normalize_code(code)
-                                  for code in reference_codes)
-
-            true_positives = generated_codes & reference_codes
-            false_positives = generated_codes - reference_codes
-            false_negatives = reference_codes - generated_codes
-
-            measures = comap.measures(generated=generated_codes,
-                                      reference=reference_codes,
-                                      f=lambda f: round(f, 2))
-
-            return OrderedDict([
-                ('codes', OrderedDict([
-                    ('TP', sorted(true_positives)),
-                    ('FP', sorted(false_positives)),
-                    ('FN', sorted(false_negatives)),
-                ])),
-                ('measures', measures),
-            ])
-
-    return OrderedDict([
-        (outcome_id, OrderedDict([
-            (database, compare(generated, reference))
-            for database, coding_system in databases
-            for generated in [generated_codes(outcomes[outcome_id], coding_system)]
-            for reference in [reference_codes(database, outcomes[outcome_id])]
-        ]))
-        for outcome_id in outcome_ids
-    ])
+        return concepts + child_concepts
 
 
-def upper_and_ignore_suffix_dot(code):
-    code = code.upper()
-    if code[-1] == '.':
-        return code[:-1]
-    else:
-        return code
-
-
-evaluations = [
-    ('baseline', create_results(lambda x: x)),
-    ('normalize',
-     create_results(normalize_code=upper_and_ignore_suffix_dot)),
-    ('normalize_and_children',
-     create_results(normalize_code=upper_and_ignore_suffix_dot,
-                    with_children=True)),
+variations = [
+    VariationIdentity,
+    VariationNormalizeDotAndCase,
+    VariationNormalizeCaseLdd,
+    variation_chain(VariationNormalizeDotAndCase, VariationIncludeRelatedCodes),
+    VariationIncludeChildConcepts,
 ]
+
+evaluation = create_results(references, concepts_by_outcome, variations)
 
 # Output results as YAML
 
 with redo.output() as f:
-    yaml.dump(OrderedDict(evaluations), f)
+    yaml.dump(evaluation, f)

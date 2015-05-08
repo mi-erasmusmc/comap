@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from collections import OrderedDict
+import os
 import json
 import yaml
 import re
@@ -54,7 +55,7 @@ def create_results(references, concepts_by_outcome, variations):
     for outcome_id in outcome_ids:
         res[outcome_id] = OrderedDict()
         for database, coding_system in databases:
-            res[outcome_id][database] = OrderedDict()
+            res[outcome_id][database] = list()
 
             mapping = references[database]['mappings'].get(outcome_id)
             if mapping is None:
@@ -76,7 +77,7 @@ def create_results(references, concepts_by_outcome, variations):
                     ]
                     varied_generated, varied_reference = \
                         variation.vary_codes(generated, reference)
-                    codes = comap.confusion_table(generated=varied_generated,
+                    codes = comap.confusion_matrix(generated=varied_generated,
                                                   reference=varied_reference)
                     measures = comap.measures(codes=codes)
                     comparison = OrderedDict([
@@ -91,7 +92,10 @@ def create_results(references, concepts_by_outcome, variations):
                     ])
                 else:
                     comparison = None
-                res[outcome_id][database][variation.description()] = comparison
+                res[outcome_id][database].append(OrderedDict([
+                    ('name', variation.description()),
+                    ('comparison', comparison),
+                ]))
     return res
 
 
@@ -120,7 +124,11 @@ def variation_chain(*variations):
             self.variations = [v(*args, **kwargs) for v in variations]
 
         def description(self):
-            return ' -> '.join(v.description() for v in self.variations)
+            res = ' -> '.join(v.description().lower() for v in self.variations)
+            if res:
+                return res[0].upper() + res[1:]
+            else:
+                return ""
 
         def vary_codes(self, generated, reference):
             for variation in self.variations:
@@ -135,7 +143,7 @@ def variation_chain(*variations):
     return VariationChain
 
 
-class VariationIdentity(AbstractVariation):
+class Identity(AbstractVariation):
 
     """Identity"""
 
@@ -143,27 +151,41 @@ class VariationIdentity(AbstractVariation):
         super().__init__(*args, **kwargs)
 
 
-class VariationNormalizeDotAndCase(AbstractVariation):
-
-    """Normalize codes (dot suffix and case)"""
+class CodeNormalization(AbstractVariation):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    @classmethod
-    def normalize(cls, code):
-        code = code.upper()
-        if code[-1] == '.':
-            return code[:-1]
-        else:
-            return code
 
     def vary_codes(self, generated, reference):
         return [self.normalize(c) for c in generated], \
             [self.normalize(c) for c in reference]
 
 
-class VariationNormalizeCaseLdd(AbstractVariation):
+class NormalizeCodeCase(CodeNormalization):
+
+    """Normalize code case"""
+
+    @classmethod
+    def normalize(cls, code):
+        return code.upper()
+
+
+class NormalizeCodeSuffixDot(CodeNormalization):
+
+    """Drop suffix dots in codes"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def normalize(cls, code):
+        if code[-1] == '.':
+            return code[:-1]
+        else:
+            return code
+
+
+class NormalizeCodeXDD(CodeNormalization):
 
     """Normalize codes (case and to XDD)"""
 
@@ -183,12 +205,8 @@ class VariationNormalizeCaseLdd(AbstractVariation):
             except:
                 return code
 
-    def vary_codes(self, generated, reference):
-        return [self.normalize(c) for c in generated], \
-            [self.normalize(c) for c in reference]
 
-
-class VariationIncludeRelatedCodes(AbstractVariation):
+class IncludeRelatedCodes(AbstractVariation):
 
     """Include related codes"""
 
@@ -203,12 +221,32 @@ class VariationIncludeRelatedCodes(AbstractVariation):
 
     def vary_codes(self, generated, reference):
         hierarchy = self.hierarchies[self.coding_system]
-        codes = comap.confusion_table(generated, reference)
+        codes = comap.confusion_matrix(generated, reference)
         related_codes, derivated_codes = comap.include_related(hierarchy, codes=codes)
-        return comap.from_confusion_table(related_codes)
+        return comap.from_confusion_matrix(related_codes)
 
 
-class VariationIncludeChildConcepts(AbstractVariation):
+class IncludeRelatedCodesBidirect(AbstractVariation):
+
+    """Include bidirectionally related codes"""
+
+    hierarchies = {
+        'ICD9CM': comap.RegexHierarchy('DDD'),
+        'ICD10CM': comap.RegexHierarchy('LDD'),
+        'ICPC': comap.RegexHierarchy('LDD'),
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def vary_codes(self, generated, reference):
+        hierarchy = self.hierarchies[self.coding_system]
+        codes = comap.confusion_matrix(generated, reference)
+        related_codes, derivated_codes = comap.include_related_bidirect(hierarchy, codes=codes)
+        return comap.from_confusion_matrix(related_codes)
+
+
+class IncludeChildConcepts(AbstractVariation):
 
     """Include child concepts"""
 
@@ -228,11 +266,12 @@ class VariationIncludeChildConcepts(AbstractVariation):
 
 
 variations = [
-    VariationIdentity,
-    VariationNormalizeDotAndCase,
-    VariationNormalizeCaseLdd,
-    variation_chain(VariationNormalizeDotAndCase, VariationIncludeRelatedCodes),
-    VariationIncludeChildConcepts,
+    Identity,
+    variation_chain(NormalizeCodeCase, NormalizeCodeSuffixDot),
+    variation_chain(NormalizeCodeCase, NormalizeCodeSuffixDot, NormalizeCodeXDD),
+    variation_chain(NormalizeCodeCase, NormalizeCodeSuffixDot, IncludeRelatedCodes),
+    variation_chain(NormalizeCodeCase, NormalizeCodeSuffixDot, IncludeRelatedCodesBidirect),
+    variation_chain(NormalizeCodeCase, NormalizeCodeSuffixDot, IncludeChildConcepts),
 ]
 
 evaluation = create_results(references, concepts_by_outcome, variations)
@@ -241,3 +280,9 @@ evaluation = create_results(references, concepts_by_outcome, variations)
 
 with redo.output() as f:
     yaml.dump(evaluation, f)
+
+if os.getenv('DOCTEST'):
+    import doctest
+    doctest.testmod()
+    doctest.testmod(comap)
+

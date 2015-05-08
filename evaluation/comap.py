@@ -90,19 +90,21 @@ def measures(generated=None, reference=None, codes=None):
     >>> generated = [1,2,3,4]
     >>> reference = [1,2,5,6,7,8]
     >>> expected = {
-    ...   'recall': 0.33,
+    ...   'recall': 1/3,
     ...   'precision': 0.5,
     ... }
     >>> f = lambda v: round(v, 2)
-    >>> dict(measures(generated=generated, reference=reference, f=f)) == expected
+    >>> dict(measures(generated=generated, reference=reference)) == expected
+    True
     >>> generated = set(generated)
     >>> reference = set(reference)
     >>> codes = {
     ...   'TP': generated & reference,
     ...   'FP': generated - reference,
-    ...   'TP': reference - generated,
+    ...   'FN': reference - generated,
     ... }
-    >>> dict(codes=codes, f=f) == expected
+    >>> dict(measures(codes=codes)) == expected
+    True
     """
 
     if codes is None:
@@ -112,7 +114,7 @@ def measures(generated=None, reference=None, codes=None):
     else:
         assert generated is None and reference is None, \
             "Provide either argument `generated` and `reference` or `code`."
-        generated, reference = from_confusion_table(codes)
+        generated, reference = from_confusion_matrix(codes)
 
     TP = generated & reference
 
@@ -127,7 +129,7 @@ def measures(generated=None, reference=None, codes=None):
     ])
 
 
-def confusion_table(generated, reference):
+def confusion_matrix(generated, reference):
     generated = set(generated)
     reference = set(reference)
     return OrderedDict([
@@ -137,7 +139,7 @@ def confusion_table(generated, reference):
     ])
 
 
-def from_confusion_table(codes):
+def from_confusion_matrix(codes):
     TP = set(codes['TP'])
     FP = set(codes['FP'])
     FN = set(codes['FN'])
@@ -148,7 +150,7 @@ class RegexHierarchy(object):
 
     TYPES = {
         # Letter Digit Digit
-        'LDD': re.compile(r'(?P<parent>[A-Z]\d{2})\.(\d)'),
+        'LDD': re.compile(r'(?P<parent>[A-Za-z]\d{2})\.(\d)'),
         # Digit Digit Digit
         'DDD': re.compile(r'(?P<parent>\d{3})\.(\d)'),
     }
@@ -196,7 +198,7 @@ def parents(hierarchy, codes1, codes2):
     `codes2`. Returns a dictionary from parent codes in `codes1` to
     lists of child codes in `codes2.
 
-    >>> h = RegexHierarchy(letter_digit_digit)
+    >>> h = RegexHierarchy('LDD')
     >>> codes1 = ['K50', 'K50.1', 'K51', 'K52']
     >>> codes2 = ['K50.2', 'K50.3', 'K52.1', 'K51.1', 'K53', 'K53.1']
     >>> expected = {
@@ -219,7 +221,7 @@ def siblings(hierarchy, codes1, codes2):
 
     """ Finds all pairs of siblings from `codes1` and `codes2` that are siblings.
 
-    >>> h = RegexHierarchy(letter_digit_digit)
+    >>> h = RegexHierarchy('LDD')
     >>> codes1 = ['K50', 'K50.1', 'K50.2', 'K51.1']
     >>> codes2 = ['K51', 'K50.3', 'K50.4']
     >>> expected = {(frozenset({'K50.1', 'K50.2'}), frozenset({'K50.3', 'K50.4'}))}
@@ -263,39 +265,72 @@ def siblings(hierarchy, codes1, codes2):
 
 def related(hierarchy, codes1, codes2):
 
-    parents_of_codes2 = parents(hierarchy, codes1, codes2)
-    children_of_codes2 = parents(hierarchy, codes2, codes1)
-    siblings_of_codes2 = siblings(hierarchy, codes1, codes2)
+    """
+    Returns codes from `codes1` that are related to codes from `codes2`.
 
+    >>> h = RegexHierarchy('LDD')
+    >>> codes1 = [ 'A01', 'A02.1', 'A02.2', 'A03.1', 'A13.2', 'A04', 'A06.1' ]
+    >>> codes2 = [ 'A01.1', 'A01.2', 'A02', 'A03.3', 'A13.4', 'A05', 'A07.1' ]
+    >>> expected = {
+    ...   'parents': set(['A01']),
+    ...   'children': set(['A02.1', 'A02.2']),
+    ...   'siblings': set(['A03.1', 'A13.2']),
+    ... }
+    >>> dict(related(h, codes1, codes2)) == expected
+    True
+    """
+
+    codes1_parents = parents(hierarchy, codes1, codes2)
+    codes2_parents = parents(hierarchy, codes2, codes1)
+    codes1_siblings = siblings(hierarchy, codes1, codes2)
+    flatten = lambda css: set(c for cs in css for c in cs)
     return OrderedDict([
         (label, codes)
         for label, codes in [
-            ('parents', set(c for cs in parents_of_codes2.keys() for c in cs)),
-            ('children', set(c for cs in children_of_codes2.values() for c in cs)),
-            ('siblings', set(c for cs, _ in siblings_of_codes2 for c in cs)),
+            ('parents', flatten(codes1_parents.keys())),
+            ('children', flatten(codes2_parents.values())),
+            ('siblings', flatten(cs for cs, _ in codes1_siblings)),
         ]
         if codes
     ])
 
-
 def include_related(hierarchy, codes):
 
-    """
-    >>> h = comap.RegexHierarchy('LDD')
-    >>> codes = {
-    ...     'TP': [],
-    ...     'FP': [],
-    ...     'FN': [],
-    ... }
-    >>> expected = OrderedDict([
-    ...     ('codes',
-    ... ])
-    >>> include_related(h, codes)['codes'] == expected_codes
-    True
-    """
+    """Simulate the appropriate expansion of the generated codes to the
+    reference codes in the confusion matrix `codes`. The false
+    negatives are added to the generated if a closely related code is
+    among the generated."""
+
+    generated, reference = from_confusion_matrix(codes)
+    TP, FP, FN = [set(codes[key]) for key in ('TP', 'FP', 'FN')]
+
+    FN_related_to_generated_by_rel = related(hierarchy, FN, generated)
+    FN_related_to_generated = \
+        set(c for cs in FN_related_to_generated_by_rel.values() for c in cs)
+
+    generated_with_related = generated | FN_related_to_generated
+
+    generated_related_to_FN_by_rel = related(hierarchy, generated, FN)
+    generated_related_to_FN = \
+        set(c for cs in generated_related_to_FN_by_rel.values() for c in cs)
+
+    related_codes = confusion_matrix(generated_with_related, reference)
+
+    derivated_codes = OrderedDict([
+        ('FN-related-to-generated', FN_related_to_generated)
+    ])
+
+    return related_codes, derivated_codes
+
+
+def include_related_bidirect(hierarchy, codes):
+
+    """Simulate the appropriate expansion of the generated codes to the
+    reference codes (cf. `include_related()`) AND add false positives
+    that are closely related to the reference to the reference."""
 
     TP, FP, FN = [set(codes[key]) for key in ('TP', 'FP', 'FN')]
-    generated, reference = from_confusion_table(codes)
+    generated, reference = from_confusion_matrix(codes)
 
     FP_related_to_reference_by_rel = related(hierarchy, FP, reference)
     FP_related_to_reference = \
@@ -330,14 +365,15 @@ def include_related(hierarchy, codes):
 
 
 def evaluations_to_xls(filename, evaluations, outcomes=None):
+
     """
     evaluations = \
-      { outcome_id: { database: { variation: { codes: ..., measures: ... }}}}
+      { outcome_id: { database: [{ variation: str, comparison: { codes: ..., measures: ... }}]}}
     """
 
     outcome_ids = list(evaluations.keys())
     database_names = list(evaluations[outcome_ids[0]].keys())
-    variations = list(evaluations[outcome_ids[0]][database_names[0]].keys())
+    variations = [v['name'] for v in evaluations[outcome_ids[0]][database_names[0]]]
 
     columns_per_database = ['TP', 'FP', 'FN', 'recall', 'precision']
     columns = pd.MultiIndex.from_tuples([
@@ -349,16 +385,19 @@ def evaluations_to_xls(filename, evaluations, outcomes=None):
     str_of_list = lambda v: ' '.join(str(v0) for v0 in v)
     index, rows = [], []
 
-    for ix, variation in enumerate(variations):
-        if ix:
+    for variation_ix, variation_name in enumerate(variations):
+        if variation_ix:
             index.extend(['', ''])
             rows.extend([[None] * len(columns)] * 2)
-        index.append(variation)
+        index.append(variation_name)
         rows.append([None] * len(columns))
         for outcome_id in outcome_ids:
             row = []
             for database_name in database_names:
-                comparison = evaluations[outcome_id][database_name][variation]
+                variation = evaluations[outcome_id][database_name][variation_ix]
+                assert variation['name'] == variation_name, \
+                    (variation['name'], variation_name)
+                comparison = variation['comparison']
                 if comparison is None:
                     row.extend([None] * len(columns_per_database))
                 else:
@@ -378,6 +417,3 @@ def evaluations_to_xls(filename, evaluations, outcomes=None):
     writer.save()
 
 
-if os.getenv('DOCTEST'):
-    import doctest
-    doctest.testmod()

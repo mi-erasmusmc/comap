@@ -39,16 +39,22 @@ def output(mode='w'):
     return open(temp, mode)
 
 
-def ifchange(**filenames):
+def ifchange(*args, **kwargs):
     """Run the `redo-ifchange` command on all files in **kwargs. """
-    return RedoCommand('redo-ifchange', filenames)
+    return RedoCommand('redo-ifchange', *args, **kwargs)
 
 
 class RedoCommand(object):
 
-    def __init__(self, command_name, filenames):
+    def __init__(self, command_name, *args, **kwargs):
         self.command_name = command_name
-        self.filenames = filenames
+        assert args or kwargs, "Provide either *args or **kwargs."
+        if args and kwargs:
+            self.filenames = (args, kwargs)
+        elif args:
+            self.filenames = args
+        elif kwargs:
+            self.filenames = kwargs
         self.run()
 
     @classmethod

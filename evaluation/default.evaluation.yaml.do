@@ -4,11 +4,12 @@ import json
 import yaml
 from pathlib import Path
 import redo
+redo.ifchange('comap.py'); import comap
 
 project = redo.base
 project_path = Path('projects') / project
 
-with redo.ifchange(evaluation_config=project_path / 'evaluation.yaml') \
+with redo.ifchange(evaluation_config=project_path / 'evaluation-config.yaml') \
         as files:
     evaluation_config = yaml.load(files['evaluation_config'])
 
@@ -86,38 +87,28 @@ def create_results(normalize_code=lambda c: c, with_children=False):
             false_positives = generated_codes - reference_codes
             false_negatives = reference_codes - generated_codes
 
-            recall = len(true_positives) / len(reference_codes) \
-                if reference_codes else None
-            precision = len(true_positives) / len(generated_codes) \
-                if generated_codes else None
-            # f_score = 2 * recall * precision / (recall + precision) \
-            #     if recall is not None and precision is not None and recall + precision > 0 \
-            #     else None
+            measures = comap.measures(generated=generated_codes,
+                                      reference=reference_codes,
+                                      f=lambda f: round(f, 2))
 
-            return {
-                'codes': OrderedDict([
-                    ('TP', list(true_positives)),
-                    ('FP', list(false_positives)),
-                    ('FN', list(false_negatives)),
-                ]),
-                'measures': OrderedDict([
-                    ('recall', round(recall, 2)),
-                    ('precision', round(precision, 2)
-                     if precision is not None else None),
-                ]),
-            }
+            return OrderedDict([
+                ('codes', OrderedDict([
+                    ('TP', sorted(true_positives)),
+                    ('FP', sorted(false_positives)),
+                    ('FN', sorted(false_negatives)),
+                ])),
+                ('measures', measures),
+            ])
 
-    return {
-        outcome_id: {
-            database: {
-                'comparison': compare(generated, reference),
-            }
+    return OrderedDict([
+        (outcome_id, OrderedDict([
+            (database, compare(generated, reference))
             for database, coding_system in databases
-            for generated in [generated_codes(outcome, coding_system)]
-            for reference in [reference_codes(database, outcome)]
-        }
-        for outcome_id, outcome in outcomes.items()
-    }
+            for generated in [generated_codes(outcomes[outcome_id], coding_system)]
+            for reference in [reference_codes(database, outcomes[outcome_id])]
+        ]))
+        for outcome_id in outcome_ids
+    ])
 
 
 def upper_and_ignore_suffix_dot(code):
@@ -129,20 +120,15 @@ def upper_and_ignore_suffix_dot(code):
 
 
 evaluations = [
-    ('Baseline', create_results(lambda x: x)),
-    ('Normalize',
+    ('baseline', create_results(lambda x: x)),
+    ('normalize',
      create_results(normalize_code=upper_and_ignore_suffix_dot)),
-    ('Normalize and children',
+    ('normalize_and_children',
      create_results(normalize_code=upper_and_ignore_suffix_dot,
                     with_children=True)),
 ]
 
-
 # Output results as YAML
 
-def represent_OrderedDict(dumper, data):
-    return dumper.represent_dict(list(data.items()))
-yaml.add_representer(OrderedDict, represent_OrderedDict, yaml.SafeDumper)
-
 with redo.output() as f:
-    yaml.dump(OrderedDict(evaluations), f, Dumper=yaml.SafeDumper)
+    yaml.dump(OrderedDict(evaluations), f)

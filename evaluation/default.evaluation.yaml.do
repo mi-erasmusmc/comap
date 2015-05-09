@@ -120,7 +120,10 @@ class CodeNormalization(AbstractVariation):
 
 class NormalizeCodeCase(CodeNormalization):
 
-    """Normalize code case"""
+    """Normalize code case in ICD, ICPC"""
+
+    def __init__(self):
+        super().__init__(['ICD', 'ICPC'])
 
     def normalize(self, code):
         return code.upper()

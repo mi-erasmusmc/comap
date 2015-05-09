@@ -4,6 +4,7 @@ import yaml
 from pathlib import Path
 import pandas as pd
 import redo
+import comap # Just for the YAML converters
 
 project = redo.base
 project_path = Path('projects') / project
@@ -31,7 +32,7 @@ with redo.ifchange(casedefs=casedef_paths) as files:
 def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
 
     """
-    evaluations ::= { outcome_id: { database: {variations?: [variation], comment?: str} } }
+    evaluations ::= { outcome_id: { database: {variations?: {variation_id: variation}, comment?: str} } }
     variation = { name: str, comparison: comparison }
     comparison ::= { codes: { TP, FP, FN: codes }, measures: { recall, precision: float } }
     """
@@ -41,9 +42,14 @@ def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
                           if databases is not None else
                           databases.keys())
     for database_name in database_names:
-        for_database = evaluations[outcome_ids[0]][database_name]
-        if 'variations' in for_database:
-            variations = [variation['name'] for variation in for_database['variations']]
+        if 'variations' in evaluations[outcome_ids[0]][database_name]:
+            variations = evaluations[outcome_ids[0]][database_name]['variations']
+            assert type(variations) == OrderedDict, type(variations)
+            variation_ids = list(variations.keys())
+            variation_names = {
+                variation_id: variations[variation_id]['name']
+                for variation_id in variations.keys()
+            }
             break
 
     columns_per_database = ['TP', 'FP', 'FN', 'recall', 'precision']
@@ -56,14 +62,14 @@ def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
         for c in columns_per_database
     ] + [('Average over databases', 'recall'), ('Average over databases', 'precision')])
 
-    str_of_list = lambda v: ' '.join(str(v0) for v0 in v)
+    str_of_list = lambda v: '{}: {}'.format(len(v), ' '.join(str(v0) for v0 in v))
     index, rows = [], []
 
-    for variation_ix, variation_name in enumerate(variations):
-        if variation_ix:
+    for variation_id in variation_ids:
+        if variation_ids.index(variation_id):
             index.extend(['', ''])
             rows.extend([[None] * len(columns)] * 2)
-        index.append(variation_name)
+        index.append(variation_names[variation_id])
         rows.append([None] * len(columns))
         measures_over_outcomes = {
             database_name: pd.DataFrame(columns=['recall', 'precision'])
@@ -75,9 +81,7 @@ def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
             for database_name in database_names:
                 for_database = evaluations[outcome_id][database_name]
                 if 'variations' in for_database:
-                    variation = for_database['variations'][variation_ix]
-                    assert variation['name'] == variation_name, \
-                        (variation['name'], variation_name)
+                    variation = for_database['variations'][variation_id]
                     codes, measures = (variation['comparison'][key] for key in ('codes', 'measures'))
                     measures_over_databases.ix[database_name] = measures
                     measures_over_outcomes[database_name].ix[outcome_id] = measures

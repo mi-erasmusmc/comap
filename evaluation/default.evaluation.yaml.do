@@ -142,7 +142,7 @@ class NormalizeCodeSuffixDot(CodeNormalization):
 
 class NormalizeCodeXDD(CodeNormalization):
 
-    """Normalize codes to XDD in ICD and ICPC"""
+    """Normalize codes ICD and ICPC to 3 letters"""
 
     def __init__(self):
         super().__init__(['ICD', 'ICPC'])
@@ -235,8 +235,8 @@ def create_results(references, concepts_by_outcome, variations):
                 reference = None
 
             if reference is not None:
-                res[outcome_id][database]['variations'] = list()
-                for variation in variations:
+                res[outcome_id][database]['variations'] = OrderedDict()
+                for variation_id, variation in variations.items():
                     variation.set_context(outcome_id, coding_system)
                     generated_concepts = variation.vary_concepts(
                         concepts_by_outcome[outcome_id], reference)
@@ -267,10 +267,10 @@ def create_results(references, concepts_by_outcome, variations):
                             for key, value in measures.items()
                         ])),
                     ])
-                    res[outcome_id][database]['variations'].append(OrderedDict([
+                    res[outcome_id][database]['variations'][variation_id] = OrderedDict([
                         ('name', variation.description()),
                         ('comparison', comparison),
-                    ]))
+                    ])
 
             if 'comment' in mapping:
                 res[outcome_id][database]['comment'] = mapping['comment']
@@ -278,14 +278,14 @@ def create_results(references, concepts_by_outcome, variations):
 
 
 default_variations = VariationChain(NormalizeCodeCase(), NormalizeCodeSuffixDot(), NormalizeRead2Codes())
-variations = [
-    Identity(),
-    default_variations,
-    VariationChain(default_variations, NormalizeCodeXDD()),
-    VariationChain(default_variations, IncludeRelatedCodes('FN')),
-    VariationChain(default_variations, IncludeRelatedCodes('FN-FP')),
-    VariationChain(default_variations, IncludeChildConcepts()),
-]
+variations = OrderedDict([
+    ('baseline', default_variations),
+    ('3-letter-codes', VariationChain(default_variations, NormalizeCodeXDD())),
+    ('related-FN', VariationChain(default_variations, IncludeRelatedCodes('FN'))),
+    ('related-FN-FP', VariationChain(default_variations, IncludeRelatedCodes('FN-FP'))),
+    ('child-concepts', VariationChain(default_variations, IncludeChildConcepts())),
+    ('child-concepts-related-FN-FP', VariationChain(default_variations, IncludeChildConcepts(), IncludeRelatedCodes('FN-FP'))),
+])
 
 evaluation = create_results(references, concepts_by_outcome, variations)
 

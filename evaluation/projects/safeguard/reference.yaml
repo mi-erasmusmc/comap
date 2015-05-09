@@ -12,7 +12,8 @@ GePaRD:
       inclusion: [I11.0, I13.0, I13.2 ]
     va:
       inclusion: [I47.0, I47.2, I49.0, I46.0, I46.9, I46.0, I46.9]
-    #scd: Not considered
+    scd:
+      comment: Not considered
     ap:
       inclusion: [K85.0, K85.3, K85.8, K85.9, K85.1, K85.2]
     pc:
@@ -68,7 +69,8 @@ Medicare:
       inclusion: ["398.91", "402.01", "402.11", "402.91", "404.01", "404.03", "404.11", "404.13", "404.91", "404.93", 428.xx ]
     va:
       inclusion: ["427.1", "427.4", "427.41", "427.42", "427.5"]
-    #scd: Not performed
+    scd:
+      comment: Not performed
     ap:
       inclusion: ["577.0"]
     pc:
@@ -104,7 +106,8 @@ PHARMO:
       inclusion: ["39891", "40201", "40211", "40291", "4040", "4041", "4049", "428x"]
     va:
       inclusion: ["4271", "4274", "42741", "42742", "4275"]
-    #scd: Not captured
+    scd:
+      comment: Not performed
     ap:
       inclusion: ["5770"]
     pc:
@@ -130,7 +133,8 @@ IPCI:
     va:
       inclusion: [ 'K79.02', 'K79.', 'K79.', 'K79.', 'k79.']
       exclusion: ['K79.01', 'K79.01']
-    #scd: no codes
+    scd:
+      comment: Not performed
     ap:
       inclusion: [D99]
       exclusion: []
@@ -140,3 +144,94 @@ IPCI:
     bc:
       inclusion: [U76.]
       exclusion: [U26, U27, A26.]
+
+BIFAB:
+  coding-system: ICPC
+  mappings:
+    mi:
+      inclusion: [K75, A96]
+    is:
+      inclusion: [K90.6, K90.14, K90.15, K90.20, K90.23, K90.31, K90.1/K90.2/K90.3/K90.16/K90.29]
+    hs:
+      inclusion: [K90.8, K90.10, K90.12, K90.18, K90.21, K90.24, K90.30, K90.1, K90.2, K90.3, K90.16, K90.29]
+    hf:
+      inclusion: [K77]
+    va:
+      comment: Not performed
+    scd:
+      comment: Not performed
+    ap:
+      inclusion: [D99.34, D99.19]
+    pc:
+      inclusion: [D76]
+    bc:
+      inclusion: [U76]
+
+CPRD:
+  coding-system: READ
+  mappings:
+    mi:
+      comment: No codes provided
+    is:
+      inclusion: [G6X..00,G64z111,G63..11,G63y000,G63y100,G64..12,G64..13,G640000,G641000,G64z.00,G64z.11,G64z.12,G64z000,G64z200,G64z300,G64z400,G665.00,G666.00,G676000,G6W..00,Gyu6300,Gyu6400,Gyu6G00]
+    hs:
+      inclusion: [G600.00,G601.00,G602.00,G603.00,G604.00,G605.00,G606.00,G60X.00,G60z.00,G615.00,G617.00,Gyu6100,Gyu6E00,G60..00,G61..00,G61..11,G61..12,G610.00,G611.00,G612.00,G613.00,G614.00,G616.00,G618.00,G61X.00,G61X000,G61X100,G61z.00,G62..00,G62z.00,Gyu6200,Gyu6F00,Gyu6E00,Q412.00,'7004100','7004200','7004300','7008200',Gyu6000]
+    hf:
+      inclusion: [SP11111,1O1..00,8H2S.00,G210100,G21z100,G232.00,G58..00,G58..11,G580.00,G580.11,G580.12,G580.13,G580.14,G580000,G580100,G580200,G580300,G580400,G581.00,G581.11,G581.12,G581000,G582.00,G58z.00,G58z.12]
+    va:
+      inclusion: [G571.00, G571.11, G572000, G572100, G574.00, G574000, G574011, G574100, G574z00, G57yA00, '3282.', '3283.', 328..00, 328Z.00, G575000, G575200, G575.00, G575.11, G575.12, G575z00, SP11000, 7L1H4, '8531.', '8532.', '8532.11', 7L1H.00, 7L1H.12, 7L1H.13, 7L1H600, 7L1H700, 7L1Hy00, 7L1Hz00, 853..00, 853Z.00]
+    scd:
+      inclusion: [G575100, R21..00, 22J4.00, R211.00, R2y..00, R21z.00, R212100, RyuC100, R213.00, R213100, 22J1.00, R212.00, R213000, RyuC.00, 22J3.00, R213z00, R212z00]
+    ap:
+      inclusion: [J670z00, J670.00, J670500, J670100, J670000, J670200, J670300]
+    pc:
+      comment: >
+        As the GPRD is a GP based database coded diagnoses do not
+        represent discharges and may represent confirmed diagnoses,
+        working diagnoses, re-recording of historic events, etc. We do
+        not therefore assume that a patient with a code for malignant
+        neoplasm of the pancreas has pancreatic cancer. We instead
+        require that they have some evidence in their records supporting
+        the cancer diagnosis.
+      inclusion: [B162.00, B17..00, B170.00, B171.00, B172.00,
+        B173.00, B174.00, B175.00, B17y.00, B17y000, B17yz00, B17z.00,
+        B808600, B80z000, BB5B.00, BB5B300, BB5B500, BB5B600, BB5Bz00,
+        BB5B011, BB5B100, BB5B400, BB5B200, BB5B000, B905100, B717011,
+        ByuB100, ByuB.00, BB5R900, B54z.00, B54y.00, B54..00, Byu1300,
+        Byu1200, Byu1.00, BBA2.00, BB5Cz00, BB5C100, BB5C.00, B80..11,
+        B80..00, B....11, ByuF.00, ByuE000, ByuE.00, ByuC800, ByuC100,
+        ByuC000, BBd9.00, BB4z.00, BB4A.00, BB49.00, BB48.00, BB47.00,
+        BB46.00, BB45.00, BB44.00, BB4..00, BB13.00, BB12.00, BB11.00,
+        BB07.00, BB04.00, BB03.00, BB02.00, B8z..00, B8yyz00, B8yy.00,
+        B8y..00, B8...00, B5z..00, B5y..00, B59z.00, B593.00, B592.00,
+        B591.00, B590.11, B590.00, B59..00, B55z.00, B55yz00, B55..00,
+        B5...11, B5...00, 1O0..00, BB5y100, BA07.00, B924z00, B92..00,
+        ByuH000, BBAz.00, BBA1.00, BBA..00, BB5C000, ByuH.00, By...00,
+        BBaz.00, BBa..00, BB06.00, BB01.00, BB0..00, BB...11, BB...00,
+        BAz..00, BA0z.00, BA0y.00, BA0..00, BA...00, B9z..00, B9y..00,
+        B93z.00, B93yz00, B93y.00, B9...00, B....00]
+    bc:
+      comment:  >
+        As the GPRD is a GP based database coded diagnoses do not
+        represent discharges and may represent confirmed diagnoses,
+        working diagnoses, re-recording of historic events, etc. We
+        do not therefore assume that a patient with a code for
+        malignant neoplasm of the bladder has bladder cancer. We
+        instead require that they have some evidence in their
+        records supporting the cancer diagnosis.
+      inclusion: [B837.00, B49z.00, B49y000, B49y.00, B497.00,
+        B496.00, B495.00, B494.00, B493.00, B492.00, B491.00, B490.00,
+        B49..00, B917.00, Byu9000, Byu9.00, BB43.11, BB43.00, BB42.00,
+        BB41.00, B83z.00, B83..00, B4z..00, B4y..00, B4Ay000, B4Ay.00,
+        B4A..00, B4...11, B4...00, ByuF.00, ByuE000, ByuE.00, ByuC800,
+        ByuC100, ByuC000, BBd9.00, BB4z.00, BB4A.00, BB49.00, BB48.00,
+        BB47.00, BB46.00, BB45.00, BB44.00, BB4..00, BB13.00, BB12.00,
+        BB11.00, BB07.00, BB04.00, BB03.00, BB02.00, B8z..00, B8yyz00,
+        B8yy.00, B8y..00, B8...00, B5z..00, B5y..00, B59z.00, B593.00,
+        B592.00, B591.00, B590.11, B590.00, B59..00, B55z.00, B55yz00,
+        B55..00, B5...11, B5...00, 1O0..00, B....11, B91zz00, B91z.11,
+        B91z.00, B91..00, ByuH.00, By...00, BBaz.00, BBa..00, BB06.00,
+        BB01.00, BB0..00, BB...11, BB...00, BAz..00, BA0z.00, BA0y.00,
+        BA0..00, BA...00, B9z..00, B9y..00, B93z.00, B93yz00, B93y.00,
+        B9...00, B....00]
+

@@ -146,7 +146,61 @@ def from_confusion_matrix(codes):
     return TP | FP, TP | FN
 
 
-class RegexHierarchy(object):
+class Hierarchy(object):
+
+    def parents(self, code):
+        raise NotImplementedError()
+
+    def is_sibling(self, code1, code2):
+        """
+        >>> h = RegexHierarchy('LDD')
+        >>> h.is_sibling("K85.1", "K85.2")
+        True
+        >>> h.is_sibling("K85.1", "K85")
+        False
+        >>> h.is_sibling("K85.1", "K85.1")
+        True
+        >>> h.is_sibling("K85.1", "J85.1")
+        False
+        """
+        parent1 = self.parents(code1)
+        parent2 = self.parents(code2)
+        return bool(parent1 and parent2 and parent1 & parent2)
+
+
+class Read2Hierarchy(Hierarchy):
+
+    head_dots_re = re.compile(r'^(?P<head>[A-Z0-9][A-Za-z0-9]*)(?P<dots>\.*)$')
+
+    def parents(self, code):
+        """
+        >>> h = Read2Hierarchy()
+        >>> set(h.parents("J01234"))
+        {'J0123.'}
+        >>> set(h.parents("J012.."))
+        {'J01...'}
+        >>> set(h.parents("J....."))
+        set()
+        """
+
+        m = self.head_dots_re.match(code)
+        head, dots = m.group('head'), m.group('dots')
+        if len(head) > 1:
+            return frozenset([head[:-1] + '.' + dots])
+        else:
+            return frozenset()
+
+    # def children(self, code):
+    #     ranges_limits = [
+    #         ('a', 'z'),
+    #         ('A', 'Z'),
+    #         ('0', '9')
+    #     ]
+    #     ranges = [range(ord(lower), ord(upper)+1)
+    #               for lower, upper in range_limits]
+    #     return set(code + chr(c) for c in chain(ranges))
+
+class RegexHierarchy(Hierarchy):
 
     TYPES = {
         # Letter Digit Digit
@@ -175,22 +229,6 @@ class RegexHierarchy(object):
             return frozenset([m.group('parent')])
         else:
             return frozenset()
-
-    def is_sibling(self, code1, code2):
-        """
-        >>> h = RegexHierarchy('LDD')
-        >>> h.is_sibling("K85.1", "K85.2")
-        True
-        >>> h.is_sibling("K85.1", "K85")
-        False
-        >>> h.is_sibling("K85.1", "K85.1")
-        True
-        >>> h.is_sibling("K85.1", "J85.1")
-        False
-        """
-        parent1 = self.parents(code1)
-        parent2 = self.parents(code2)
-        return bool(parent1 and parent2 and parent1 & parent2)
 
 
 def parents(hierarchy, codes1, codes2):

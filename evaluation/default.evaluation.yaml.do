@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import os
 import json
 import yaml
@@ -73,6 +73,64 @@ class Variation(object):
     def vary_codes(self, generated, reference, coding_systems):
         """Code-level variations."""
         return generated, reference
+
+
+class MaximumSensitivityVariation(Variation):
+
+    """Maximium sensitivity"""
+
+    def __init__(self):
+        self.client = comap.ComapClient()
+
+    def vary_concepts_and_mapping(self, concepts, mapping, outcome_id):
+        cuis = set()
+        for database_id in mapping.keys():
+            coding_system = databases[database_id]
+            codes = mapping[database_id]
+            if coding_system == 'RCD2':
+                coding_system = 'RCD'
+                read_translation = comap.translation_read2_to_read3(codes)
+                codes = set(code for codes in read_translation.values() for code in codes)
+            if not codes:
+                continue
+            # ... WHERE cui IN (SELECT ... is too slow!
+            # query = """
+            #     SELECT DISTINCT cui, code FROM MRCONSO
+            #     WHERE cui IN (SELECT DISTINCT cui FROM MRCONSO
+            #                   WHERE sab = %s AND code IN ({placeholders}))
+            #     AND sab = %s
+            # """.format(placeholders=', '.join(['%s'] * len(codes)))
+            # args = [coding_system] + list(codes) + [coding_system]
+            cuis_query = """
+                SELECT DISTINCT cui FROM MRCONSO
+                WHERE sab = %s AND code IN ({placeholders})
+            """.format(placeholders=', '.join(['%s'] * len(codes)))
+            with comap.umls_db.cursor() as cursor:
+                cursor.execute(cuis_query, tuple([coding_system] + list(codes)))
+                cuis_for_codes = []
+                for row in cursor.fetchall():
+                    cuis_for_codes.append(row[0])
+            query = """
+                SELECT DISTINCT cui, code FROM MRCONSO
+                WHERE cui IN ({placeholders})
+            """.format(placeholders=', '.join(['%s'] * len(cuis_for_codes)))
+            with comap.umls_db.cursor() as cursor:
+                cursor.execute(query, tuple(cuis_for_codes))
+                cui_codes = defaultdict(set)
+                for row in cursor.fetchall():
+                    cui, code = row
+                    cui_codes[cui].add(code)
+            for code in codes:
+                # Find the `cui` that implicates `code` with the least number of irrelevant codes
+                cuis_with_count = \
+                    [(cui, len(set(codes) - set(codes1)))
+                     for cui, codes1 in cui_codes.items()
+                     if code in codes1]
+                if cuis_with_count:
+                    key = lambda x: x[1]
+                    cui, _ = sorted(cuis_with_count, key=key)[0]
+                    cuis.add(cui)
+        return self.client.umls_concepts(cuis, coding_systems), mapping
 
 
 class VariationChain(Variation):
@@ -257,46 +315,69 @@ class IncludeRelatedConcepts(Variation):
         return list(concepts_and_related.values()), mapping
 
 
-def create_results(references0, concepts_by_outcome, variations):
+def create_results(references, concepts_by_outcome, variations):
 
-    # mapping ::= { database_id: { "codes": { code } | None, "comment": str | None } }
+    # mapping ::= { database_id: { code } | None }
 
     # { outcome_id: mapping }
     mappings = {}
     for outcome_id in outcome_ids:
         mappings[outcome_id] = {}
         for database in databases.keys():
-            mapping = references0[database]['mappings'][outcome_id]
+            mapping = references[database]['mappings'][outcome_id]
             if 'inclusion' in mapping:
                 codes = set(mapping['inclusion'] + mapping.get('exclusion', []))
             else:
                 codes = None
-            mappings[outcome_id][database] = OrderedDict([
-                ('codes', codes),
-                ('comment', mapping.get('comment')),
-            ])
+            mappings[outcome_id][database] = codes
 
     # { outcome_id: { variation_id: { "concepts": { concept }, "mapping": mapping } } }
     varied_by_outcome = {}
     for outcome_id in outcome_ids:
         varied_by_outcome[outcome_id] = {}
         concepts = concepts_by_outcome[outcome_id]
+        reference_codes = OrderedDict([
+            (database_id, mappings[outcome_id][database_id])
+            for database_id in databases.keys()
+        ])
         for variation_id, variation in variations.items():
-            varied_generated, varied_mapping = \
-                variation.vary_concepts_and_mapping(concepts, mappings[outcome_id], outcome_id)
+            # Map codes in generated concepts with variation.vary_code
+            concepts1 = []
+            for concept in concepts_by_outcome[outcome_id]:
+                concept1 = concept.copy()
+                concept1['sourceConcepts'] = []
+                for source_concept in concept['sourceConcepts']:
+                    source_concept1 = source_concept.copy()
+                    id, coding_system = source_concept['id'], source_concept['codingSystem']
+                    source_concept1['id'] = variation.vary_code(id, coding_system)
+                    concept1['sourceConcepts'].append(source_concept1)
+                concepts1.append(concept1)
+            # Map reference codes with variation.vary_code
+            reference_codes1 = OrderedDict()
+            for database_id in databases.keys():
+                if reference_codes[database_id] is None:
+                    reference_codes1[database_id] = None
+                else:
+                    reference_codes1[database_id] = [
+                        variation.vary_code(code, databases[database_id])
+                        for code in mappings[outcome_id][database_id]
+                    ]
+            concepts2, reference_codes2 = \
+                variation.vary_concepts_and_mapping(concepts1, reference_codes1, outcome_id)
+            assert concepts2 is not None, (outcome_id, variation_id)
             varied_by_outcome[outcome_id][variation_id] = {
-                'concepts': varied_generated,
-                'mapping': varied_mapping,
+                'concepts': concepts2,
+                'reference-codes': reference_codes2,
             }
 
     res = OrderedDict()
     for outcome_id in outcome_ids:
         res[outcome_id] = OrderedDict()
-        for database, coding_system in databases.items():
-            res[outcome_id][database] = OrderedDict([])
-            mapping = mappings[outcome_id][database]
-            if mapping['codes'] is not None:
-                res[outcome_id][database]['variations'] = OrderedDict()
+        for database_id, coding_system in databases.items():
+            res[outcome_id][database_id] = OrderedDict([])
+            mapping = mappings[outcome_id][database_id]
+            if mapping is not None:
+                res[outcome_id][database_id]['variations'] = OrderedDict()
                 for variation_id, variation in variations.items():
                     varied = varied_by_outcome[outcome_id][variation_id]
                     generated_codes = [
@@ -307,7 +388,7 @@ def create_results(references0, concepts_by_outcome, variations):
                     ]
                     reference_codes = [
                         variation.vary_code(code, coding_system)
-                        for code in varied['mapping'][database]['codes']
+                        for code in varied['reference-codes'][database_id]
                     ]
                     varied_generated_codes, varied_reference_codes = \
                         variation.vary_codes(generated_codes, reference_codes, coding_system)
@@ -315,7 +396,7 @@ def create_results(references0, concepts_by_outcome, variations):
                                                           reference=varied_reference_codes)
                     measures = comap.measures(codes=varied_codes)
 
-                    res[outcome_id][database]['variations'][variation_id] = \
+                    res[outcome_id][database_id]['variations'][variation_id] = \
                         OrderedDict([
                             ('name', variation.description()),
                             ('comparison', OrderedDict([
@@ -323,14 +404,16 @@ def create_results(references0, concepts_by_outcome, variations):
                                 ('measures', measures),
                             ])),
                     ])
-            if mapping['comment'] is not None:
-                res[outcome_id][database]['comment'] = mapping['comment']
+            comment = references[database_id]['mappings'][outcome_id].get('comment')
+            if comment is not None:
+                res[outcome_id][database_id]['comment'] = comment
     return res
 
 
 default_variations = VariationChain(NormalizeCodeCase(), NormalizeCodeSuffixDot(), NormalizeRead2Codes())
 variations = OrderedDict([
     ('baseline', default_variations),
+    ('maximum-sensitivity', VariationChain(default_variations, MaximumSensitivityVariation())),
     ('3-letter-codes', VariationChain(default_variations, NormalizeCodeXDD())),
     ('related-FN', VariationChain(default_variations, IncludeRelatedCodes('FN'))),
     ('related-FN-FP', VariationChain(default_variations, IncludeRelatedCodes('FN-FP'))),

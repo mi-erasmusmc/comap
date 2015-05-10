@@ -75,62 +75,115 @@ class Variation(object):
         return generated, reference
 
 
-class MaximumSensitivityVariation(Variation):
+class MaximumRecall(Variation):
 
-    """Maximium sensitivity"""
+    """Maximize recall"""
 
     def __init__(self):
         self.client = comap.ComapClient()
 
     def vary_concepts_and_mapping(self, concepts, mapping, outcome_id):
+        "Return concepts that contain all codes in `mapping`."
         cuis = set()
         for database_id in mapping.keys():
-            coding_system = databases[database_id]
-            codes = mapping[database_id]
-            if coding_system == 'RCD2':
-                coding_system = 'RCD'
-                read_translation = comap.translation_read2_to_read3(codes)
-                codes = set(code for codes in read_translation.values() for code in codes)
-            if not codes:
+            if not mapping[database_id]:
                 continue
-            # ... WHERE cui IN (SELECT ... is too slow!
-            # query = """
-            #     SELECT DISTINCT cui, code FROM MRCONSO
-            #     WHERE cui IN (SELECT DISTINCT cui FROM MRCONSO
-            #                   WHERE sab = %s AND code IN ({placeholders}))
-            #     AND sab = %s
-            # """.format(placeholders=', '.join(['%s'] * len(codes)))
-            # args = [coding_system] + list(codes) + [coding_system]
-            cuis_query = """
-                SELECT DISTINCT cui FROM MRCONSO
-                WHERE sab = %s AND code IN ({placeholders})
-            """.format(placeholders=', '.join(['%s'] * len(codes)))
-            with comap.umls_db.cursor() as cursor:
-                cursor.execute(cuis_query, tuple([coding_system] + list(codes)))
-                cuis_for_codes = []
-                for row in cursor.fetchall():
-                    cuis_for_codes.append(row[0])
-            query = """
-                SELECT DISTINCT cui, code FROM MRCONSO
-                WHERE cui IN ({placeholders})
-            """.format(placeholders=', '.join(['%s'] * len(cuis_for_codes)))
-            with comap.umls_db.cursor() as cursor:
-                cursor.execute(query, tuple(cuis_for_codes))
-                cui_codes = defaultdict(set)
-                for row in cursor.fetchall():
-                    cui, code = row
-                    cui_codes[cui].add(code)
+            codes = set(mapping[database_id])
+            coding_system = databases[database_id]
+            cui_codes = cosynonym_codes(codes, coding_system)
             for code in codes:
                 # Find the `cui` that implicates `code` with the least number of irrelevant codes
                 cuis_with_count = \
-                    [(cui, len(set(codes) - set(codes1)))
+                    [(cui, len(codes - codes1))
                      for cui, codes1 in cui_codes.items()
                      if code in codes1]
                 if cuis_with_count:
                     key = lambda x: x[1]
                     cui, _ = sorted(cuis_with_count, key=key)[0]
                     cuis.add(cui)
-        return self.client.umls_concepts(cuis, coding_systems), mapping
+        concepts = self.client.umls_concepts(cuis, coding_systems)
+        return concepts, mapping
+
+
+class MaximiumPrecision(Variation):
+
+    """Maximize precision"""
+
+    def __init__(self):
+        self.client = comap.ComapClient()
+
+    def vary_concepts_and_mapping(self, concepts, mapping, outcome_id):
+        "Return concepts such that code is not in `mapping`."
+        all_cui_codes = defaultdict(lambda: defaultdict(set))
+        for database_id in mapping.keys():
+            if not mapping[database_id]:
+                continue
+            coding_system = databases[database_id]
+            codes = set(mapping[database_id])
+            cui_codes = cosynonym_codes(codes, coding_system)
+            for cui, codes in cui_codes.items():
+                for code in codes:
+                    all_cui_codes[cui][database_id].add(code)
+        # Find the `cui` where all codes are in the reference
+        cuis = set()
+        for cui, all_codes in all_cui_codes.items():
+            if all(mapping[database_id] is not None and \
+                   all_codes[database_id].issubset(mapping[database_id])
+                   for database_id, coding_system in databases.items()):
+                cuis.add(cui)
+        concepts = self.client.umls_concepts(cuis, coding_systems)
+        return concepts, mapping
+
+
+def cosynonym_codes(codes, coding_system):
+
+    if not codes:
+        return defaultdict(set)
+
+    original_coding_system = coding_system
+    if coding_system == 'RCD2':
+        coding_system = 'RCD'
+        read_translation, read_backtranslation = comap.translation_read2_to_read3(codes)
+        codes = set(code for codes in read_translation.values() for code in codes)
+
+    # ... WHERE cui IN (SELECT cui FROM MRCONSO WHERE code in (...)) was too slow, separate
+    cuis_query = """
+        SELECT DISTINCT cui FROM MRCONSO
+        WHERE sab = %s AND code IN ({placeholders})
+    """.format(placeholders=', '.join(['%s'] * len(codes)))
+
+    cuis_for_codes = []
+    with comap.umls_db.cursor() as cursor:
+        try:
+            cursor.execute(cuis_query, tuple([coding_system] + list(codes)))
+        except:
+            raise
+        for row in cursor.fetchall():
+            cuis_for_codes.append(row[0])
+
+    if not cuis_for_codes:
+        return defaultdict(set)
+
+    cui_code_query = """
+        SELECT DISTINCT cui, code FROM MRCONSO
+        WHERE cui IN ({placeholders})
+    """.format(placeholders=', '.join(['%s'] * len(cuis_for_codes)))
+
+    cui_codes = defaultdict(set)
+    with comap.umls_db.cursor() as cursor:
+        cursor.execute(cui_code_query, tuple(cuis_for_codes))
+        for row in cursor.fetchall():
+            cui, code = row
+            cui_codes[cui].add(code)
+
+    if original_coding_system == 'RCD2':
+        cui_codes = {
+            cui: set(code2
+                     for code3 in codes3
+                     for code2 in read_backtranslation[code3])
+            for cui, codes3 in cui_codes.items()
+        }
+    return cui_codes
 
 
 class VariationChain(Variation):
@@ -390,10 +443,13 @@ def create_results(references, concepts_by_outcome, variations):
                         variation.vary_code(code, coding_system)
                         for code in varied['reference-codes'][database_id]
                     ]
+
                     varied_generated_codes, varied_reference_codes = \
                         variation.vary_codes(generated_codes, reference_codes, coding_system)
+
                     varied_codes = comap.confusion_matrix(generated=varied_generated_codes,
                                                           reference=varied_reference_codes)
+
                     measures = comap.measures(codes=varied_codes)
 
                     res[outcome_id][database_id]['variations'][variation_id] = \
@@ -413,7 +469,8 @@ def create_results(references, concepts_by_outcome, variations):
 default_variations = VariationChain(NormalizeCodeCase(), NormalizeCodeSuffixDot(), NormalizeRead2Codes())
 variations = OrderedDict([
     ('baseline', default_variations),
-    ('maximum-sensitivity', VariationChain(default_variations, MaximumSensitivityVariation())),
+    ('maximum-recall', VariationChain(default_variations, MaximumRecall())),
+    ('maximum-precision', VariationChain(default_variations, MaximiumPrecision())),
     ('3-letter-codes', VariationChain(default_variations, NormalizeCodeXDD())),
     ('related-FN', VariationChain(default_variations, IncludeRelatedCodes('FN'))),
     ('related-FN-FP', VariationChain(default_variations, IncludeRelatedCodes('FN-FP'))),

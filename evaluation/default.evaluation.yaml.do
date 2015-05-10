@@ -15,7 +15,7 @@ with redo.ifchange(evaluation_config=project_path / 'evaluation-config.yaml') \
         as files:
     evaluation_config = yaml.load(files['evaluation_config'])
 
-databases = evaluation_config['databases']
+databases = OrderedDict(evaluation_config['databases'])
 outcome_ids = evaluation_config['outcome_ids']
 concept_filenames = {
     outcome_id: '{}.{}.concepts.json'.format(project, outcome_id)
@@ -49,23 +49,25 @@ with redo.ifchange(coding_systems='config/coding_systems.yaml',
     }
 
 
-class AbstractVariation(object):
+class Variation(object):
+
+    """Identity"""
+
+    def __init__(self):
+        self.outcome_id = None
+        self.coding_system = None
 
     def description(self):
         return self.__doc__
 
-    def set_context(self, outcome_id, coding_system):
-        self.outcome_id = outcome_id
-        self.coding_system = coding_system
-
-    def vary_codes(self, generated, reference):
+    def vary_codes(self, generated, reference, coding_systems):
         return generated, reference
 
-    def vary_concepts(self, concepts, reference):
+    def vary_concepts(self, concepts, outcome_id, reference_mapping):
         return concepts
 
 
-class VariationChain(AbstractVariation):
+class VariationChain(Variation):
 
     """Chain of variations that are applied to the input left-to-right."""
 
@@ -83,25 +85,18 @@ class VariationChain(AbstractVariation):
         else:
             return ""
 
-    def vary_codes(self, generated, reference):
+    def vary_codes(self, generated, reference, coding_system):
         for variation in self.variations:
-            generated, reference = variation.vary_codes(generated, reference)
+            generated, reference = variation.vary_codes(generated, reference, coding_system)
         return generated, reference
 
-    def vary_concepts(self, concepts, reference):
+    def vary_concepts(self, concepts, outcome_id, reference_mapping):
         for variation in self.variations:
-            concepts = variation.vary_concepts(concepts, reference)
+            concepts = variation.vary_concepts(concepts, outcome_id, reference_mapping)
         return concepts
 
 
-class Identity(AbstractVariation):
-
-    """Identity"""
-
-    pass
-
-
-class CodeNormalization(AbstractVariation):
+class CodeNormalization(Variation):
 
     def __init__(self, coding_system_prefixes=['']):
         """`coding_systems` is None or a list of prefixes and this
@@ -109,8 +104,8 @@ class CodeNormalization(AbstractVariation):
         current coding systems."""
         self.coding_system_prefixes = coding_system_prefixes
 
-    def vary_codes(self, generated, reference):
-        if any(self.coding_system.startswith(prefix)
+    def vary_codes(self, generated, reference, coding_system):
+        if any(coding_system.startswith(prefix)
                for prefix in self.coding_system_prefixes):
             return [self.normalize(c) for c in generated], \
                 [self.normalize(c) for c in reference]
@@ -178,7 +173,7 @@ class NormalizeRead2Codes(CodeNormalization):
         return m.group('code')
 
 
-class IncludeRelatedCodes(AbstractVariation):
+class IncludeRelatedCodes(Variation):
 
     """Include related codes"""
 
@@ -196,8 +191,8 @@ class IncludeRelatedCodes(AbstractVariation):
     def description(self):
         return super().description() + ' ({})'.format(self.direction)
 
-    def vary_codes(self, generated, reference):
-        hierarchy = self.hierarchies[self.coding_system]
+    def vary_codes(self, generated, reference, coding_system):
+        hierarchy = self.hierarchies[coding_system]
         codes = comap.confusion_matrix(generated, reference)
         related_codes, derivated_codes = {
             'FN': comap.include_related,
@@ -206,13 +201,13 @@ class IncludeRelatedCodes(AbstractVariation):
         return comap.from_confusion_matrix(related_codes)
 
 
-class IncludeChildConcepts(AbstractVariation):
+class IncludeChildConcepts(Variation):
 
     """Include child concepts"""
 
-    def vary_concepts(self, concepts, reference):
+    def vary_concepts(self, concepts, outcome_id, reference_mapping):
         cuis = [c['cui'] for c in concepts]
-        child_concepts_by_parent = child_concepts_by_outcome[self.outcome_id]
+        child_concepts_by_parent = child_concepts_by_outcome[outcome_id]
         child_concepts = [
             child_concept
             for parent_id, concepts_for_parent in child_concepts_by_parent
@@ -222,59 +217,87 @@ class IncludeChildConcepts(AbstractVariation):
         return concepts + child_concepts
 
 
-def create_results(references, concepts_by_outcome, variations):
+class IncludeRelatedConcepts(Variation):
+
+    """Include related concepts"""
+
+    def __init__(self, *relations):
+        self.relations = list(relations)
+        self.client = comap.ComapClient()
+
+    def description(self):
+        return super().description() + ' ({})'.format(', '.join(self.relations))
+
+    def vary_concepts(self, concepts, outcome_id, reference_mapping):
+        cuis = [c['cui'] for c in concepts]
+        coding_systems = [databases[database] for database in reference_mapping.keys()]
+        related = self.client.related(cuis, self.relations, coding_systems)
+        concepts_and_related = {c['cui']: c for c in concepts}
+        for cui in related.keys():
+            for rel in related[cui].keys():
+                for new_concept in related[cui][rel]:
+                    new_cui = new_concept['cui']
+                    codes = set((sourceConcept['id'], sourceConcept['codingSystem'])
+                                for sourceConcept in new_concept['sourceConcepts'])
+                    if new_cui not in concepts_and_related:
+                        concepts_and_related[new_cui] = new_concept
+        return list(concepts_and_related.values())
+
+
+def create_results(references0, concepts_by_outcome, variations):
+
+    mappings = {} # { outcome_id : { database: { codes?: { code }, comment?: str } } }
+    for outcome_id in outcome_ids:
+        mappings[outcome_id] = {}
+        for database in databases.keys():
+            mapping = references0[database]['mappings'][outcome_id]
+            if 'inclusion' in mapping:
+                codes = set(mapping['inclusion'] + mapping.get('exclusion', []))
+            else:
+                codes = None
+            mappings[outcome_id][database] = OrderedDict([
+                ('codes', codes)
+            ])
+            if 'comment' in mapping:
+                mappings[outcome_id][database]['comment'] = mapping['comment']
+
+    varied_concepts_by_outcome = {} # { variation_id: { outcome_id: { concept } } }
+    for variation_id, variation in variations.items():
+        varied_concepts_by_outcome[variation_id] = {}
+        for outcome_id in outcome_ids:
+            concepts = concepts_by_outcome[outcome_id]
+            varied_concepts_by_outcome[variation_id][outcome_id] = \
+                variation.vary_concepts(concepts, outcome_id, mappings[outcome_id])
 
     res = OrderedDict()
     for outcome_id in outcome_ids:
         res[outcome_id] = OrderedDict()
-        for database, coding_system in databases:
-            mapping = references[database]['mappings'][outcome_id]
+        for database, coding_system in databases.items():
             res[outcome_id][database] = OrderedDict([])
-
-            if 'inclusion' in mapping:
-                reference = mapping['inclusion'] + mapping.get('exclusion', [])
-            else:
-                print("No mapping for {} in {}".format(outcome_id, database))
-                reference = None
-
-            if reference is not None:
+            mapping = mappings[outcome_id][database]
+            if mapping['codes'] is not None:
                 res[outcome_id][database]['variations'] = OrderedDict()
                 for variation_id, variation in variations.items():
-                    variation.set_context(outcome_id, coding_system)
-                    generated_concepts = variation.vary_concepts(
-                        concepts_by_outcome[outcome_id], reference)
-                    generated = [
+                    generated_codes = [
                         code['id']
-                        for concept in generated_concepts
+                        for concept in varied_concepts_by_outcome[variation_id][outcome_id]
                         for code in concept['sourceConcepts']
                         if code['codingSystem'] == coding_system
                     ]
-                    varied_generated, varied_reference = \
-                        variation.vary_codes(generated, reference)
-                    codes = comap.confusion_matrix(generated=varied_generated,
-                                                  reference=varied_reference)
-                    measures = comap.measures(codes=codes)
-                    for key, values in codes.items():
-                        try:
-                            sorted(values)
-                        except:
-                            print([v for v in values if type(v) != str])
-                            raise
-                    comparison = OrderedDict([
-                        ('codes', OrderedDict([
-                            (key, sorted(value))
-                            for key, value in codes.items()
-                        ])),
-                        ('measures', OrderedDict([
-                            (key, value) # and round(value, 2))
-                            for key, value in measures.items()
-                        ])),
-                    ])
-                    res[outcome_id][database]['variations'][variation_id] = OrderedDict([
-                        ('name', variation.description()),
-                        ('comparison', comparison),
-                    ])
+                    varied_generated_codes, varied_reference_codes = \
+                        variation.vary_codes(generated_codes, mapping['codes'], coding_system)
+                    varied_codes = comap.confusion_matrix(generated=varied_generated_codes,
+                                                          reference=varied_reference_codes)
+                    measures = comap.measures(codes=varied_codes)
 
+                    res[outcome_id][database]['variations'][variation_id] = \
+                        OrderedDict([
+                            ('name', variation.description()),
+                            ('comparison', OrderedDict([
+                                ('codes', varied_codes),
+                                ('measures', measures),
+                            ])),
+                    ])
             if 'comment' in mapping:
                 res[outcome_id][database]['comment'] = mapping['comment']
     return res
@@ -286,7 +309,11 @@ variations = OrderedDict([
     ('3-letter-codes', VariationChain(default_variations, NormalizeCodeXDD())),
     ('related-FN', VariationChain(default_variations, IncludeRelatedCodes('FN'))),
     ('related-FN-FP', VariationChain(default_variations, IncludeRelatedCodes('FN-FP'))),
-    ('child-concepts', VariationChain(default_variations, IncludeChildConcepts())),
+    ('related-concepts-RN', VariationChain(default_variations, IncludeRelatedConcepts('RN'))),
+    ('related-concepts-RN-RB', VariationChain(default_variations, IncludeRelatedConcepts('RN', 'RB'))),
+    ('related-concepts-CHD', VariationChain(default_variations, IncludeRelatedConcepts('CHD'))),
+    ('related-concepts-CHD-PAR', VariationChain(default_variations, IncludeRelatedConcepts('CHD', 'PAR'))),
+    ('hyponyms', VariationChain(default_variations, IncludeChildConcepts())),
     ('child-concepts-related-FN-FP', VariationChain(default_variations, IncludeChildConcepts(), IncludeRelatedCodes('FN-FP'))),
 ])
 

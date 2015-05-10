@@ -18,20 +18,21 @@ def represent_OrderedDict(dumper, data):
 yaml.add_representer(OrderedDict, represent_OrderedDict, yaml.dumper.Dumper)
 
 
+COMAP_API_URL = 'http://localhost:8080/AdvanceCodeMapper/rest'
 COMAP_COOKIES_FILE = '.comap-cookies'
 
 
-def get_cookies(comap_api_url):
+def get_cookies():
     try:
         with open(COMAP_COOKIES_FILE, 'rb') as f:
             cookies = pickle.load(f)
-        url = comap_api_url + '/authentification/user'
+        url = COMAP_API_URL + '/authentification/user'
         r = requests.post(url, cookies=cookies)
         if not r.json():
             raise
         return cookies
     except:
-        url = comap_api_url + '/authentification/login'
+        url = COMAP_API_URL + '/authentification/login'
         data = dict(username='b.becker', password='Codemapper2015')
         r = requests.post(url, data=data)
         with open(COMAP_COOKIES_FILE, 'wb') as f:
@@ -50,17 +51,16 @@ def peregrine_index(text, peregrine_api_url):
 
 class ComapClient(object):
 
-    def __init__(self, comap_api_url):
-        self.comap_api_url = comap_api_url
-        self.cookies = get_cookies(self.comap_api_url)
+    def __init__(self):
+        self.cookies = get_cookies()
 
     def coding_systems(self):
-        url = self.comap_api_url + '/code-mapper/coding-systems'
+        url = COMAP_API_URL + '/code-mapper/coding-systems'
         r = requests.get(url, cookies=self.cookies)
         return r.json()
 
     def umls_concepts(self, cuis, coding_systems):
-        url = self.comap_api_url + '/code-mapper/umls-concepts'
+        url = COMAP_API_URL + '/code-mapper/umls-concepts'
         data = {
             'cuis': cuis,
             'codingSystems': coding_systems
@@ -72,7 +72,7 @@ class ComapClient(object):
             print("Couldn't post {}.".format(r.url), file=sys.stderr)
 
     def hyponyms(self, cuis, coding_systems):
-        url = self.comap_api_url + '/code-mapper/related/hyponyms'
+        url = COMAP_API_URL + '/code-mapper/related/hyponyms'
         data = {
             'cuis': cuis,
             'codingSystems': coding_systems
@@ -331,6 +331,7 @@ def related(hierarchy, codes1, codes2):
         ]
         if codes
     ])
+
 
 def include_related(hierarchy, codes):
 

@@ -223,7 +223,7 @@ public class UmlsApi  {
 			for (String abbr: codingSystems0)
 				if (extCodingSystems.containsKey(abbr)) {
 					extAbbrs.add(abbr);
-					codingSystems.add(extCodingSystems.get(abbr).getCodingSystem().getAbbreviation());
+					codingSystems.add(extCodingSystems.get(abbr).getReferenceCodingSystem());
 				}
 				else
 					codingSystems.add(abbr);

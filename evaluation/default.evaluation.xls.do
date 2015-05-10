@@ -95,8 +95,13 @@ def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
                 else:
                     row.extend([for_database.get('comment')] + [None] * (len(columns_per_database) - 1))
             if len(measures_over_databases):
-                average = measures_over_databases.sum() / len(measures_over_databases)
-                row.extend([average['recall'], average['precision']])
+                recalls = measures_over_databases.recall
+                recalls = recalls[recalls.notnull()]
+                recall = recalls.sum() / len(recalls) if len(recalls) else None
+                precisions = measures_over_databases.precision
+                precisions = precisions[precisions.notnull()]
+                precision = precisions.sum() / len(precisions) if len(precisions) else None
+                row.extend([recall, precision])
             else:
                 row.extend([None, None])
             index.append(outcomes[outcome_id]['name'] if outcomes else outcome_id)
@@ -104,9 +109,13 @@ def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
 
         row = []
         for database_name in database_names:
-            measures = measures_over_outcomes[database_name]
-            average = measures.sum() / len(measures)
-            row.extend([None] * (len(columns_per_database)-2) + [average['recall'], average['precision']])
+            recalls = measures_over_outcomes[database_name].recall
+            recalls = recalls[recalls.notnull()]
+            recall = recalls.sum() / len(recalls) if len(recalls) else None
+            precisions = measures_over_outcomes[database_name].precision
+            precisions = precisions[precisions.notnull()]
+            precision = precisions.sum() / len(precisions) if len(precisions) else None
+            row.extend([None] * (len(columns_per_database)-2) + [recall, precision])
         index.append('Average over outcomes')
         rows.append(row)
 

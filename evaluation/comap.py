@@ -157,9 +157,9 @@ def measures(generated=None, reference=None, codes=None):
     TP = generated & reference
 
     recall = len(TP) / len(reference) \
-        if len(reference) else 0.0
+        if len(reference) else None
     precision = len(TP) / len(generated) \
-        if len(generated) else 0.0
+        if len(generated) else None
 
     return OrderedDict([
         ('recall', recall),

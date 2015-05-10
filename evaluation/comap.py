@@ -72,7 +72,7 @@ class ComapClient(object):
         if r.ok:
             return r.json()
         else:
-            print("Couldn't post {}.".format(r.url), file=sys.stderr)
+            raise Exception("Couldn't retrieve umls concepts")
 
     def hyponyms(self, cuis, coding_systems):
         url = COMAP_API_URL + '/code-mapper/related/hyponyms'
@@ -84,7 +84,7 @@ class ComapClient(object):
         if r.ok:
             return r.json()
         else:
-            print("Couldn't get " + r.request.path_url, file=sys.stderr)
+            raise Exception("Couldn't retrieve hyponyms")
 
     def related(self, cuis, relations, coding_systems):
         url = COMAP_API_URL + '/code-mapper/related'
@@ -93,12 +93,11 @@ class ComapClient(object):
             'relations': relations,
             'codingSystems': coding_systems,
         }
-        print("POST", url, data)
         r = requests.post(url, data=data, cookies=self.cookies)
         if r.ok:
             return r.json()
         else:
-            print("Couldn't get related " + r.request.path_url, file=sys.stderr)
+            raise Exception("Couldn't retrieve related concepts")
 
 
 db = dict(host='127.0.0.1', user='root', password='root')

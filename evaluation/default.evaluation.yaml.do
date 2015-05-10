@@ -484,8 +484,6 @@ variations = OrderedDict([
 
 evaluation = create_results(references, concepts_by_outcome, variations)
 
-# Output results as YAML
-
 with redo.output() as f:
     yaml.dump(evaluation, f)
 

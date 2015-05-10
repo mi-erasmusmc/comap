@@ -27,10 +27,11 @@ def get_cuis_for_codes(coding_system, codes):
         # print('get_cuis_for_codes', ', '.join(codes), end='... ')
         query = "select distinct code, cui from MRCONSO where sab = %s and code in ({})" \
             .format(', '.join(['%s'] * len(codes)))
-        umls_cur.execute(query, tuple([coding_system] + codes))
-        for row in umls_cur.fetchall():
-            code, cui = row['code'], row['cui']
-            res[code].add(cui)
+        with comap.umls_db.cursor() as cursor:
+            cursor.execute(query, tuple([coding_system] + codes))
+            for row in cursor.fetchall():
+                code, cui = row
+                res[code].add(cui)
         # print('found', sum(len(cuis) for cuis in res.values()))
     return res
 
@@ -41,11 +42,13 @@ def get_terms_for_cuis(cuis):
         # print('get_terms_for_cuis', ', '.join(cuis), end='... ')
         query = "select distinct cui, str, ispref = 'Y' and ts = 'p' and stt = 'PF' as preferred from MRCONSO where cui in ({})" \
             .format(', '.join(['%s'] * len(cuis)))
-        umls_cur.execute(query, tuple(cuis))
-        for row in umls_cur.fetchall():
-            if row['preferred']:
-                res[row['cui']][0] = row['str']
-            res[row['cui']][1].add(row['str'])
+        with comap.umls_db.cursor() as cursor:
+            cursor.execute(query, tuple(cuis))
+            for row in cursor.fetchall():
+                cui, term, preferred = row
+                if preferred:
+                    res[cui][0] = term
+                res[cui][1].add(termm)
         # print('found', sum(len(terms) for terms in res.values()))
     return res
 

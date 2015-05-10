@@ -63,8 +63,8 @@ class Variation(object):
     def vary_codes(self, generated, reference, coding_systems):
         return generated, reference
 
-    def vary_concepts(self, concepts, outcome_id, reference_mapping):
-        return concepts
+    def vary_concepts_and_mapping(self, concepts, mapping, outcome_id):
+        return concepts, mapping
 
 
 class VariationChain(Variation):
@@ -90,10 +90,10 @@ class VariationChain(Variation):
             generated, reference = variation.vary_codes(generated, reference, coding_system)
         return generated, reference
 
-    def vary_concepts(self, concepts, outcome_id, reference_mapping):
+    def vary_concepts_and_mapping(self, concepts, mapping, outcome_id):
         for variation in self.variations:
-            concepts = variation.vary_concepts(concepts, outcome_id, reference_mapping)
-        return concepts
+            concepts, mapping = variation.vary_concepts_and_mapping(concepts, mapping, outcome_id)
+        return concepts, mapping
 
 
 class CodeNormalization(Variation):
@@ -205,7 +205,7 @@ class IncludeChildConcepts(Variation):
 
     """Include child concepts"""
 
-    def vary_concepts(self, concepts, outcome_id, reference_mapping):
+    def vary_concepts_and_mapping(self, concepts, mapping, outcome_id):
         cuis = [c['cui'] for c in concepts]
         child_concepts_by_parent = child_concepts_by_outcome[outcome_id]
         child_concepts = [
@@ -214,7 +214,7 @@ class IncludeChildConcepts(Variation):
             for child_concept in concepts_for_parent
             if child_concept not in cuis
         ]
-        return concepts + child_concepts
+        return concepts + child_concepts, mapping
 
 
 class IncludeRelatedConcepts(Variation):
@@ -228,9 +228,9 @@ class IncludeRelatedConcepts(Variation):
     def description(self):
         return super().description() + ' ({})'.format(', '.join(self.relations))
 
-    def vary_concepts(self, concepts, outcome_id, reference_mapping):
+    def vary_concepts_and_mapping(self, concepts, mapping, outcome_id):
         cuis = [c['cui'] for c in concepts]
-        coding_systems = [databases[database] for database in reference_mapping.keys()]
+        coding_systems = list(databases.values())
         related = self.client.related(cuis, self.relations, coding_systems)
         concepts_and_related = {c['cui']: c for c in concepts}
         for cui in related.keys():
@@ -241,12 +241,15 @@ class IncludeRelatedConcepts(Variation):
                                 for sourceConcept in new_concept['sourceConcepts'])
                     if new_cui not in concepts_and_related:
                         concepts_and_related[new_cui] = new_concept
-        return list(concepts_and_related.values())
+        return list(concepts_and_related.values()), mapping
 
 
 def create_results(references0, concepts_by_outcome, variations):
 
-    mappings = {} # { outcome_id : { database: { codes?: { code }, comment?: str } } }
+    # mapping ::= { database_id: { "codes?": { code }, "comment"?: str } }
+
+    # { outcome_id: mapping }
+    mappings = {}
     for outcome_id in outcome_ids:
         mappings[outcome_id] = {}
         for database in databases.keys():
@@ -261,13 +264,18 @@ def create_results(references0, concepts_by_outcome, variations):
             if 'comment' in mapping:
                 mappings[outcome_id][database]['comment'] = mapping['comment']
 
-    varied_concepts_by_outcome = {} # { variation_id: { outcome_id: { concept } } }
-    for variation_id, variation in variations.items():
-        varied_concepts_by_outcome[variation_id] = {}
-        for outcome_id in outcome_ids:
-            concepts = concepts_by_outcome[outcome_id]
-            varied_concepts_by_outcome[variation_id][outcome_id] = \
-                variation.vary_concepts(concepts, outcome_id, mappings[outcome_id])
+    # { outcome_id: { variation_id: { "concepts": { concept }, "mapping": mapping } } }
+    varied_by_outcome = {}
+    for outcome_id in outcome_ids:
+        varied_by_outcome[outcome_id] = {}
+        concepts = concepts_by_outcome[outcome_id]
+        for variation_id, variation in variations.items():
+            varied_generated, varied_mapping = \
+                variation.vary_concepts_and_mapping(concepts, mappings[outcome_id], outcome_id)
+            varied_by_outcome[outcome_id][variation_id] = {
+                'concepts': varied_generated,
+                'mapping': varied_mapping,
+            }
 
     res = OrderedDict()
     for outcome_id in outcome_ids:
@@ -275,17 +283,18 @@ def create_results(references0, concepts_by_outcome, variations):
         for database, coding_system in databases.items():
             res[outcome_id][database] = OrderedDict([])
             mapping = mappings[outcome_id][database]
-            if mapping['codes'] is not None:
+            if mapping.get('codes') is not None:
                 res[outcome_id][database]['variations'] = OrderedDict()
                 for variation_id, variation in variations.items():
                     generated_codes = [
                         code['id']
-                        for concept in varied_concepts_by_outcome[variation_id][outcome_id]
+                        for concept in varied_by_outcome[outcome_id][variation_id]['concepts']
                         for code in concept['sourceConcepts']
                         if code['codingSystem'] == coding_system
                     ]
+                    reference_codes = varied_by_outcome[outcome_id][variation_id]['mapping'][database]['codes']
                     varied_generated_codes, varied_reference_codes = \
-                        variation.vary_codes(generated_codes, mapping['codes'], coding_system)
+                        variation.vary_codes(generated_codes, reference_codes, coding_system)
                     varied_codes = comap.confusion_matrix(generated=varied_generated_codes,
                                                           reference=varied_reference_codes)
                     measures = comap.measures(codes=varied_codes)

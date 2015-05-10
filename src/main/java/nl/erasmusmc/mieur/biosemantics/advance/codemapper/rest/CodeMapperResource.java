@@ -95,7 +95,7 @@ public class CodeMapperResource {
 			@FormParam("codingSystems") List<String> codingSystems,
 			@Context User user) {
 		AuthentificationResource.assertAuthentificated(user);
-		return getRelated(cuis, codingSystems, true, user);
+		return getHyponymsOrHypernyms(cuis, codingSystems, true, user);
 	}
 
 	@POST
@@ -105,13 +105,13 @@ public class CodeMapperResource {
 			@FormParam("codingSystems") List<String> codingSystems,
 			@Context User user) {
 		AuthentificationResource.assertAuthentificated(user);
-		return getRelated(cuis, codingSystems, false, user);
+		return getHyponymsOrHypernyms(cuis, codingSystems, false, user);
 	}
 
 	@POST
-	@Path("related")
+	@Path("related-hypernyms-or-hyponyms")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Map<String, List<UmlsConcept>> getRelated(@FormParam("cuis") List<String> cuis,
+	public Map<String, List<UmlsConcept>> getHyponymsOrHypernyms(@FormParam("cuis") List<String> cuis,
 			@FormParam("codingSystems") List<String> codingSystems,
 			@FormParam("hyponymsNotHypernyms") boolean hyponymsNotHypernyms,
 			@Context User user) {
@@ -120,7 +120,7 @@ public class CodeMapperResource {
 			return new TreeMap<>();
 		else {
 			try {
-				return api.getRelated(cuis, codingSystems, hyponymsNotHypernyms);
+				return api.getHyponymsOrHypernyms(cuis, codingSystems, hyponymsNotHypernyms);
 			} catch (CodeMapperException e) {
 				throw e.asWebApplicationException();
 			}

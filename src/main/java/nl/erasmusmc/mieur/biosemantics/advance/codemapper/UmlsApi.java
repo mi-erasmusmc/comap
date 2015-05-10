@@ -314,7 +314,7 @@ public class UmlsApi  {
 		}
 	}
 
-	public Map<String, List<UmlsConcept>> getRelated(List<String> cuis, List<String> codingSystems, boolean hyponymsNotHypernyms) throws CodeMapperException {
+	public Map<String, List<UmlsConcept>> getHyponymsOrHypernyms(List<String> cuis, List<String> codingSystems, boolean hyponymsNotHypernyms) throws CodeMapperException {
 
 		if (cuis.isEmpty())
 			return new TreeMap<>();

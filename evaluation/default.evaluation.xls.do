@@ -69,8 +69,8 @@ def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
         if variation_ids.index(variation_id):
             index.extend(['', ''])
             rows.extend([[None] * len(columns)] * 2)
-        index.append(variation_names[variation_id])
-        rows.append([None] * len(columns))
+        index.append(variation_id)
+        rows.append([variation_names[variation_id]] + [None] * (len(columns) - 1))
         measures_over_outcomes = {
             database_name: pd.DataFrame(columns=['recall', 'precision'])
             for database_name in database_names

@@ -52,7 +52,7 @@ def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
             }
             break
 
-    columns_per_database = ['TP', 'FP', 'FN', 'recall', 'precision']
+    columns_per_database = ['TP', 'FN', 'FP', 'recall', 'precision']
     columns = pd.MultiIndex.from_tuples([
         (database_name
          if databases is None else
@@ -87,8 +87,8 @@ def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
                     measures_over_outcomes[database_name].ix[outcome_id] = measures
                     row.extend([
                         str_of_list(codes['TP']),
-                        str_of_list(codes['FP']),
                         str_of_list(codes['FN']),
+                        str_of_list(codes['FP']),
                         measures['recall'],
                         measures['precision'],
                     ])

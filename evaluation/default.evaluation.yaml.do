@@ -60,11 +60,19 @@ class Variation(object):
     def description(self):
         return self.__doc__
 
-    def vary_codes(self, generated, reference, coding_systems):
-        return generated, reference
+    def vary_code(self, code, coding_system):
+        """Called on each code of generated concepts and the reference before
+        before vary_codes and vary_concepts_and_mapping"""
+        return code
 
     def vary_concepts_and_mapping(self, concepts, mapping, outcome_id):
+        """Called for each outcome_id and database before vary_codes. For
+        concept-level variations."""
         return concepts, mapping
+
+    def vary_codes(self, generated, reference, coding_systems):
+        """Code-level variations."""
+        return generated, reference
 
 
 class VariationChain(Variation):
@@ -85,6 +93,11 @@ class VariationChain(Variation):
         else:
             return ""
 
+    def vary_code(self, code, coding_system):
+        for variation in self.variations:
+            code = variation.vary_code(code, coding_system)
+        return code
+
     def vary_codes(self, generated, reference, coding_system):
         for variation in self.variations:
             generated, reference = variation.vary_codes(generated, reference, coding_system)
@@ -98,19 +111,19 @@ class VariationChain(Variation):
 
 class CodeNormalization(Variation):
 
-    def __init__(self, coding_system_prefixes=['']):
+    def __init__(self, *coding_system_prefixes):
         """`coding_systems` is None or a list of prefixes and this
         normalization is applied only if the list contains a prefix of the
         current coding systems."""
-        self.coding_system_prefixes = coding_system_prefixes
+        self.coding_system_prefixes = coding_system_prefixes \
+            or [''] # A prefix of any coding system
 
-    def vary_codes(self, generated, reference, coding_system):
+    def vary_code(self, code, coding_system):
         if any(coding_system.startswith(prefix)
                for prefix in self.coding_system_prefixes):
-            return [self.normalize(c) for c in generated], \
-                [self.normalize(c) for c in reference]
+            return self.normalize(code, coding_system)
         else:
-            return generated, reference
+            return code
 
 
 class NormalizeCodeCase(CodeNormalization):
@@ -118,9 +131,9 @@ class NormalizeCodeCase(CodeNormalization):
     """Normalize code case in ICD, ICPC"""
 
     def __init__(self):
-        super().__init__(['ICD', 'ICPC'])
+        super().__init__('ICD', 'ICPC')
 
-    def normalize(self, code):
+    def normalize(self, code, coding_system):
         return code.upper()
 
 
@@ -129,9 +142,9 @@ class NormalizeCodeSuffixDot(CodeNormalization):
     """Drop suffix dots in codes in ICPC"""
 
     def __init__(self):
-        super().__init__(['ICPC'])
+        super().__init__('ICPC')
 
-    def normalize(self, code):
+    def normalize(self, code, coding_system):
         if code[-1] == '.':
             return code[:-1]
         else:
@@ -143,9 +156,9 @@ class NormalizeCodeXDD(CodeNormalization):
     """Normalize codes ICD and ICPC to 3 letters"""
 
     def __init__(self):
-        super().__init__(['ICD', 'ICPC'])
+        super().__init__('ICD', 'ICPC')
 
-    def normalize(self, code):
+    def normalize(self, code, coding_system):
         code = code.upper()
         m1 = re.match(comap.RegexHierarchy.TYPES['LDD'], code)
         try:
@@ -162,13 +175,13 @@ class NormalizeRead2Codes(CodeNormalization):
 
     """Normalize READ2 codes to 5-byte"""
 
-    read_re = re.compile(r'(?P<code>[A-Z\d][A-Za-z0-9.]{4}).*')
+    READ_RE = re.compile(r'(?P<code>[A-Z\d][A-Za-z0-9.]{4}).*')
 
     def __init__(self):
-        super().__init__(['RCD2'])
+        super().__init__('RCD2')
 
-    def normalize(self, code):
-        m = self.read_re.match(code)
+    def normalize(self, code, coding_system):
+        m = self.READ_RE.match(code)
         assert m, "Not a READ2 code: {}".format(code)
         return m.group('code')
 
@@ -246,7 +259,7 @@ class IncludeRelatedConcepts(Variation):
 
 def create_results(references0, concepts_by_outcome, variations):
 
-    # mapping ::= { database_id: { "codes?": { code }, "comment"?: str } }
+    # mapping ::= { database_id: { "codes": { code } | None, "comment": str | None } }
 
     # { outcome_id: mapping }
     mappings = {}
@@ -259,10 +272,9 @@ def create_results(references0, concepts_by_outcome, variations):
             else:
                 codes = None
             mappings[outcome_id][database] = OrderedDict([
-                ('codes', codes)
+                ('codes', codes),
+                ('comment', mapping.get('comment')),
             ])
-            if 'comment' in mapping:
-                mappings[outcome_id][database]['comment'] = mapping['comment']
 
     # { outcome_id: { variation_id: { "concepts": { concept }, "mapping": mapping } } }
     varied_by_outcome = {}
@@ -283,16 +295,20 @@ def create_results(references0, concepts_by_outcome, variations):
         for database, coding_system in databases.items():
             res[outcome_id][database] = OrderedDict([])
             mapping = mappings[outcome_id][database]
-            if mapping.get('codes') is not None:
+            if mapping['codes'] is not None:
                 res[outcome_id][database]['variations'] = OrderedDict()
                 for variation_id, variation in variations.items():
+                    varied = varied_by_outcome[outcome_id][variation_id]
                     generated_codes = [
-                        code['id']
-                        for concept in varied_by_outcome[outcome_id][variation_id]['concepts']
+                        variation.vary_code(code['id'], coding_system)
+                        for concept in varied['concepts']
                         for code in concept['sourceConcepts']
                         if code['codingSystem'] == coding_system
                     ]
-                    reference_codes = varied_by_outcome[outcome_id][variation_id]['mapping'][database]['codes']
+                    reference_codes = [
+                        variation.vary_code(code, coding_system)
+                        for code in varied['mapping'][database]['codes']
+                    ]
                     varied_generated_codes, varied_reference_codes = \
                         variation.vary_codes(generated_codes, reference_codes, coding_system)
                     varied_codes = comap.confusion_matrix(generated=varied_generated_codes,
@@ -307,7 +323,7 @@ def create_results(references0, concepts_by_outcome, variations):
                                 ('measures', measures),
                             ])),
                     ])
-            if 'comment' in mapping:
+            if mapping['comment'] is not None:
                 res[outcome_id][database]['comment'] = mapping['comment']
     return res
 

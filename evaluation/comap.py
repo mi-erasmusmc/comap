@@ -184,7 +184,7 @@ class Hierarchy(object):
 
 class Read2Hierarchy(Hierarchy):
 
-    head_dots_re = re.compile(r'^(?P<head>[A-Z0-9][A-Za-z0-9]*)(?P<dots>\.*)$')
+    HEAD_DOTS_RE = re.compile(r'^(?P<head>[A-Z0-9][A-Za-z0-9]*)(?P<dots>\.*)$')
 
     def parents(self, code):
         """
@@ -196,8 +196,8 @@ class Read2Hierarchy(Hierarchy):
         >>> set(h.parents("J....."))
         set()
         """
-
-        m = self.head_dots_re.match(code)
+        m = self.HEAD_DOTS_RE.match(code)
+        assert m, code
         head, dots = m.group('head'), m.group('dots')
         if len(head) > 1:
             return frozenset([head[:-1] + '.' + dots])

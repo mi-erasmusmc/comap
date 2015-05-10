@@ -297,8 +297,9 @@ public class UmlsApi  {
 
 					for (String cui: sourceConcepts.keySet()) {
 						Set<SourceConcept> extSourceConceptsForCui = new HashSet<>();
-						for (List<SourceConcept> extSourceConceptForCui: extSourceConcepts.get(cui).values())
-							extSourceConceptsForCui.addAll(extSourceConceptForCui);
+						if (extSourceConcepts.containsKey(cui))
+							for (List<SourceConcept> extSourceConceptForCui: extSourceConcepts.get(cui).values())
+								extSourceConceptsForCui.addAll(extSourceConceptForCui);
 						sourceConcepts.get(cui).addAll(extSourceConceptsForCui);
 					}
 				}

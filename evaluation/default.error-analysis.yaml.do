@@ -59,13 +59,9 @@ def error_analysis(coding_system, codes):
     """
     if coding_system == 'RCD2':
         coding_system = 'RCD'
-        to_umls0 = comap.translation_read2_to_read3(codes)
-        from_umls0 = {
-            code: set(c for c, codes in to_umls0.items() if code in codes)
-            for code in (c for cs in to_umls0.values() for c in cs)
-        }
-        to_umls = lambda code: to_umls0.get(code, set())
-        from_umls = lambda code: from_umls0.get(code, set())
+        to_umls0, from_umls0 = comap.translation_read2_to_read3(codes)
+        to_umls = to_umls0.get
+        from_umls = from_umls0.get
     else:
         to_umls = lambda code: set([code])
         from_umls = lambda code: set([code])

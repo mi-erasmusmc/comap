@@ -110,16 +110,27 @@ def translation_read2_to_read3(codes):
     """ { read2_code: { read3_code } } """
     if codes:
         with umls_ext_db.cursor() as cursor:
-            query = 'select distinct V2_CONCEPTID, CTV3_CONCEPTID from RCD_V3_to_V2 where V2_CONCEPTID in ({})'\
-            .format(', '.join(['%s'] * len(codes)))
+            query = """
+                select distinct V2_CONCEPTID, CTV3_CONCEPTID from RCD_V3_to_V2
+                where V2_CONCEPTID in ({})
+            """.format(', '.join(['%s'] * len(codes)))
             cursor.execute(query, tuple(codes))
-            res = defaultdict(set)
+            translation = defaultdict(set)
             for row in cursor.fetchall():
                 code2, code3 = row
-                res[code2].add(code3)
-        return res
+                translation[code2].add(code3)
+        backtranslation = defaultdict(set, [
+            (code3, set(code2 for code2, codes3 in translation.items() if code3 in codes3))
+            for codes3 in translation.values()
+            for code3 in codes3
+        ])
+        # backtranslation = defaultdict(set)
+        # for code2, codes3 in read_translation.items():
+        #     for code3 in codes3:
+        #         backtranslation[code3].add(code2)
+        return translation, backtranslation
     else:
-        return defaultdict(set)
+        return defaultdict(set), defaultdict(set)
 
 
 def measures(generated=None, reference=None, codes=None):

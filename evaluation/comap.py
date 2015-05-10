@@ -7,11 +7,14 @@ import sys
 import re
 import os
 import yaml
+import pymysql
+
 
 def construct_OrderedDict(loader, node):
     loader.flatten_mapping(node)
     return OrderedDict(loader.construct_pairs(node))
 yaml.loader.Loader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_OrderedDict)
+
 
 def represent_OrderedDict(dumper, data):
     return dumper.represent_dict(list(data.items()))
@@ -96,6 +99,27 @@ class ComapClient(object):
             return r.json()
         else:
             print("Couldn't get related " + r.request.path_url, file=sys.stderr)
+
+
+db = dict(host='127.0.0.1', user='root', password='root')
+umls_db = pymysql.connect(db='UMLS2014AB_CoMap', **db)
+umls_ext_db = pymysql.connect(db='UMLS_ext_mappings', **db)
+
+
+def translation_read2_to_read3(codes):
+    """ { read2_code: { read3_code } } """
+    if codes:
+        with umls_ext_db.cursor() as cursor:
+            query = 'select distinct V2_CONCEPTID, CTV3_CONCEPTID from RCD_V3_to_V2 where V2_CONCEPTID in ({})'\
+            .format(', '.join(['%s'] * len(codes)))
+            cursor.execute(query, tuple(codes))
+            res = defaultdict(set)
+            for row in cursor.fetchall():
+                code2, code3 = row
+                res[code2].add(code3)
+        return res
+    else:
+        return defaultdict(set)
 
 
 def measures(generated=None, reference=None, codes=None):

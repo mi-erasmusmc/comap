@@ -21,12 +21,6 @@ databases = OrderedDict(evaluation_config['databases'])
 outcome_ids = evaluation_config['outcome_ids']
 
 
-umls_db = pymysql.connect(host='127.0.0.1', user='root', password='root', db='UMLS2014AB_CoMap')
-umls_cur = umls_db.cursor(pymysql.cursors.DictCursor)
-umls_ext_db = pymysql.connect(host='127.0.0.1', user='root', password='root', db='UMLS_ext_mappings')
-umls_ext_cur = umls_ext_db.cursor(pymysql.cursors.DictCursor)
-
-
 def get_cuis_for_codes(coding_system, codes):
     res = defaultdict(lambda: set())
     if codes:
@@ -56,29 +50,13 @@ def get_terms_for_cuis(cuis):
     return res
 
 
-def translation_read2_to_read3(codes):
-    """ { read2_code: { read3_code } } """
-    if codes:
-        # print('translation_to_read3', ', '.join(codes), end='... ')
-        query = 'select distinct V2_CONCEPTID, CTV3_CONCEPTID from RCD_V3_to_V2 where V2_CONCEPTID in ({})'\
-            .format(', '.join(['%s'] * len(codes)))
-        umls_ext_cur.execute(query, tuple(codes))
-        res = defaultdict(set)
-        for row in umls_ext_cur.fetchall():
-            res[row['V2_CONCEPTID']].add(row['CTV3_CONCEPTID'])
-        # print('found', sum(len(codes) for codes in res.values()))
-        return res
-    else:
-        return defaultdict(set)
-
-
 def error_analysis(coding_system, codes):
     """
     { code: { "cuis": [ cui ], "terms": [ str ] } }
     """
     if coding_system == 'RCD2':
         coding_system = 'RCD'
-        to_umls0 = translation_read2_to_read3(codes)
+        to_umls0 = comap.translation_read2_to_read3(codes)
         from_umls0 = {
             code: set(c for c, codes in to_umls0.items() if code in codes)
             for code in (c for cs in to_umls0.values() for c in cs)

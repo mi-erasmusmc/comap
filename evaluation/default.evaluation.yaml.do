@@ -85,18 +85,19 @@ class MaximumRecall(Variation):
     def vary_concepts_and_mapping(self, concepts, mapping, outcome_id):
         "Return concepts that contain all codes in `mapping`."
         cuis = set()
+        coding_systems = list(databases.values())
         for database_id in mapping.keys():
             if not mapping[database_id]:
                 continue
             codes = set(mapping[database_id])
             coding_system = databases[database_id]
-            cui_codes = cosynonym_codes(codes, coding_system)
+            cui_codes = cosynonym_codes(codes, coding_system, coding_systems)
             for code in codes:
                 # Find the `cui` that implicates `code` with the least number of irrelevant codes
                 cuis_with_count = \
-                    [(cui, len(codes - codes1))
-                     for cui, codes1 in cui_codes.items()
-                     if code in codes1]
+                    [(cui, len(codes - codes_by_sab[coding_system]))
+                     for cui, codes_by_sab in cui_codes.items()
+                     if code in codes_by_sab[coding_system]]
                 if cuis_with_count:
                     key = lambda x: x[1]
                     cui, _ = sorted(cuis_with_count, key=key)[0]
@@ -115,75 +116,96 @@ class MaximiumPrecision(Variation):
     def vary_concepts_and_mapping(self, concepts, mapping, outcome_id):
         "Return concepts such that code is not in `mapping`."
         all_cui_codes = defaultdict(lambda: defaultdict(set))
+        coding_systems = list(databases.values())
         for database_id in mapping.keys():
             if not mapping[database_id]:
                 continue
             coding_system = databases[database_id]
             codes = set(mapping[database_id])
-            cui_codes = cosynonym_codes(codes, coding_system)
-            for cui, codes in cui_codes.items():
-                for code in codes:
-                    all_cui_codes[cui][database_id].add(code)
+            cui_codes = cosynonym_codes(codes, coding_system, coding_systems)
+            for cui, codes_by_sab in cui_codes.items():
+                for sab, codes in codes_by_sab.items():
+                    for code in codes:
+                        all_cui_codes[cui][sab].add(code)
         # Find the `cui` where all codes are in the reference
         cuis = set()
-        for cui, all_codes in all_cui_codes.items():
+        for cui, codes_by_sab in all_cui_codes.items():
             if all(mapping[database_id] is not None and \
-                   all_codes[database_id].issubset(mapping[database_id])
+                   codes_by_sab[coding_system].issubset(mapping[database_id])
                    for database_id, coding_system in databases.items()):
                 cuis.add(cui)
         concepts = self.client.umls_concepts(cuis, coding_systems)
         return concepts, mapping
 
 
-def cosynonym_codes(codes, coding_system):
+def cosynonym_codes(codes, coding_system, coding_systems):
+
+    res = defaultdict(lambda: defaultdict(set))
 
     if not codes:
-        return defaultdict(set)
+        return res
 
     original_coding_system = coding_system
+    original_coding_systems = coding_systems
     if coding_system == 'RCD2':
         coding_system = 'RCD'
-        read_translation, read_backtranslation = comap.translation_read2_to_read3(codes)
+        if 'RCD' not in coding_systems:
+            coding_systems = coding_systems + ['RCD']
+        read_translation = comap.translation_read2_to_read3(codes)
         codes = set(code for codes in read_translation.values() for code in codes)
 
     # ... WHERE cui IN (SELECT cui FROM MRCONSO WHERE code in (...)) was too slow, separate
     cuis_query = """
         SELECT DISTINCT cui FROM MRCONSO
-        WHERE sab = %s AND code IN ({placeholders})
-    """.format(placeholders=', '.join(['%s'] * len(codes)))
+        WHERE sab = %s AND code IN ({codes})
+    """.format(codes=', '.join(['%s'] * len(codes)))
 
     cuis_for_codes = []
     with comap.umls_db.cursor() as cursor:
-        try:
-            cursor.execute(cuis_query, tuple([coding_system] + list(codes)))
-        except:
-            raise
+        cursor.execute(cuis_query, tuple([coding_system] + list(codes)))
         for row in cursor.fetchall():
             cuis_for_codes.append(row[0])
 
     if not cuis_for_codes:
-        return defaultdict(set)
+        return res
 
     cui_code_query = """
-        SELECT DISTINCT cui, code FROM MRCONSO
-        WHERE cui IN ({placeholders})
-    """.format(placeholders=', '.join(['%s'] * len(cuis_for_codes)))
+        SELECT DISTINCT cui, code, sab FROM MRCONSO
+        WHERE cui IN ({cuis})
+        AND sab in ({coding_systems})
+    """.format(cuis=', '.join(['%s'] * len(cuis_for_codes)),
+               coding_systems=', '.join(['%s'] * len(coding_systems)))
 
-    cui_codes = defaultdict(set)
     with comap.umls_db.cursor() as cursor:
-        cursor.execute(cui_code_query, tuple(cuis_for_codes))
-        for row in cursor.fetchall():
-            cui, code = row
-            cui_codes[cui].add(code)
+        cursor.execute(cui_code_query, tuple(cuis_for_codes + coding_systems))
 
-    if original_coding_system == 'RCD2':
-        cui_codes = {
-            cui: set(code2
-                     for code3 in codes3
-                     for code2 in read_backtranslation[code3])
-            for cui, codes3 in cui_codes.items()
-        }
-    return cui_codes
+        for row in cursor.fetchall():
+            cui, code, sab = row
+            res[cui][sab].add(code)
+
+    if 'RCD2' in coding_systems:
+        rcd3_codes = set()
+        for cui, codes_by_sab in res.items():
+            for sab, codes in codes_by_sab.items():
+                if sab == 'RCD':
+                    for code in codes:
+                        rcd3_codes.add(code)
+        backtranslation = comap.translation_read3_to_read2(rcd3_codes)
+        res1 = defaultdict(lambda: defaultdict(set))
+        for cui, codes_by_sab in res.items():
+            for sab, codes in codes_by_sab.items():
+                for code in codes:
+                    if sab == 'RCD':
+                        if 'RCD' in original_coding_systems:
+                            res1[cui]['RCD'].add(code)
+                        else:
+                            for code2 in backtranslation[code]:
+                                res1[cui]['RCD2'].add(code2)
+                    else:
+                        res1[cui][sab].add(code)
+        return res1
+    else:
+        return res
 
 
 class VariationChain(Variation):

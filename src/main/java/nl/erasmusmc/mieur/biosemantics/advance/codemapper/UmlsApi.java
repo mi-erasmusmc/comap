@@ -315,6 +315,89 @@ public class UmlsApi  {
 		}
 	}
 
+	/**
+ 		UMLS2014AB_CoMap> select rel, count(rel) as count from MRREL group by rel order by count desc;
+		+-----+---------+
+		| rel | count   |
+		+-----+---------+
+		| SIB | 5103112 | // SIBLING_CODING_SYSTEM
+		| RO  | 4009440 | //
+		| CHD | 1371883 | // MORE_SPECIFIC_CODING_SYSTEM
+		| PAR | 1371883 | // MORE_GENERAL_CODING_SYSTEM
+		| SY  | 1130820 | // SYNONYM_CODING_SYSTEM
+		| RB  |  859489 | // MORE_GENERAL_UMLS
+		| RN  |  859489 | // MORE_SPECIFIC_UMLS
+		| AQ  |  609748 | //
+		| QB  |  609748 | //
+		| RQ  |  254628 | // RELATED_POSSIBLY_SYNONYM_UMLS
+		+-----+---------+
+
+	 * @param cuis
+	 * @param codingSystems
+	 * @param relations
+	 * @return { cui: { rel: { cui1 for (cui, rel, cui1) in MRREL } for rel in relations } for cui in cuis }
+	 * @throws CodeMapperException
+	 */
+	public Map<String, Map<String, List<UmlsConcept>>> getRelated(List<String> cuis, List<String> codingSystems, List<String> relations) throws CodeMapperException {
+		System.out.println(String.format("%d - %d - %d", cuis.size(), codingSystems.size(), relations.size()));
+		if (cuis.isEmpty() || relations.isEmpty())
+			return new TreeMap<>();
+		else {
+			String queryFmt =
+					"SELECT DISTINCT cui1, rel, cui2 FROM MRREL "
+					+ "WHERE cui1 in (%s) "
+					+ "AND rel in (%s) "
+					+ "AND cui1 != cui2";
+			String query = String.format(queryFmt,
+					Utils.sqlPlaceholders(cuis.size()),
+					Utils.sqlPlaceholders(relations.size()));
+			System.out.println(query);
+			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+				int offset = 1;
+				for (int ix = 0; ix < cuis.size(); ix++, offset++)
+					statement.setString(offset, cuis.get(ix));
+				for (int ix = 0; ix < relations.size(); ix++, offset++)
+					statement.setString(offset, relations.get(ix));
+
+				ResultSet sqlResults = statement.executeQuery();
+
+				Map<String, Map<String, Set<String>>> related = new TreeMap<>();
+				while (sqlResults.next()) {
+					String cui1 = sqlResults.getString(1);
+					String rel = sqlResults.getString(2);
+					String cui2 = sqlResults.getString(3);
+					if (!related.containsKey(cui1))
+						related.put(cui1, new HashMap<String, Set<String>>());
+					if (!related.get(cui1).containsKey(rel))
+						related.get(cui1).put(rel, new HashSet<String>());
+					related.get(cui1).get(rel).add(cui2);
+				}
+
+
+				Set<String> relatedCuis = new TreeSet<>();
+				for (Map<String, Set<String>> rels : related.values())
+					for (Set<String> cs : rels.values())
+						relatedCuis.addAll(cs);
+
+				Map<String, UmlsConcept> relatedConcepts = getConcepts(relatedCuis, codingSystems);
+
+				Map<String, Map<String, List<UmlsConcept>>> result = new HashMap<>();
+				for (String cui1: related.keySet()) {
+					result.put(cui1, new HashMap<String, List<UmlsConcept>>());
+					for (String rel: related.get(cui1).keySet()) {
+						result.get(cui1).put(rel, new LinkedList<UmlsConcept>());
+						for (String cui2: related.get(cui1).get(rel))
+							result.get(cui1).get(rel).add(relatedConcepts.get(cui2));
+					}
+				}
+
+				return result;
+			} catch (SQLException e) {
+				throw CodeMapperException.server("Cannot execute query for related concepts 2", e);
+			}
+		}
+	}
+
 	public Map<String, List<UmlsConcept>> getHyponymsOrHypernyms(List<String> cuis, List<String> codingSystems, boolean hyponymsNotHypernyms) throws CodeMapperException {
 
 		if (cuis.isEmpty())

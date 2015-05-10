@@ -126,4 +126,19 @@ public class CodeMapperResource {
 			}
 		}
 	}
+
+	@POST
+	@Path("related")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Map<String, Map<String, List<UmlsConcept>>> getRelated(@FormParam("cuis") List<String> cuis,
+			@FormParam("codingSystems") List<String> codingSystems,
+			@FormParam("relations") List<String> relations,
+			@Context User user) {
+		AuthentificationResource.assertAuthentificated(user);
+		try {
+			return api.getRelated(cuis, codingSystems, relations);
+		} catch (CodeMapperException e) {
+			throw e.asWebApplicationException();
+		}
+	}
 }

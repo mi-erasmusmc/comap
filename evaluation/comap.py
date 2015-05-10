@@ -83,6 +83,20 @@ class ComapClient(object):
         else:
             print("Couldn't get " + r.request.path_url, file=sys.stderr)
 
+    def related(self, cuis, relations, coding_systems):
+        url = COMAP_API_URL + '/code-mapper/related'
+        data = {
+            'cuis': cuis,
+            'relations': relations,
+            'codingSystems': coding_systems,
+        }
+        print("POST", url, data)
+        r = requests.post(url, data=data, cookies=self.cookies)
+        if r.ok:
+            return r.json()
+        else:
+            print("Couldn't get related " + r.request.path_url, file=sys.stderr)
+
 
 def measures(generated=None, reference=None, codes=None):
 

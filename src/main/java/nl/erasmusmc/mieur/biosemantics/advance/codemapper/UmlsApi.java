@@ -59,6 +59,31 @@ public class UmlsApi  {
 		extCodingSystems.put(ext.getCodingSystem().getAbbreviation(), ext);
 	}
 
+	/**
+	 UMLS2014AB_CoMap> select sab, count(sab) as count from MRCONSO group by sab order by count desc;
+		+---------------+---------+
+		| sab           | count   |
+		+---------------+---------+
+		| SNOMEDCT_US   | 1225189 |
+		| MSH           |  815608 |
+		| RCD           |  347568 |
+		| ICD10PCS      |  323730 |
+		| ICD10CM       |  173324 |
+		| MTH           |  171407 |
+		| MDR           |   96729 |
+		| ICPC2ICD10ENG |   81799 |
+		| ICD9CM        |   40846 |
+		| MTHICD9       |   23524 |
+		| RCDSY         |   22186 |
+		| ICPC2P        |   16897 |
+		| ICD10         |   13505 |
+		| ATC           |    6503 |
+		| MEDLINEPLUS   |    3159 |
+		| ICPC2EENG     |    1379 |
+		| ICPC          |    1053 |
+		| SRC           |     102 |
+		+---------------+---------+
+	 */
 	public List<CodingSystem> getCodingSystems() throws CodeMapperException {
 
 		List<CodingSystem> codingSystems = new LinkedList<>();
@@ -213,7 +238,7 @@ public class UmlsApi  {
 	public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> codingSystems0)
 			throws CodeMapperException {
 
-		if (cuis.isEmpty() || codingSystems0 == null)
+		if (cuis.isEmpty() || codingSystems0.isEmpty())
 			return new TreeMap<>();
 		else {
 
@@ -228,15 +253,13 @@ public class UmlsApi  {
 				else
 					codingSystems.add(abbr);
 
-			String sabPlaceholders = "";
-			if (!codingSystems.isEmpty())
-				sabPlaceholders = String.format("AND sab IN (%s)", Utils.sqlPlaceholders(codingSystems.size()));
-
 			String queryFmt =
 				  	"SELECT DISTINCT cui, sab, code, str, tty "
 					+ "FROM MRCONSO "
-					+ "WHERE cui IN (%s) %s ORDER BY cui, sab, code, str";
-			String query = String.format(queryFmt, Utils.sqlPlaceholders(cuis.size()), sabPlaceholders);
+					+ "WHERE cui IN (%s) AND sab IN (%s) ORDER BY cui, sab, code, str";
+			String query = String.format(queryFmt,
+					Utils.sqlPlaceholders(cuis.size()),
+					Utils.sqlPlaceholders(codingSystems.size()));
 
 			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 
@@ -245,9 +268,8 @@ public class UmlsApi  {
 				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
 					statement.setString(offset, iter.next());
 
-				if (codingSystems != null)
-					for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
-						statement.setString(offset, iter.next());
+				for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
+					statement.setString(offset, iter.next());
 
                 logger.debug(statement);
 				ResultSet result = statement.executeQuery();
@@ -351,7 +373,7 @@ public class UmlsApi  {
 			String query = String.format(queryFmt,
 					Utils.sqlPlaceholders(cuis.size()),
 					Utils.sqlPlaceholders(relations.size()));
-			System.out.println(query);
+
 			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 				int offset = 1;
 				for (int ix = 0; ix < cuis.size(); ix++, offset++)

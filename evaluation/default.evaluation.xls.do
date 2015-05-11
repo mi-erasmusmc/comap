@@ -93,7 +93,8 @@ def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
                         measures['precision'],
                     ])
                 else:
-                    row.extend([for_database.get('comment')] + [None] * (len(columns_per_database) - 1))
+                    row.extend([None] * len(columns_per_database))
+                    # row.extend([for_database.get('comment')] + [None] * (len(columns_per_database) - 1))
             if len(measures_over_databases):
                 recalls = measures_over_databases.recall
                 recalls = recalls[recalls.notnull()]

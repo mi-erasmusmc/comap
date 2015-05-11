@@ -4,3 +4,4 @@ databases:
 - [IPCI, ICPC]
 - [CPRD, RCD2]
 outcome_ids: [ap, pc, scd, is, va, bc, mi, hf, hs]
+#variations: [baseline, maximum-recall, maximum-precision]

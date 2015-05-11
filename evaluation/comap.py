@@ -100,9 +100,9 @@ class ComapClient(object):
             raise Exception("Couldn't retrieve related concepts")
 
 
-db = dict(host='127.0.0.1', user='root', password='root')
-umls_db = pymysql.connect(db='UMLS2014AB_CoMap', **db)
-umls_ext_db = pymysql.connect(db='UMLS_ext_mappings', **db)
+db_access = dict(host='127.0.0.1', user='root', password='root')
+umls_db = pymysql.connect(db='UMLS2014AB_CoMap', **db_access)
+umls_ext_db = pymysql.connect(db='UMLS_ext_mappings', **db_access)
 
 
 def translation_read2_to_read3(codes):
@@ -111,7 +111,8 @@ def translation_read2_to_read3(codes):
     if codes:
         with umls_ext_db.cursor() as cursor:
             query = """
-                select distinct V2_CONCEPTID, CTV3_CONCEPTID from RCD_V3_to_V2
+                select distinct V2_CONCEPTID, CTV3_CONCEPTID
+                from RCD_V3_to_V2
                 where V2_CONCEPTID in ({})
             """.format(', '.join(['%s'] * len(codes)))
             cursor.execute(query, tuple(codes))
@@ -202,6 +203,13 @@ def from_confusion_matrix(codes):
 
 class Hierarchy(object):
 
+    def related(self, codes1, codes2):
+        "Subset of from `codes1` that are related to codes from `codes2`."
+        raise NotImplementedError()
+
+
+class ParentsHierarchy(Hierarchy):
+
     def parents(self, code):
         raise NotImplementedError()
 
@@ -222,7 +230,142 @@ class Hierarchy(object):
         return bool(parent1 and parent2 and parent1 & parent2)
 
 
-class Read2Hierarchy(Hierarchy):
+    def related_parents(self, codes1, codes2):
+        """ Finds the codes in `codes1` that are parents of codes in
+        `codes2`. Returns a dictionary from parent codes in `codes1` to
+        lists of child codes in `codes2.
+
+        >>> h = RegexHierarchy('LDD')
+        >>> codes1 = ['K50', 'K50.1', 'K51', 'K52']
+        >>> codes2 = ['K50.2', 'K50.3', 'K52.1', 'K51.1', 'K53', 'K53.1']
+        >>> expected = {
+        ...     frozenset({'K50'}): {'K50.2', 'K50.3'},
+        ...     frozenset({'K51'}): {'K51.1'},
+        ...     frozenset({'K52'}): {'K52.1'},
+        ... }
+        >>> h.related_parents(codes1, codes2) == expected
+        True
+        """
+        res = defaultdict(set)
+        for code2 in codes2:
+            parents_of_code2 = self.parents(code2) & set(codes1)
+            if parents_of_code2:
+                res[parents_of_code2].add(code2)
+        return res
+
+
+    def related_siblings(self, codes1, codes2):
+
+        """ Finds all pairs of siblings from `codes1` and `codes2` that are siblings.
+
+        >>> h = RegexHierarchy('LDD')
+        >>> codes1 = ['K50', 'K50.1', 'K50.2', 'K51.1']
+        >>> codes2 = ['K51', 'K50.3', 'K50.4']
+        >>> expected = {(frozenset({'K50.1', 'K50.2'}), frozenset({'K50.3', 'K50.4'}))}
+        >>> h.related_siblings(codes1, codes2) == expected
+        True
+        >>> codes1 = ['K50', 'K50.1', 'K50.2', 'K51.1', 'K51.2']
+        >>> codes2 = ['K49', 'K50.2', 'K51.3', 'K51.4']
+        >>> expected = {(frozenset({'K50.1', 'K50.2'}), frozenset({'K50.2'})),
+        ...             (frozenset({'K51.1', 'K51.2'}), frozenset({'K51.3', 'K51.4'}))}
+        >>> h.related_siblings(codes1, codes2) == expected
+        True
+        >>> codes1 = ['K50.1', 'K50.2']
+        >>> codes2 = ['K51.1', 'K51.2']
+        >>> h.related_siblings(codes1, codes2) == set()
+        True
+        """
+        def sibling_sets(codes):
+            codes = set(codes)
+            res = list()
+            while codes:
+                code = codes.pop()
+                siblings = [
+                    code0 for code0 in codes
+                    if self.is_sibling(code0, code)
+                ]
+                for sibling in siblings:
+                    codes.discard(sibling)
+                res.append(set([code] + siblings))
+            return res
+        sibling_sets1 = sibling_sets(codes1)
+        sibling_sets2 = sibling_sets(codes2)
+        return set([
+            (frozenset(siblings1), frozenset(siblings2))
+            for siblings1 in sibling_sets1
+            for siblings2 in sibling_sets2
+            if any(self.is_sibling(code1, code2)
+                   for code1 in siblings1
+                   for code2 in siblings2)
+        ])
+
+
+    def related(self, codes1, codes2):
+
+        """
+        >>> h = RegexHierarchy('LDD')
+        >>> codes1 = [ 'A01', 'A02.1', 'A02.2', 'A03.1', 'A13.2', 'A04', 'A06.1' ]
+        >>> codes2 = [ 'A01.1', 'A01.2', 'A02', 'A03.3', 'A13.4', 'A05', 'A07.1' ]
+        >>> expected = {
+        ...   'parents': set(['A01']),
+        ...   'children': set(['A02.1', 'A02.2']),
+        ...   'siblings': set(['A03.1', 'A13.2']),
+        ... }
+        >>> h.related(codes1, codes2) == expected
+        True
+        """
+
+        codes1_parents = self.related_parents(codes1, codes2)
+        codes2_parents = self.related_parents(codes2, codes1)
+        codes1_siblings = self.related_siblings(codes1, codes2)
+        flatten = lambda css: set(c for cs in css for c in cs)
+        return {
+            label: codes
+            for label, codes in {
+                'parents': flatten(codes1_parents.keys()),
+                'children': flatten(codes2_parents.values()),
+                'siblings': flatten(cs for cs, _ in codes1_siblings),
+            }.items()
+            if codes
+        }
+
+class DataHierarchy(Hierarchy):
+
+    """
+    >>> data = {
+    ...   'A01': {'up': {'A01.1', 'A01.2'}},
+    ...   'A02': {'up': {'A02.1', 'A02.2'}},
+    ...   'A03.1': {'sib': {'A03.2'}},
+    ...   'A03.2': {'sib': {'A03.1'}},
+    ... }
+    >>> h = DataHierarchy(['up', 'sib'], data)
+    >>> codes1 = {'A01', 'A02.1', 'A02.2', 'A03.1'}
+    >>> codes2 = {'A01.1', 'A01.2', 'A02', 'A03.2'}
+    >>> h.related(codes1, codes2) == {'up': {'A01'}, 'sib': {'A03.1'}}
+    True
+    >>> h.related(codes2, codes1) == {'up': {'A02'}, 'sib': {'A03.2'}}
+    True
+    """
+
+    def __init__(self, relations, relation_data):
+        self.relations = relations
+        self.relation_data = relation_data
+
+    def related_by(self, codes1, codes2, relation):
+        """The subset of `codes1` that are in `relation` with codes from
+        `codes2`."""
+        return set(
+            code1 for code1 in codes1 & set(self.relation_data.keys())
+            if len(codes2 & self.relation_data[code1].get(relation, set()))
+        )
+
+    def related(self, codes1, codes2):
+        return {
+            relation: self.related_by(codes1, codes2, relation)
+            for relation in self.relations
+        }
+
+class Read2Hierarchy(ParentsHierarchy):
 
     HEAD_DOTS_RE = re.compile(r'^(?P<head>[A-Z0-9][A-Za-z0-9]*)(?P<dots>\.*)$')
 
@@ -254,7 +397,8 @@ class Read2Hierarchy(Hierarchy):
     #               for lower, upper in range_limits]
     #     return set(code + chr(c) for c in chain(ranges))
 
-class RegexHierarchy(Hierarchy):
+
+class RegexHierarchy(ParentsHierarchy):
 
     TYPES = {
         # Letter Digit Digit
@@ -285,108 +429,6 @@ class RegexHierarchy(Hierarchy):
             return frozenset()
 
 
-def parents(hierarchy, codes1, codes2):
-    """ Finds the codes in `codes1` that are parents of codes in
-    `codes2`. Returns a dictionary from parent codes in `codes1` to
-    lists of child codes in `codes2.
-
-    >>> h = RegexHierarchy('LDD')
-    >>> codes1 = ['K50', 'K50.1', 'K51', 'K52']
-    >>> codes2 = ['K50.2', 'K50.3', 'K52.1', 'K51.1', 'K53', 'K53.1']
-    >>> expected = {
-    ...     frozenset({'K50'}): {'K50.2', 'K50.3'},
-    ...     frozenset({'K51'}): {'K51.1'},
-    ...     frozenset({'K52'}): {'K52.1'},
-    ... }
-    >>> parents(h, codes1, codes2) == expected
-    True
-    """
-    res = defaultdict(set)
-    for code2 in codes2:
-        parents_of_code2 = hierarchy.parents(code2) & set(codes1)
-        if parents_of_code2:
-            res[parents_of_code2].add(code2)
-    return res
-
-
-def siblings(hierarchy, codes1, codes2):
-
-    """ Finds all pairs of siblings from `codes1` and `codes2` that are siblings.
-
-    >>> h = RegexHierarchy('LDD')
-    >>> codes1 = ['K50', 'K50.1', 'K50.2', 'K51.1']
-    >>> codes2 = ['K51', 'K50.3', 'K50.4']
-    >>> expected = {(frozenset({'K50.1', 'K50.2'}), frozenset({'K50.3', 'K50.4'}))}
-    >>> siblings(h, codes1, codes2) == expected
-    True
-    >>> codes1 = ['K50', 'K50.1', 'K50.2', 'K51.1', 'K51.2']
-    >>> codes2 = ['K49', 'K50.2', 'K51.3', 'K51.4']
-    >>> expected = {(frozenset({'K50.1', 'K50.2'}), frozenset({'K50.2'})),
-    ...             (frozenset({'K51.1', 'K51.2'}), frozenset({'K51.3', 'K51.4'}))}
-    >>> siblings(h, codes1, codes2) == expected
-    True
-    >>> codes1 = ['K50.1', 'K50.2']
-    >>> codes2 = ['K51.1', 'K51.2']
-    >>> siblings(h, codes1, codes2) == set()
-    True
-    """
-    def sibling_sets(codes):
-        codes = set(codes)
-        res = list()
-        while codes:
-            code = codes.pop()
-            siblings = [
-                code0 for code0 in codes
-                if hierarchy.is_sibling(code0, code)
-            ]
-            for sibling in siblings:
-                codes.discard(sibling)
-            res.append(set([code] + siblings))
-        return res
-    sibling_sets1 = sibling_sets(codes1)
-    sibling_sets2 = sibling_sets(codes2)
-    return set([
-        (frozenset(siblings1), frozenset(siblings2))
-        for siblings1 in sibling_sets1
-        for siblings2 in sibling_sets2
-        if any(hierarchy.is_sibling(code1, code2)
-               for code1 in siblings1
-               for code2 in siblings2)
-    ])
-
-
-def related(hierarchy, codes1, codes2):
-
-    """
-    Returns codes from `codes1` that are related to codes from `codes2`.
-
-    >>> h = RegexHierarchy('LDD')
-    >>> codes1 = [ 'A01', 'A02.1', 'A02.2', 'A03.1', 'A13.2', 'A04', 'A06.1' ]
-    >>> codes2 = [ 'A01.1', 'A01.2', 'A02', 'A03.3', 'A13.4', 'A05', 'A07.1' ]
-    >>> expected = {
-    ...   'parents': set(['A01']),
-    ...   'children': set(['A02.1', 'A02.2']),
-    ...   'siblings': set(['A03.1', 'A13.2']),
-    ... }
-    >>> dict(related(h, codes1, codes2)) == expected
-    True
-    """
-
-    codes1_parents = parents(hierarchy, codes1, codes2)
-    codes2_parents = parents(hierarchy, codes2, codes1)
-    codes1_siblings = siblings(hierarchy, codes1, codes2)
-    flatten = lambda css: set(c for cs in css for c in cs)
-    return OrderedDict([
-        (label, codes)
-        for label, codes in [
-            ('parents', flatten(codes1_parents.keys())),
-            ('children', flatten(codes2_parents.values())),
-            ('siblings', flatten(cs for cs, _ in codes1_siblings)),
-        ]
-        if codes
-    ])
-
-
 def include_related(hierarchy, codes):
 
     """Simulate the appropriate expansion of the generated codes to the
@@ -397,13 +439,13 @@ def include_related(hierarchy, codes):
     generated, reference = from_confusion_matrix(codes)
     TP, FP, FN = [set(codes[key]) for key in ('TP', 'FP', 'FN')]
 
-    FN_related_to_generated_by_rel = related(hierarchy, FN, generated)
+    FN_related_to_generated_by_rel = hierarchy.related(FN, generated)
     FN_related_to_generated = \
         set(c for cs in FN_related_to_generated_by_rel.values() for c in cs)
 
     generated_with_related = generated | FN_related_to_generated
 
-    generated_related_to_FN_by_rel = related(hierarchy, generated, FN)
+    generated_related_to_FN_by_rel = hierarchy.related(generated, FN)
     generated_related_to_FN = \
         set(c for cs in generated_related_to_FN_by_rel.values() for c in cs)
 
@@ -425,12 +467,12 @@ def include_related_bidirect(hierarchy, codes):
     TP, FP, FN = [set(codes[key]) for key in ('TP', 'FP', 'FN')]
     generated, reference = from_confusion_matrix(codes)
 
-    FP_related_to_reference_by_rel = related(hierarchy, FP, reference)
+    FP_related_to_reference_by_rel = hierarchy.related(FP, reference)
     FP_related_to_reference = \
         set(c for cs in FP_related_to_reference_by_rel.values() for c in cs)
     FP_unrelated = FP - FP_related_to_reference
 
-    FN_related_to_generated_by_rel = related(hierarchy, FN, generated)
+    FN_related_to_generated_by_rel = hierarchy.related(FN, generated)
     FN_related_to_generated = \
         set(c for cs in FN_related_to_generated_by_rel.values() for c in cs)
     FN_unrelated = FN - FN_related_to_generated
@@ -457,4 +499,39 @@ def include_related_bidirect(hierarchy, codes):
     return related_codes, derivated_codes
 
 
-
+def mega_map(data, path, f, inplace=False):
+    """
+    >>> f = lambda x: x + 100
+    >>> mega_map([0,1,2], [1], f) == [0, 101, 2]
+    True
+    >>> mega_map({'a': 1, 'b': 2}, ['a'], f) == {'a': 101, 'b': 2}
+    True
+    >>> mega_map({1,2,3}, [None], f) == {101, 102, 103}
+    True
+    >>> mega_map([0, {'a': 1}, 2], [1, 'a'], f) == [0, {'a': 101}, 2]
+    True
+    """
+    def aux(data, ix):
+        if ix == len(path):
+            return f(data)
+        selector = path[ix]
+        if isinstance(data, dict):
+            if not inplace:
+                data = data.copy()
+            for key, value in data.items():
+                if selector == None or selector == key:
+                    data[key] = aux(value, ix+1)
+        elif type(data) == list:
+            if not inplace:
+                data = data.copy()
+            for data_ix, value in enumerate(data):
+                if selector == None or selector == data_ix:
+                    data[data_ix] = aux(value, ix+1)
+        elif type(data) == set:
+            assert selector == None, "Cannot restrict on set"
+            data = set(aux(value, ix+1) for value in data)
+        else:
+            raise Exception("Don't know how to map {} on path {}"\
+                            .format(type(data), path[:ix+1]))
+        return data
+    return aux(data, 0)

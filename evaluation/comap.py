@@ -490,6 +490,197 @@ def include_related_bidirect(hierarchy, codes):
     return related_codes, derivated_codes
 
 
+
+
+def cosynonym_codes(codes, coding_system, coding_systems):
+
+    """
+    >>> res = cosynonym_codes(['C67.0'], 'ICD10CM', ['ICD10CM', 'RCD'])
+    >>> expected = {'C0496826': {'ICD10CM': {'C67.0'}, 'RCD': {'X78ZS', 'B490.'}}}
+    >>> dict(mega_map(res, [None], dict)) == expected
+    True
+    """
+
+    res = defaultdict(lambda: defaultdict(set))
+
+    if not codes:
+        return res
+
+    original_coding_systems = coding_systems
+    if coding_system == 'RCD2':
+        original_coding_system, coding_system = coding_system, 'RCD'
+        if 'RCD' not in coding_systems:
+            coding_systems = coding_systems + ['RCD']
+        translation = translation_read_2to3(codes)
+        codes = set(code for codes in translation.values() for code in codes)
+
+    query = """
+        select distinct c1.cui, c1.sab, c1.code
+        from MRCONSO c1 inner join MRCONSO c2
+        where c1.sab in %s
+        and c1.cui = c2.cui
+        and c2.sab = %s
+        and c2.code in %s
+    """
+
+    with umls_db.cursor() as cursor:
+        cursor.execute(query, (coding_systems, coding_system, codes))
+        for cui, sab, code in cursor.fetchall():
+            res[cui][sab].add(code)
+
+    if 'RCD2' in original_coding_systems:
+
+        rcd3_codes = set()
+        for cui in res.keys():
+            for sab, codes in res[cui].items():
+                if sab == 'RCD':
+                    rcd3_codes.update(codes)
+        backtranslation = translation_read_3to2(rcd3_codes)
+
+        res1 = defaultdict(lambda: defaultdict(set))
+        for cui in res.keys():
+            for sab, codes in res[cui].items():
+                if sab == 'RCD' and 'RCD2' in original_coding_systems:
+                    for code in codes:
+                        res1[cui]['RCD2'].update(backtranslation[code])
+                    if 'RCD' in original_coding_systems:
+                        res1[cui]['RCD'].update(codes)
+                else:
+                    res1[cui][sab].update(codes)
+        return res1
+    else:
+        return res
+
+
+def mapping_to_max_recall_cuis(databases, mapping):
+
+    """The CUIs such that their codes capture the mapping with minimal
+    codes outside the mapping, i.e.
+
+        ⋃_{v ∈ V_DB} \{
+           argmin_{cui ∈ UMLS}
+             \| m_v ∩ codes(cui) \|
+        \}
+
+    The implementation below selects the concepts only locally. This
+    might be sub-optimal, but the optimal selection is NP-complete
+    problem: finding the cheapest binding for a DNF formula over CUIS
+    with the number of irrevant codes as costs for each CUI.
+    """
+
+    cuis = set()
+    coding_systems = list(set(databases.values()))
+    for database_id in mapping.keys():
+        if mapping[database_id] is None:
+            continue
+        coding_system = databases[database_id]
+        codes = set(mapping[database_id])
+        cui_codes = cosynonym_codes(codes, coding_system, coding_systems)
+        for code in codes:
+            # Find the `cui` that implicates `code` with the least
+            # number of irrelevant codes.
+            cuis_with_count_irrelevant = \
+                [(cui, len(codes - codes_by_sab[coding_system]))
+                 for cui, codes_by_sab in cui_codes.items()
+                 if code in codes_by_sab[coding_system]]
+            if cuis_with_count_irrelevant:
+                key = lambda x: x[1]
+                cui, _ = sorted(cuis_with_count_irrelevant, key=key)[0]
+                cuis.add(cui)
+    return cuis
+
+
+def mapping_to_max_precision_cuis(databases, mapping):
+    """
+    The maximum CUIs such that all codes are in mapping, i.e.
+
+    \{ 
+       cui ∈ UMLS | ∀v ∈ V_DB: codes_v ⊂ m_v
+    \}
+    """
+
+    coding_systems = list(set(databases.values()))
+
+    # Merge cosynonym_codes for all databases
+    all_cui_codes = defaultdict(lambda: defaultdict(set))
+    for database_id in mapping.keys():
+        if not mapping[database_id]:
+            continue
+        coding_system = databases[database_id]
+        codes = set(mapping[database_id])
+        cui_codes = cosynonym_codes(codes, coding_system, coding_systems)
+        for cui in cui_codes.keys():
+            for sab, codes in cui_codes[cui].items():
+                all_cui_codes[cui][sab].update(codes)
+
+    # Find the CUIs where all codes are in the reference
+    cuis = set()
+    for cui, codes in all_cui_codes.items():
+        if all(mapping[database_id] is None or \
+               codes[coding_system].issubset(mapping[database_id])
+               for database_id, coding_system in databases.items()):
+            cuis.add(cui)
+    return cuis
+
+
+def connected_sets(cuis, relations):
+    """
+    >>> cuis = [1,2,3]
+    >>> connected_sets(cuis, {}) == {cui: {cui} for cui in cuis}
+    True
+    >>> cuis = [1,2,3,4,5,6,7]
+    >>> relations = {1: {2, 3}, 4: {5}, 5: {6}}
+    >>> expected = {1: {1, 2, 3}, 4: {4, 5, 6}, 7: {7}}
+    >>> connected_sets(cuis, relations) == expected
+    True
+    >>> cuis = [1,2,3,4]
+    >>> relations = {1: {2, 3}, 2: {4}, 3: {4}}
+    >>> connected_sets(cuis, relations) == {1: {1,2,3,4}}
+    True
+    >>> cuis = [1,2,3,4]
+    >>> relations = {1: {2, 3}, 2: {4}, 3: {4}, 4: {1}}
+    >>> list(connected_sets(cuis, relations).values()) == [{1,2,3,4}]
+    True
+    """
+    relations = defaultdict(set, {
+        cui: set(cuis)
+        for cui, cuis in relations.items()
+    })
+    def loop(roots):
+        for cui0, cuis1 in roots.items():
+            for cui1 in cuis1:
+                for cui2, cuis2 in roots.items():
+                    if cui0 != cui2:
+                        if relations[cui1] & cuis2:
+                            roots[cui0].update(roots[cui2])
+                            del roots[cui2]
+                            return loop(roots)
+        return roots
+    return loop({cui: {cui} for cui in cuis})
+
+
+def relations_for_cuis(cuis, relations):
+
+    """Compute the roots from `cuis` from where all `cuis` are accessible
+    via one of the given relations."""
+
+    query = """
+        select cui1, cui2 from MRREL
+        where cui1 in %s and rel in %s
+    """
+
+    res = defaultdict(set)
+
+    if not cuis or not relations:
+        return res
+
+    with umls_db.cursor() as cursor:
+        cursor.execute(query, (cuis, relations))
+        for cui1, cui2 in cursor.fetchall():
+            res[cui2].add(cui1)
+    return res
+
+
 def mega_map(data, path, f, inplace=False):
     """
     >>> f = lambda x: x + 100

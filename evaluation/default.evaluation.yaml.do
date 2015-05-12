@@ -52,8 +52,8 @@ with redo.ifchange(coding_systems='config/coding_systems.yaml',
 def cosynonym_codes(codes, coding_system, coding_systems):
 
     """
-    >>> expected = {'C0496826': {'ICD10CM': {'C67.0'}, 'RCD': {'X78ZS', 'B490.'}}}
     >>> res = cosynonym_codes(['C67.0'], 'ICD10CM', ['ICD10CM', 'RCD'])
+    >>> expected = {'C0496826': {'ICD10CM': {'C67.0'}, 'RCD': {'X78ZS', 'B490.'}}}
     >>> dict(comap.mega_map(res, [None], dict)) == expected
     True
     """
@@ -63,64 +63,47 @@ def cosynonym_codes(codes, coding_system, coding_systems):
     if not codes:
         return res
 
-    original_coding_system = coding_system
     original_coding_systems = coding_systems
     if coding_system == 'RCD2':
-        coding_system = 'RCD'
+        original_coding_system, coding_system = coding_system, 'RCD'
         if 'RCD' not in coding_systems:
             coding_systems = coding_systems + ['RCD']
-        read_translation = comap.translation_read2_to_read3(codes)
-        codes = set(code for codes in read_translation.values() for code in codes)
+        translation = comap.translation_read_2to3(codes)
+        codes = set(code for codes in translation.values() for code in codes)
 
-    # ... WHERE cui IN (SELECT cui FROM MRCONSO WHERE code in (...)) was too slow, separate
-    cuis_query = """
-        SELECT DISTINCT cui FROM MRCONSO
-        WHERE sab = %s AND code IN ({codes})
-    """.format(codes=', '.join(['%s'] * len(codes)))
-
-    cuis_for_codes = []
-    with comap.umls_db.cursor() as cursor:
-        cursor.execute(cuis_query, tuple([coding_system] + list(codes)))
-        for row in cursor.fetchall():
-            cuis_for_codes.append(row[0])
-
-    if not cuis_for_codes:
-        return res
-
-    cui_code_query = """
-        SELECT DISTINCT cui, code, sab FROM MRCONSO
-        WHERE cui IN ({cuis})
-        AND sab in ({coding_systems})
-    """.format(cuis=', '.join(['%s'] * len(cuis_for_codes)),
-               coding_systems=', '.join(['%s'] * len(coding_systems)))
+    query = """
+        select distinct c1.cui, c1.sab, c1.code
+        from MRCONSO c1 inner join MRCONSO c2
+        where c1.sab in %s
+        and c1.cui = c2.cui
+        and c2.sab = %s
+        and c2.code in %s
+    """
 
     with comap.umls_db.cursor() as cursor:
-        cursor.execute(cui_code_query, tuple(cuis_for_codes + coding_systems))
-
-        for row in cursor.fetchall():
-            cui, code, sab = row
+        cursor.execute(query, (coding_systems, coding_system, codes))
+        for cui, sab, code in cursor.fetchall():
             res[cui][sab].add(code)
 
-    if 'RCD2' in coding_systems:
+    if 'RCD2' in original_coding_systems:
+
         rcd3_codes = set()
-        for cui, codes_by_sab in res.items():
-            for sab, codes in codes_by_sab.items():
+        for cui in res.keys():
+            for sab, codes in res[cui].items():
                 if sab == 'RCD':
-                    for code in codes:
-                        rcd3_codes.add(code)
-        backtranslation = comap.translation_read3_to_read2(rcd3_codes)
+                    rcd3_codes.update(codes)
+        backtranslation = comap.translation_read_3to2(rcd3_codes)
+
         res1 = defaultdict(lambda: defaultdict(set))
-        for cui, codes_by_sab in res.items():
-            for sab, codes in codes_by_sab.items():
-                for code in codes:
-                    if sab == 'RCD':
-                        if 'RCD' in original_coding_systems:
-                            res1[cui]['RCD'].add(code)
-                        else:
-                            for code2 in backtranslation[code]:
-                                res1[cui]['RCD2'].add(code2)
-                    else:
-                        res1[cui][sab].add(code)
+        for cui in res.keys():
+            for sab, codes in res[cui].items():
+                if sab == 'RCD' and 'RCD2' in original_coding_systems:
+                    for code in codes:
+                        res1[cui]['RCD2'].update(backtranslation[code])
+                    if 'RCD' in original_coding_systems:
+                        res1[cui]['RCD'].update(codes)
+                else:
+                    res1[cui][sab].update(codes)
         return res1
     else:
         return res
@@ -128,8 +111,7 @@ def cosynonym_codes(codes, coding_system, coding_systems):
 
 def mapping_to_max_recall_cuis(mapping):
 
-    """
-    The CUIs such that their codes capture the mapping with minimal
+    """The CUIs such that their codes capture the mapping with minimal
     codes outside the mapping, i.e.
 
         ⋃_{v ∈ V_DB} \{
@@ -137,25 +119,30 @@ def mapping_to_max_recall_cuis(mapping):
              \| m_v ∩ codes(cui) \|
         \}
 
+    The implementation below selects the concepts only locally. This
+    might be sub-optimal, but the optimal selection is NP-complete
+    problem: finding the cheapest binding for a DNF formula over CUIS
+    with the number of irrevant codes as costs for each CUI.
     """
 
     cuis = set()
     coding_systems = list(set(databases.values()))
     for database_id in mapping.keys():
-        if not mapping[database_id]:
+        if mapping[database_id] is None:
             continue
-        codes = set(mapping[database_id])
         coding_system = databases[database_id]
+        codes = set(mapping[database_id])
         cui_codes = cosynonym_codes(codes, coding_system, coding_systems)
         for code in codes:
-            # Find the `cui` that implicates `code` with the least number of irrelevant codes
-            cuis_with_count = \
+            # Find the `cui` that implicates `code` with the least
+            # number of irrelevant codes.
+            cuis_with_count_irrelevant = \
                 [(cui, len(codes - codes_by_sab[coding_system]))
                  for cui, codes_by_sab in cui_codes.items()
                  if code in codes_by_sab[coding_system]]
-            if cuis_with_count:
+            if cuis_with_count_irrelevant:
                 key = lambda x: x[1]
-                cui, _ = sorted(cuis_with_count, key=key)[0]
+                cui, _ = sorted(cuis_with_count_irrelevant, key=key)[0]
                 cuis.add(cui)
     return cuis
 
@@ -168,7 +155,10 @@ def mapping_to_max_precision_cuis(mapping):
        cui ∈ UMLS | ∀v ∈ V_DB: codes_v ⊂ m_v
     \}
     """
+
     coding_systems = list(set(databases.values()))
+
+    # Merge cosynonym_codes for all databases
     all_cui_codes = defaultdict(lambda: defaultdict(set))
     for database_id in mapping.keys():
         if not mapping[database_id]:
@@ -176,10 +166,10 @@ def mapping_to_max_precision_cuis(mapping):
         coding_system = databases[database_id]
         codes = set(mapping[database_id])
         cui_codes = cosynonym_codes(codes, coding_system, coding_systems)
-        for cui, codes_by_sab in cui_codes.items():
-            for sab, codes in codes_by_sab.items():
-                for code in codes:
-                    all_cui_codes[cui][sab].add(code)
+        for cui in cui_codes.keys():
+            for sab, codes in cui_codes[cui].items():
+                all_cui_codes[cui][sab].update(codes)
+
     # Find the CUIs where all codes are in the reference
     cuis = set()
     for cui, codes in all_cui_codes.items():

@@ -105,7 +105,7 @@ umls_db = pymysql.connect(db='UMLS2014AB_CoMap', **db_access)
 umls_ext_db = pymysql.connect(db='UMLS_ext_mappings', **db_access)
 
 
-def translation_read2_to_read3(codes):
+def translation_read_2to3(codes):
     """ { read2_code: { read3_code } } """
     translation = defaultdict(set)
     if codes:
@@ -122,7 +122,7 @@ def translation_read2_to_read3(codes):
     return translation
 
 
-def translation_read3_to_read2(codes):
+def translation_read_3to2(codes):
     """ { read2_code: { read3_code } } """
     translation = defaultdict(set)
     if codes:
@@ -194,10 +194,10 @@ def confusion_matrix(generated, reference):
     ])
 
 
-def from_confusion_matrix(codes):
-    TP = set(codes['TP'])
-    FP = set(codes['FP'])
-    FN = set(codes['FN'])
+def from_confusion_matrix(cm):
+    TP = set(cm['TP'])
+    FP = set(cm['FP'])
+    FN = set(cm['FN'])
     return TP | FP, TP | FN
 
 
@@ -365,6 +365,7 @@ class DataHierarchy(Hierarchy):
             for relation in self.relations
         }
 
+
 class Read2Hierarchy(ParentsHierarchy):
 
     HEAD_DOTS_RE = re.compile(r'^(?P<head>[A-Z0-9][A-Za-z0-9]*)(?P<dots>\.*)$')
@@ -386,16 +387,6 @@ class Read2Hierarchy(ParentsHierarchy):
             return frozenset([head[:-1] + '.' + dots])
         else:
             return frozenset()
-
-    # def children(self, code):
-    #     ranges_limits = [
-    #         ('a', 'z'),
-    #         ('A', 'Z'),
-    #         ('0', '9')
-    #     ]
-    #     ranges = [range(ord(lower), ord(upper)+1)
-    #               for lower, upper in range_limits]
-    #     return set(code + chr(c) for c in chain(ranges))
 
 
 class RegexHierarchy(ParentsHierarchy):

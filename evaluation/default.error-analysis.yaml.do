@@ -57,7 +57,7 @@ def error_analysis(coding_system, codes):
     original_coding_system = coding_system
     if original_coding_system == 'RCD2':
         coding_system = 'RCD'
-        translations = comap.translation_read2_to_read3(codes)
+        translations = comap.translation_read_2to3(codes)
         codes = set(code0
                     for code in codes
                     for code0 in translations.get(code, []))
@@ -68,7 +68,7 @@ def error_analysis(coding_system, codes):
     ])
 
     if original_coding_system == 'RCD2':
-        backtranslation = comap.translation_read3_to_read2(codes)
+        backtranslation = comap.translation_read_3to2(codes)
         # codes = set(code0
         #             for code in codes
         #             for code0 in backtranslation[code])

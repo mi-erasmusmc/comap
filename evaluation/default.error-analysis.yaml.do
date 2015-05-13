@@ -30,7 +30,7 @@ def get_cuis_for_codes(coding_system, codes):
             where sab = %s and code in %s
         """
         with comap.umls_db.cursor() as cursor:
-            cursor.execute(query, tuple(coding_system, codes))
+            cursor.execute(query, (coding_system, codes))
             for cui, code in cursor.fetchall():
                 res[code].add(cui)
     return res
@@ -67,7 +67,7 @@ class Terms(Analysis):
         self.positions = list(positions)
 
 
-    def in_database(outcome_id, database_id, coding_system, cm):
+    def in_database(self, outcome_id, database_id, coding_system, cm):
         """
         { code: { cui: {"name": str, "terms": { str } } }
         """
@@ -111,51 +111,63 @@ class Terms(Analysis):
         return res
 
 
-class Clusters(Analysis):
+def get_false_negative_cuis(outcome_id, reference_variation='maximum-recall'):
+    reference_cuis = evaluations['by-variation'][reference_variation]['by-outcome'][outcome_id]['generated-cuis']
+    generated_cuis = evaluations['by-variation'][variation_id]['by-outcome'][outcome_id]['generated-cuis']
+    return set(reference_cuis) - set(generated_cuis)
 
-    def __init__(self, positions, relations):
-        self.positions = positions
+
+class NumberOfFalseNegatives(Analysis):
+
+    def in_all_databases(self, outcome_id, cms):
+        cuis = get_false_negative_cuis(outcome_id)
+        return len(cuis)
+
+
+class ClustersInFalseNegatives(Analysis):
+
+    def __init__(self, relations):
         self.relations = relations
 
     def in_all_databases(self, outcome_id, cms):
 
-        mapping = {}
-        for database_id in databases.keys():
-            mapping[database_id] = set()
-            if database_id in cms:
-                for position in self.positions:
-                    mapping[database_id].update(cms[database_id][position])
-
-        cuis = comap.mapping_to_max_recall_cuis(databases, mapping)
+        cuis = get_false_negative_cuis(outcome_id)
         relations = comap.relations_for_cuis(cuis, self.relations)
         connected_sets = comap.connected_sets(cuis, relations)
-        # terms_for_cuis = get_terms_for_cuis(cuis)
 
-        res = OrderedDict([
-            ('max-sensitivity-cuis', len(cuis)),
-            ('transitivity-sets', len(connected_sets)),
+        return OrderedDict([
+            ('count', len(connected_sets)),
+            ('clusters', OrderedDict([
+                (cui, sorted(connected_sets[cui]))
+                for cui in sorted(connected_sets.keys())
+            ])),
         ])
-        # res = OrderedDict()
-        # for root, connected in connected_sets.items():
-            # res[root] = list()
-            # for cui in [root] + [cui0 for cui0 in connected if cui0 != root]:
-            #     res[root].append(OrderedDict([
-            #         ('cui', cui),
-            #         ('name', terms_for_cuis[cui][0] or next(terms_for_cuis[cui])),
-            #     ]))
-        return res
+
+
+class TermsInFalseNegatives(Analysis):
+
+    def in_all_databases(self, outcome_id, cms):
+        cuis = get_false_negative_cuis(outcome_id)
+        terms_for_cuis = get_terms_for_cuis(cuis)
+        return OrderedDict([
+            (cui, [ name ] + sorted(term for term in terms if term != name))
+            for cui, (name, terms) in terms_for_cuis.items()
+        ])
 
 
 def run_analyses(analyses):
-    res = OrderedDict()
+    res = OrderedDict([
+        ('by-outcome', OrderedDict())
+    ])
     for outcome_id in outcome_ids:
-        res[outcome_id] = OrderedDict()
+        res_for_outcome = res['by-outcome'][outcome_id] = OrderedDict()
+        by_database = evaluations['by-variation'][variation_id]['by-outcome'][outcome_id]['by-database']
 
+        # All confusion matrices by database for the variation of the outcome
         cms = {}
         for database_id in databases.keys():
-            for_database = evaluations[outcome_id][database_id]
-            if 'variations' in for_database:
-                cms[database_id] = for_database['variations'][variation_id]['comparison']['codes']
+            if by_database[database_id]:
+                cms[database_id] = by_database[database_id]['codes']
 
         in_all_databases = OrderedDict()
         for analysis_id, analysis in analyses:
@@ -163,22 +175,17 @@ def run_analyses(analyses):
             if analysis_result is not None:
                 in_all_databases[analysis_id] = analysis_result
         if in_all_databases:
-            res[outcome_id]['analysis'] = in_all_databases
+            res_for_outcome['analysis'] = in_all_databases
 
-        for database_id, coding_system in databases.items():
-            res[outcome_id][database_id] = OrderedDict()
-            evaluation = evaluations[outcome_id][database_id]
-            if 'variations' in evaluation:
-                this_variation_id, variation = next(
-                    (this_variation_id, variation)
-                    for this_variation_id, variation in  evaluation['variations'].items()
-                    if this_variation_id == variation_id
-                )
-                cm = variation['comparison']['codes']
-                for analysis_id, analysis in analyses:
-                    analysis_result = analysis.in_database(outcome_id, database_id, coding_system, cm)
-                    if analysis_result is not None:
-                        res[outcome_id][database_id]['analysis'][analysis_id] = analysis_result
+        # res_for_outcome['by-database'] = OrderedDict()
+        # for database_id, coding_system in databases.items():
+        #     res_for_database = res_for_outcome['by-database'][database_id] = OrderedDict()
+        #     if by_database[database_id]:
+        #         cm = by_database[database_id]['codes']
+        #         for analysis_id, analysis in analyses:
+        #             analysis_result = analysis.in_database(outcome_id, database_id, coding_system, cm)
+        #             if analysis_result is not None:
+        #                 res_for_database[analysis_id] = analysis_result
     return res
 
 if os.getenv('DOCTEST'):
@@ -187,8 +194,9 @@ if os.getenv('DOCTEST'):
     doctest.testmod(report=True)
 
 analyses = [
-#    ('FN-terms', Terms('FN')),
-    ('FN-clusters-RN-CHD-RB-PAR', Clusters(['FN'], ['RN', 'CHD', 'RB', 'PAR'])),
+    ('FN-count', NumberOfFalseNegatives()),
+    ('FN-clusters-RN-CHD-RB-PAR', ClustersInFalseNegatives(['RN', 'CHD', 'RB', 'PAR'])),
+    ('FN-terms', TermsInFalseNegatives()),
 ]
 
 res = run_analyses(analyses)

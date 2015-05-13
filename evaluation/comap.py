@@ -113,11 +113,10 @@ def translation_read_2to3(codes):
             query = """
                 select distinct V2_CONCEPTID, CTV3_CONCEPTID
                 from RCD_V3_to_V2
-                where V2_CONCEPTID in ({})
-            """.format(', '.join(['%s'] * len(codes)))
-            cursor.execute(query, tuple(codes))
-            for row in cursor.fetchall():
-                code2, code3 = row
+                where V2_CONCEPTID in %s
+            """
+            cursor.execute(query, [set(codes)])
+            for code2, code3 in cursor.fetchall():
                 translation[code2].add(code3)
     return translation
 
@@ -128,13 +127,13 @@ def translation_read_3to2(codes):
     if codes:
         with umls_ext_db.cursor() as cursor:
             query = """
-                select distinct V2_CONCEPTID, CTV3_CONCEPTID from RCD_V3_to_V2
-                where CTV3_CONCEPTID in ({})
-                and V2_CONCEPTID NOT IN ('_DRUG', '_NONE')
-            """.format(', '.join(['%s'] * len(codes)))
-            cursor.execute(query, tuple(codes))
-            for row in cursor.fetchall():
-                code2, code3 = row
+                select distinct V2_CONCEPTID, CTV3_CONCEPTID
+                from RCD_V3_to_V2
+                where CTV3_CONCEPTID in %s
+                and V2_CONCEPTID not in ('_DRUG', '_NONE')
+            """
+            cursor.execute(query, [set(codes)])
+            for code2, code3 in cursor.fetchall():
                 translation[code3].add(code2)
     return translation
 

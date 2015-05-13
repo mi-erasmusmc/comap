@@ -495,8 +495,12 @@ def cosynonym_codes(codes, coding_system, coding_systems):
 
     """
     >>> res = cosynonym_codes(['C67.0'], 'ICD10CM', ['ICD10CM', 'RCD'])
-    >>> expected = {'C0496826': {'ICD10CM': {'C67.0'}, 'RCD': {'X78ZS', 'B490.'}}}
-    >>> dict(mega_map(res, [None], dict)) == expected
+    >>> dict(mega_map(res, [None], dict)) == {
+    ...     'C0496826': {
+    ...         'ICD10CM': {'C67.0'},
+    ...         'RCD': {'X78ZS', 'B490.'}
+    ...     }
+    ... }
     True
     """
 
@@ -551,14 +555,76 @@ def cosynonym_codes(codes, coding_system, coding_systems):
         return res
 
 
-def mapping_to_max_recall_cuis(databases, mapping):
+def mapping_to_max_recall_cuis_aux(databases, cosynonyms, mapping, min_codes=None):
+
+    """
+    >>> databases = {'D1': 'V1', 'D2': 'V2'}
+    >>> mapping = {
+    ...    'D1': {1,2},
+    ...    'D2': {3,4},
+    ... }
+    >>> cosynonyms = {
+    ...    'A': {'V1': {1}, 'V2': {3}},
+    ...    'B': {'V1': {2}},
+    ...    'C': {'V2': {4, 6}},
+    ...    'D': {'V2': {4, 6, 7}},
+    ...    'E': {'V1': {1}, 'V2': {5}},
+    ... }
+    >>> mapping_to_max_recall_cuis_aux(databases, cosynonyms, mapping) ==\
+         { 'A', 'B', 'C' }
+    True
+    >>> mapping_to_max_recall_cuis_aux(databases, cosynonyms, mapping, min_codes=2) ==\
+         {'A'}
+    True
+    """
+
+    cosynonyms = defaultdict(lambda: defaultdict(set), {
+        key: defaultdict(set, value)
+        for key, value in cosynonyms.items()
+    })
+    
+    # Include only cuis that have more than `min_codes` in `mapping`
+    if min_codes is not None:
+        for cui in list(cosynonyms):
+            num_tp = 0
+            for database_id, codes in mapping.items():
+                if codes is not None:
+                    generated = cosynonyms[cui][databases[database_id]]
+                    num_tp += len(set(codes) & generated)
+            if num_tp < min_codes:
+                del cosynonyms[cui]
+
+    cuis = set()
+    for database_id, reference in mapping.items():
+        coding_system = databases[database_id]
+        if reference is not None:
+            for code in reference:
+                # Find the `cui` that implicates `code` with the least
+                # number of irrelevant codes.
+                candidates = set()
+                for cui in cosynonyms.keys():
+                    if code in cosynonyms[cui][coding_system]:
+                        num_fn = 0
+                        for database_id0, reference0 in mapping.items():
+                            if reference0 is not None:
+                                coding_system0 = databases[database_id0]
+                                generated0 = cosynonyms[cui][coding_system0]
+                                num_fn += len(generated0 - set(reference0))
+                        candidates.add((cui, num_fn))
+                candidates = sorted(candidates, key=lambda x: x[1])
+                if candidates:
+                    cuis.add(candidates[0][0])
+    return cuis
+
+
+def mapping_to_max_recall_cuis(databases, mapping, min_codes=None):
 
     """The CUIs such that their codes capture the mapping with minimal
     codes outside the mapping, i.e.
 
         ⋃_{v ∈ V_DB} \{
            argmin_{cui ∈ UMLS}
-             \| m_v ∩ codes(cui) \|
+             | m_v ∩ codes(cui) |
         \}
 
     The implementation below selects the concepts only locally. This
@@ -567,29 +633,64 @@ def mapping_to_max_recall_cuis(databases, mapping):
     with the number of irrevant codes as costs for each CUI.
     """
 
-    cuis = set()
     coding_systems = list(set(databases.values()))
+
+    cosynonyms = defaultdict(lambda: defaultdict(set))
     for database_id in mapping.keys():
         if mapping[database_id] is None:
             continue
         coding_system = databases[database_id]
-        codes = set(mapping[database_id])
+        codes = mapping[database_id]
         cui_codes = cosynonym_codes(codes, coding_system, coding_systems)
-        for code in codes:
-            # Find the `cui` that implicates `code` with the least
-            # number of irrelevant codes.
-            cuis_with_count_irrelevant = \
-                [(cui, len(codes - codes_by_sab[coding_system]))
-                 for cui, codes_by_sab in cui_codes.items()
-                 if code in codes_by_sab[coding_system]]
-            if cuis_with_count_irrelevant:
-                key = lambda x: x[1]
-                cui, _ = sorted(cuis_with_count_irrelevant, key=key)[0]
-                cuis.add(cui)
-    return cuis
+        for cui in cui_codes.keys():
+            for coding_system0 in cui_codes[cui].keys():
+                cosynonyms[cui][coding_system0]\
+                    .update(cui_codes[cui][coding_system0])
+
+    return mapping_to_max_recall_cuis_aux(databases, cosynonyms, mapping, min_codes=min_codes)
 
 
-def mapping_to_max_precision_cuis(databases, mapping):
+def mapping_to_max_precision_cuis_aux(databases, cosynonyms, mapping, max_codes=None):
+
+    """
+    >>> databases = {'D1': 'V1', 'D2': 'V2'}
+    >>> mapping = {
+    ...    'D1': {1,2},
+    ...    'D2': {3,4},
+    ... }
+    >>> cosynonyms = {
+    ...    'A': {'V1': {1}, 'V2': {3, 5}},
+    ...    'B': {'V1': {2}},
+    ...    'C': {'V2': {4}},
+    ...    'D': {'V2': {4, 5}},
+    ...    'E': {'V1': {1}, 'V2': {5}},
+    ... }
+    >>> mapping_to_max_recall_cuis_aux(databases, cosynonyms, mapping) == {'B', 'C'}
+    True
+    """
+
+    cosynonyms = defaultdict(lambda: defaultdict(set), {
+        key: defaultdict(set, value)
+        for key, value in cosynonyms.items()
+    })
+
+    res = set()
+    # Find CUIs where all codes are in the reference (or at most
+    # `max_codes` are not)
+    for cui in list(cosynonyms):
+        num_fp = 0
+        for database_id, coding_system in databases.items():
+            reference = mapping[database_id]
+            if reference is not None:
+                generated = cosynonyms[cui][coding_system]
+                N = len(set(generated - set(reference)))
+                num_fp += N
+        if num_fp <= (max_codes or 0):
+            res.add(cui)
+    return res
+
+
+def mapping_to_max_precision_cuis(databases, mapping, max_codes=None):
     """
     The maximum CUIs such that all codes are in mapping, i.e.
 
@@ -601,7 +702,7 @@ def mapping_to_max_precision_cuis(databases, mapping):
     coding_systems = list(set(databases.values()))
 
     # Merge cosynonym_codes for all databases
-    all_cui_codes = defaultdict(lambda: defaultdict(set))
+    cosynonyms = defaultdict(lambda: defaultdict(set))
     for database_id in mapping.keys():
         if not mapping[database_id]:
             continue
@@ -610,16 +711,9 @@ def mapping_to_max_precision_cuis(databases, mapping):
         cui_codes = cosynonym_codes(codes, coding_system, coding_systems)
         for cui in cui_codes.keys():
             for sab, codes in cui_codes[cui].items():
-                all_cui_codes[cui][sab].update(codes)
+                cosynonyms[cui][sab].update(codes)
 
-    # Find the CUIs where all codes are in the reference
-    cuis = set()
-    for cui, codes in all_cui_codes.items():
-        if all(mapping[database_id] is None or \
-               codes[coding_system].issubset(mapping[database_id])
-               for database_id, coding_system in databases.items()):
-            cuis.add(cui)
-    return cuis
+    return mapping_to_max_precision_cuis_aux(databases, cosynonyms, mapping, max_codes=max_codes)
 
 
 def connected_sets(cuis, relations):

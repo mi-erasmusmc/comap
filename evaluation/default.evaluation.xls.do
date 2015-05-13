@@ -58,8 +58,8 @@ def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
         else:
             return None
 
-    for variation_ix, variation_id in enumerate(evaluations['by_variation'].keys()):
-        for_variation = evaluations['by_variation'][variation_id]
+    for variation_ix, variation_id in enumerate(evaluations['by-variation'].keys()):
+        for_variation = evaluations['by-variation'][variation_id]
         if 0 < variation_ix:
             index.extend(['', ''])
             rows.extend([[None] * len(columns)] * 2)
@@ -70,11 +70,11 @@ def evaluations_to_xls(filename, evaluations, outcomes=None, databases=None):
             for database_id, _ in databases
         }
         for outcome_id in outcome_ids:
-            for_outcome = for_variation['by_outcome'][outcome_id]
+            for_outcome = for_variation['by-outcome'][outcome_id]
             row = [str_of_list(for_outcome['generated-cuis'])]
             measures_over_databases = pd.DataFrame(columns=['recall', 'precision'])
             for database_id, _ in databases:
-                comparison = for_outcome['comparisons'][database_id]
+                comparison = for_outcome['by-database'][database_id]
                 if comparison:
                     codes, measures = comparison['codes'], comparison['measures']
                     measures_over_databases.ix[database_id] = measures

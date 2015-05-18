@@ -62,9 +62,12 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 		/** referenceCodes {CUI: [SourceConcept3]} */
 
 		Set<String> codes = new HashSet<>();
+		Map<String, String> preferredTerms = new HashMap<>();
 		for (List<SourceConcept> referenceCodesForCui: referenceCodes.values())
-			for (SourceConcept referenceCode: referenceCodesForCui)
+			for (SourceConcept referenceCode: referenceCodesForCui) {
 				codes.add(referenceCode.getId());
+				preferredTerms.put(referenceCode.getId(), referenceCode.getPreferredTerm());
+			}
 
 		if (codes.isEmpty())
 			return new HashMap<>();
@@ -94,10 +97,10 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 				res.put(cui, new HashMap<String, List<SourceConcept>>());
 				for (SourceConcept sourceConceptRcd3: referenceCodes.get(cui)) {
 					String code3 = sourceConceptRcd3.getId();
+					String preferredTerm = preferredTerms.containsKey(code3) ? preferredTerms.get(code3) : null;
 					List<SourceConcept> sourceConceptsRcd2 = new LinkedList<>();
 					if (mapping.containsKey(code3))
 						for (String code2: mapping.get(code3)) {
-							String preferredTerm = null;
 							SourceConcept sourceConcept2 = new SourceConcept(cui, ABBREVIATION, code2, preferredTerm);
 							sourceConceptsRcd2.add(sourceConcept2);
 						}

@@ -187,9 +187,9 @@ def confusion_matrix(generated, reference):
     generated = set(generated)
     reference = set(reference)
     return OrderedDict([
-        ('TP', generated & reference),
-        ('FN', reference - generated),
-        ('FP', generated - reference),
+        ('TP', list(generated & reference)),
+        ('FN', list(reference - generated)),
+        ('FP', list(generated - reference)),
     ])
 
 

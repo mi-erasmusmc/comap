@@ -15,7 +15,6 @@ def construct_OrderedDict(loader, node):
     return OrderedDict(loader.construct_pairs(node))
 yaml.loader.Loader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_OrderedDict)
 
-
 def represent_OrderedDict(dumper, data):
     return dumper.represent_dict(list(data.items()))
 yaml.add_representer(OrderedDict, represent_OrderedDict, yaml.dumper.Dumper)
@@ -493,29 +492,35 @@ def include_related_bidirect(hierarchy, codes):
 
 def cosynonym_codes(codes, coding_system, coding_systems):
 
-    """
-    >>> res = cosynonym_codes(['C67.0'], 'ICD10CM', ['ICD10CM', 'RCD'])
-    >>> dict(mega_map(res, [None], dict)) == {
+    """Return a mapping from all CUIS that include the given `codes` of a
+    `coding_system` to all codes in `coding_systems`.
+
+    >>> cosynonym_codes(['C67.0'], 'ICD10CM', ['ICD10CM', 'RCD']) == {
     ...     'C0496826': {
     ...         'ICD10CM': {'C67.0'},
     ...         'RCD': {'X78ZS', 'B490.'}
     ...     }
     ... }
     True
+    >>> cosynonym_codes(['G61z.'], 'RCD2', ['RCD2', 'ICD9CM' ]) == {
+    ...     'C2937358': {
+    ...       'ICD9CM': {'431'},
+    ...       'RCD2': {'G6...', 'G61..', 'G61z.'}
+    ...     }
+    ... }
+    True
     """
-
-    res = defaultdict(lambda: defaultdict(set))
-
-    if not codes:
-        return res
 
     original_coding_systems = coding_systems
     if coding_system == 'RCD2':
         original_coding_system, coding_system = coding_system, 'RCD'
-        if 'RCD' not in coding_systems:
-            coding_systems = coding_systems + ['RCD']
+        coding_systems = [ 'RCD' ] + [ c for c in coding_systems
+                                       if c not in ['RCD', 'RCD2'] ]
         translation = translation_read_2to3(codes)
         codes = set(code for codes in translation.values() for code in codes)
+
+    if not codes:
+        return {}
 
     query = """
         select distinct c1.cui, c1.sab, c1.code
@@ -526,33 +531,74 @@ def cosynonym_codes(codes, coding_system, coding_systems):
         and c2.code in %s
     """
 
+    res = defaultdict(lambda: defaultdict(set))
+
     with umls_db.cursor() as cursor:
-        cursor.execute(query, (coding_systems, coding_system, codes))
+        cursor.execute(query, (sorted(coding_systems), coding_system, sorted(codes)))
         for cui, sab, code in cursor.fetchall():
             res[cui][sab].add(code)
 
     if 'RCD2' in original_coding_systems:
 
         rcd3_codes = set()
-        for cui in res.keys():
-            for sab, codes in res[cui].items():
+        for cui in res:
+            for sab in res[cui]:
                 if sab == 'RCD':
-                    rcd3_codes.update(codes)
+                    rcd3_codes.update(res[cui][sab])
+
         backtranslation = translation_read_3to2(rcd3_codes)
 
-        res1 = defaultdict(lambda: defaultdict(set))
-        for cui in res.keys():
-            for sab, codes in res[cui].items():
-                if sab == 'RCD' and 'RCD2' in original_coding_systems:
-                    for code in codes:
-                        res1[cui]['RCD2'].update(backtranslation[code])
-                    if 'RCD' in original_coding_systems:
-                        res1[cui]['RCD'].update(codes)
+        for cui in list(res):
+            res_for_cui = defaultdict(set)
+            for sab in res[cui]:
+                if sab != 'RCD':
+                    res_for_cui[sab].update(res[cui][sab])
                 else:
-                    res1[cui][sab].update(codes)
-        return res1
-    else:
-        return res
+                    codes3 = res[cui][sab]
+                    if 'RCD' in original_coding_systems:
+                        res_for_cui['RCD'].update(codes3)
+                    for code3 in codes3:
+                        codes2 = backtranslation[code3]
+                        if codes2:
+                            res_for_cui['RCD2'].update(codes2)
+            del res[cui]
+            if res_for_cui:
+                res[cui] = res_for_cui
+
+    return {
+        cui: {
+            sab: res[cui][sab]
+            for sab in res[cui]
+        }
+        for cui in res
+    }
+
+
+def all_cosynonyms(mapping, databases):
+
+    # { CUI: { VOC: { CODE } } }
+
+    res = defaultdict(lambda: defaultdict(set))
+    coding_systems = sorted(set(databases.values()))
+
+    for database_id in databases:
+        codes = mapping.get(database_id)
+        if codes is not None:
+            cosynonyms = cosynonym_codes(codes, databases[database_id], coding_systems)
+            for cui in cosynonyms:
+                for coding_system in cosynonyms[cui]:
+                    synonyms = cosynonyms[cui][coding_system]
+                    if synonyms:
+                        res[cui][coding_system].update(synonyms)
+
+    # Cleanup noise (introduced by RCD2/3 translations)
+    for cui in list(res):
+        if not any(code in mapping[database_id]
+                   for database_id in databases
+                   for code in res[cui][databases[database_id]]):
+            del res[cui]
+
+    return res
 
 
 def mapping_to_max_recall_cuis_aux(databases, cosynonyms, mapping, min_codes=None):
@@ -582,7 +628,7 @@ def mapping_to_max_recall_cuis_aux(databases, cosynonyms, mapping, min_codes=Non
         key: defaultdict(set, value)
         for key, value in cosynonyms.items()
     })
-    
+
     # Include only cuis that have more than `min_codes` in `mapping`
     if min_codes is not None:
         for cui in list(cosynonyms):
@@ -635,19 +681,20 @@ def mapping_to_max_recall_cuis(databases, mapping, min_codes=None):
 
     coding_systems = list(set(databases.values()))
 
-    cosynonyms = defaultdict(lambda: defaultdict(set))
+    all_cosynonyms = defaultdict(lambda: defaultdict(set))
     for database_id in mapping.keys():
         if mapping[database_id] is None:
             continue
-        coding_system = databases[database_id]
-        codes = mapping[database_id]
-        cui_codes = cosynonym_codes(codes, coding_system, coding_systems)
+        cui_codes = cosynonym_codes(mapping[database_id],
+                                    databases[database_id],
+                                    coding_systems)
         for cui in cui_codes.keys():
             for coding_system0 in cui_codes[cui].keys():
-                cosynonyms[cui][coding_system0]\
+                all_cosynonyms[cui][coding_system0]\
                     .update(cui_codes[cui][coding_system0])
 
-    return mapping_to_max_recall_cuis_aux(databases, cosynonyms, mapping, min_codes=min_codes)
+    return mapping_to_max_recall_cuis_aux(databases, all_cosynonyms,
+                                          mapping, min_codes=min_codes)
 
 
 def mapping_to_max_precision_cuis_aux(databases, cosynonyms, mapping, max_codes=None):

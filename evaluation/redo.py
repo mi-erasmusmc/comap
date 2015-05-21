@@ -44,6 +44,11 @@ def ifchange(*args, **kwargs):
     return RedoCommand('redo-ifchange', *args, **kwargs)
 
 
+def delegate(*args, **kwargs):
+    """Run the `redo-ifchange` command on all files in **kwargs. """
+    return RedoCommand('redo-delegate', *args, **kwargs)
+
+
 class RedoCommand(object):
 
     def __init__(self, command_name, *args, **kwargs):

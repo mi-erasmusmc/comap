@@ -593,9 +593,14 @@ def all_cosynonyms(mapping, databases):
 
     # Cleanup noise (introduced by RCD2/3 translations)
     for cui in list(res):
-        if not any(code in mapping[database_id]
-                   for database_id in databases
-                   for code in res[cui][databases[database_id]]):
+        cui_has_reference = False
+        for database_id in databases:
+            reference = mapping.get(database_id)
+            if reference is not None:
+                for_cui = res[cui].get(databases[database_id], [])
+                if set(for_cui) & set(reference):
+                    cui_has_reference = True
+        if not cui_has_reference:
             del res[cui]
 
     return res
@@ -763,6 +768,29 @@ def mapping_to_max_precision_cuis(databases, mapping, max_codes=None):
     return mapping_to_max_precision_cuis_aux(databases, cosynonyms, mapping, max_codes=max_codes)
 
 
+def create_dnf(mapping, cosynonyms, databases):
+    """
+    `mapping`: { database_id: { code } }
+    `cosynonyms`: { cui: { voc: { code } } }
+
+    RETURNs a mapping from sets of CUIs to sets of codes 
+      { { cui }: { code } }
+    such that the set of keys builds a DNF over CUIs for maxium recall.
+    """
+    res = defaultdict(lambda: defaultdict(set))
+    for database_id in databases:
+        codes = mapping.get(database_id)
+        if codes is not None:
+            for code in codes:
+                cuis = []
+                for cui in cosynonyms:
+                    if code in cosynonyms[cui].get(databases[database_id], []):
+                        cuis.append(cui)
+                if cuis:
+                    res[frozenset(cuis)][databases[database_id]].add(code)
+    return res
+
+
 def connected_sets(cuis, relations):
     """
     >>> cuis = [1,2,3]
@@ -857,3 +885,97 @@ def mega_map(data, path, f, inplace=False):
                             .format(type(data), path[:ix+1]))
         return data
     return aux(data, 0)
+
+
+def evaluations_to_xls(filename, evaluations, databases, outcomes=None, show_generated_cuis=True):
+
+    import pandas as pd
+
+    """
+    evaluations: { "by-variant": { variant_id: FOR_VARIANT } }
+    FOR_VARIANT: { "name"?: str,
+                   "by-outcome": { outcome_id: FOR_OUTCOME } }
+    FOR_OUTCOME: { "generated-cuis"?: {CUI},
+                   "by-database": { database_id: None | FOR_DATABASE } }
+    FOR_DATABASE: { "confusion": CONFUSION,
+                    "measurse": MEASURES }
+    CONFUSION: { "TP", "FP", "FN": {str} }
+    MEASURES: { "precision", "recall": float }
+    """
+
+    columns_per_database = ['TP', 'FN', 'FP', 'recall', 'precision']
+    columns = pd.MultiIndex.from_tuples(
+        ([('Generated', 'CUIs')] if show_generated_cuis else []) + [
+            (database_id, c)
+            for database_id in databases
+            for c in columns_per_database
+        ] + [
+            ('Average over databases', 'recall'),
+            ('Average over databases', 'precision'),
+        ]
+    )
+
+    str_of_list = lambda v: '{}: {}'.format(len(v), ' '.join(str(v0) for v0 in v))
+    index, rows = [], []
+
+    def average_if_notnull(series):
+        series = series[series.notnull()]
+        if len(series):
+            return series.sum() / len(series)
+        else:
+            return None
+
+    for variation_ix, (variation_id, for_variation) in enumerate(evaluations['by-variant'].items()):
+        if 0 < variation_ix:
+            index.extend(['', ''])
+            rows.extend([[None] * len(columns)] * 2)
+        index.append(variation_id)
+        rows.append([for_variation.get('name')] + [None] * (len(columns) - 1))
+        measures_over_outcomes = {
+            database_id: pd.DataFrame(columns=['recall', 'precision'])
+            for database_id in databases
+        }
+        for outcome_id, for_outcome in for_variation['by-outcome'].items():
+            row = []
+            if show_generated_cuis:
+                row.append(str_of_list(for_outcome['generated-cuis']))
+            measures_over_databases = pd.DataFrame(columns=['recall', 'precision'])
+            for database_id in databases:
+                comparison = for_outcome['by-database'].get(database_id)
+                if comparison:
+                    confusion, measures = comparison['confusion'], comparison['measures']
+                    measures_over_databases.ix[database_id] = measures
+                    measures_over_outcomes[database_id].ix[outcome_id] = measures
+                    row.extend([
+                        str_of_list(confusion['TP']),
+                        str_of_list(confusion['FN']),
+                        str_of_list(confusion['FP']),
+                        measures['recall'],
+                        measures['precision'],
+                    ])
+                else:
+                    row.extend([None] * len(columns_per_database))
+            if len(measures_over_databases):
+                recall = average_if_notnull(measures_over_databases.recall)
+                precision = average_if_notnull(measures_over_databases.precision)
+                row.extend([recall, precision])
+            else:
+                row.extend([None, None])
+            index.append(outcomes[outcome_id]['name'] if outcomes else outcome_id)
+            rows.append(row)
+
+        if len(for_variation['by-outcome']) > 1:
+            row = []
+            if show_generated_cuis:
+                row.append(None)
+            for database_id in databases:
+                recall = average_if_notnull(measures_over_outcomes[database_id].recall)
+                precision = average_if_notnull(measures_over_outcomes[database_id].precision)
+                row.extend([None] * (len(columns_per_database)-2) + [recall, precision])
+            index.append('Average over outcomes')
+            rows.append(row)
+
+    writer = pd.ExcelWriter(filename)
+    df = pd.DataFrame(rows, index=pd.Index(index), columns=columns)
+    df.to_excel(writer, float_format='%.2f')
+    writer.save()

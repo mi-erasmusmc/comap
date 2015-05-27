@@ -13,13 +13,24 @@ project_path = Path('projects') / project
 
 with redo.ifchange(
         evaluation_config=project_path / 'evaluation-config.yaml',
-        evaluation=project + '.evaluation.yaml'
+        evaluations='{}.evaluations.yaml'.format(project, variation_id),
+        references=(project_path / 'reference.yaml').as_posix()
 ) as files:
     evaluation_config = yaml.load(files['evaluation_config'])
-    evaluations = yaml.load(files['evaluation'])
+    evaluations = yaml.load(files['evaluations'])
+    references = yaml.load(files['references'])
 
 databases = OrderedDict(evaluation_config['databases'])
 outcome_ids = evaluation_config['outcome_ids']
+mappings = {
+    outcome_id: defaultdict(None, {
+        database_id: set(m['inclusion'] + m.get('exclusion', []))
+        for database_id in databases
+        for m in [ references[database_id]['mappings'][outcome_id] ]
+        if 'inclusion' in m
+    })
+    for outcome_id in outcome_ids
+}
 
 
 def get_cuis_for_codes(coding_system, codes):
@@ -57,7 +68,7 @@ class Analysis(object):
     def in_database(self, outcome_id, database_id, coding_system, cm):
         return None
 
-    def in_all_databases(self, outcome_id, cms):
+    def in_all_databases(self, outcome_id, confusions):
         return None
 
 
@@ -65,7 +76,6 @@ class Terms(Analysis):
 
     def __init__(self, *positions):
         self.positions = list(positions)
-
 
     def in_database(self, outcome_id, database_id, coding_system, cm):
         """
@@ -111,16 +121,18 @@ class Terms(Analysis):
         return res
 
 
-def get_false_negative_cuis(outcome_id, reference_variation='maximum-recall'):
-    reference_cuis = evaluations['by-variation'][reference_variation]['by-outcome'][outcome_id]['generated-cuis']
-    generated_cuis = evaluations['by-variation'][variation_id]['by-outcome'][outcome_id]['generated-cuis']
+def get_false_negative_cuis(outcome_id, reference_variation_id='maximum-recall'):
+    reference_cuis = evaluations['by-variant'][reference_variation_id]['by-outcome'][outcome_id]['generated-cuis']
+    generated_cuis = evaluations['by-variant'][variation_id]['by-outcome'][outcome_id]['generated-cuis']
+    print(sorted(reference_cuis), '-', sorted(generated_cuis), '=', sorted(set(reference_cuis) - set(generated_cuis)))
     return set(reference_cuis) - set(generated_cuis)
 
 
 class NumberOfFalseNegatives(Analysis):
 
-    def in_all_databases(self, outcome_id, cms):
+    def in_all_databases(self, outcome_id, confusions):
         cuis = get_false_negative_cuis(outcome_id)
+        print(outcome_id, cuis)
         return len(cuis)
 
 
@@ -129,7 +141,7 @@ class ClustersInFalseNegatives(Analysis):
     def __init__(self, relations):
         self.relations = relations
 
-    def in_all_databases(self, outcome_id, cms):
+    def in_all_databases(self, outcome_id, confusions):
 
         cuis = get_false_negative_cuis(outcome_id)
         relations = comap.relations_for_cuis(cuis, self.relations)
@@ -146,7 +158,7 @@ class ClustersInFalseNegatives(Analysis):
 
 class TermsInFalseNegatives(Analysis):
 
-    def in_all_databases(self, outcome_id, cms):
+    def in_all_databases(self, outcome_id, confusions):
         cuis = get_false_negative_cuis(outcome_id)
         terms_for_cuis = get_terms_for_cuis(cuis)
         return OrderedDict([
@@ -161,17 +173,19 @@ def run_analyses(analyses):
     ])
     for outcome_id in outcome_ids:
         res_for_outcome = res['by-outcome'][outcome_id] = OrderedDict()
-        by_database = evaluations['by-variation'][variation_id]['by-outcome'][outcome_id]['by-database']
+        by_database = evaluations['by-variant'][variation_id]['by-outcome'][outcome_id]['by-database']
 
         # All confusion matrices by database for the variation of the outcome
-        cms = {}
+        confusions = {}
         for database_id in databases.keys():
             if by_database[database_id]:
-                cms[database_id] = by_database[database_id]['codes']
+                confusions[database_id] = by_database[database_id]['confusion']
+
+        print(confusions)
 
         in_all_databases = OrderedDict()
         for analysis_id, analysis in analyses:
-            analysis_result = analysis.in_all_databases(outcome_id, cms)
+            analysis_result = analysis.in_all_databases(outcome_id, confusions)
             if analysis_result is not None:
                 in_all_databases[analysis_id] = analysis_result
         if in_all_databases:
@@ -198,6 +212,11 @@ analyses = [
     ('FN-clusters-RN-CHD-RB-PAR', ClustersInFalseNegatives(['RN', 'CHD', 'RB', 'PAR'])),
     ('FN-terms', TermsInFalseNegatives()),
 ]
+
+# dnfs = {}
+# for outcome_id in outcome_ids:
+#     cosynonyms = comap.all_cosynonyms(mappings[outcome_id], databases)
+#     dnfs[outcome_id] = comap.create_dnf(mapping, cosynonyms, databases)
 
 res = run_analyses(analyses)
 

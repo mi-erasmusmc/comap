@@ -75,6 +75,53 @@ class Variation(object):
         return generated, reference
 
 
+__related_cache = {}
+client = comap.ComapClient()
+def cache_related(generated_cuis, relations):
+    arg = (frozenset(generated_cuis), frozenset(relations))
+    if arg in __related_cache:
+        return __related_cache[arg]
+    else:
+        res = client.related(generated_cuis, relations, [])
+        __related_cache[arg] = res
+        return res
+
+
+class ExpandConceptsTowardsMaxRecallDNF(Variation):
+
+    """Expand concepts towards max-recall DNF"""
+
+    def __init__(self, depth, *relations):
+        self.depth = depth
+        self.relations = list(relations)
+
+    def description(self):
+        return super().description() + " ({} times over {})".format(self.depth, ', '.join(self.relations))
+
+    def vary_concepts_and_mapping(self, concepts, mapping, coding_systems, outcome_id):
+
+        cosynonyms = comap.all_cosynonyms(mapping, databases)
+        dnf = comap.create_dnf(mapping, cosynonyms, databases)
+
+        generated_cuis = {c['cui'] for c in concepts}
+        reference_cuis = {cui for cuis in dnf for cui in cuis}
+        expansions = defaultdict(set)
+
+        for _ in range(self.depth):
+            related = client.related(generated_cuis, self.relations, [])
+            for cui in related:
+                for rel in related[cui]:
+                    for concept in related[cui][rel]:
+                        related_cui = concept['cui']
+                        if related_cui in reference_cuis:
+                            generated_cuis.add(related_cui)
+                            expansions[cui].add(related_cui)
+
+        varied_concepts = client.umls_concepts(generated_cuis, coding_systems)
+
+        return varied_concepts, mapping
+
+
 class ExpandConceptsTowardsReference(Variation):
 
     """Expand concepts towards reference"""
@@ -94,12 +141,19 @@ class ExpandConceptsTowardsReference(Variation):
         all_cuis = generated_cuis | reference_cuis
         related_concepts = self.client.related(all_cuis, self.relations, [])
 
-        relation_data = related_concepts
-        for path, f in [([None, None, None], lambda c: c['cui']),
-                        ([None, None], set),
-                        ([None], lambda d: defaultdict(set, d)),
-                        ([], lambda d: defaultdict(lambda: defaultdict(set), d))]:
-            relation_data = comap.mega_map(relation_data, path, f)
+        relation_data = defaultdict(set, {
+            cui: defaultdict(set, {
+                rel: set(concept['cui'] for concept in related_concepts[cui][rel])
+                for rel in related_concepts[cui]
+            })
+            for cui in related_concepts
+        })
+        # relation_data = related_concepts
+        # for path, f in [([None, None, None], lambda c: c['cui']),
+        #                 ([None, None], set),
+        #                 ([None], lambda d: defaultdict(set, d)),
+        #                 ([], lambda d: defaultdict(lambda: defaultdict(set), d))]:
+        #     relation_data = comap.mega_map(relation_data, path, f)
 
         hierarchy = comap.DataHierarchy(self.relations, relation_data)
         related_cuis_by_rel = hierarchy.related(reference_cuis, generated_cuis)
@@ -248,14 +302,14 @@ class NormalizeCodeXDD(CodeNormalization):
                 return code
 
 
-class NormalizeRead2Codes(CodeNormalization):
+class NormalizeReadCodes(CodeNormalization):
 
     """Normalize READ2 codes to 5-byte"""
 
     READ_RE = re.compile(r'(?P<code>[A-Z\d][A-Za-z0-9.]{4}).*')
 
     def __init__(self):
-        super().__init__('RCD2')
+        super().__init__('RCD')
 
     def normalize(self, code, coding_system):
         m = self.READ_RE.match(code)
@@ -370,13 +424,11 @@ def create_result(references, concepts_by_outcome, variation):
             variation.vary_concepts_and_mapping(vary_code_concepts, vary_code_mapping, coding_systems, outcome_id)
         return varied_concepts, varied_reference
 
-    print(variation_id)
     res_for_variation = OrderedDict([
         ('name', variation.description()),
         ('by-outcome', OrderedDict()),
     ])
     for outcome_id in outcome_ids:
-        print(' - ', outcome_id)
         concepts = concepts_by_outcome[outcome_id]
         mapping = {
             database_id: mappings[outcome_id][database_id]
@@ -427,13 +479,13 @@ def create_result(references, concepts_by_outcome, variation):
                 measures = comap.measures(codes=varied_cm)
 
                 res_comparisons[database_id] = OrderedDict([
-                    ('codes', varied_cm),
+                    ('confusion', varied_cm),
                     ('measures', measures),
                 ])
     return res_for_variation
 
 
-default_variations0 = VariationChain(NormalizeCodeCase(), NormalizeCodeSuffixDot(), NormalizeRead2Codes(), NormalizeCodeXDD('ICPC'))
+default_variations0 = VariationChain(NormalizeCodeCase(), NormalizeCodeSuffixDot(), NormalizeReadCodes(), NormalizeCodeXDD('ICPC'))
 default_variations = VariationChain(default_variations0, description='Baseline variations')
 all_variations = OrderedDict([
     ('baseline', default_variations0),
@@ -442,6 +494,7 @@ all_variations = OrderedDict([
     ('maximum-precision', VariationChain(default_variations, MaximiumPrecision())),
     ('maximum-precision-max-1', VariationChain(default_variations, MaximiumPrecision(1))),
     ('3-letter-codes', VariationChain(default_variations, NormalizeCodeXDD('ICPC'))),
+
     ('expand-to-ref-RN-RB', VariationChain(default_variations, ExpandConceptsTowardsReference('RN', 'RB'))),
     ('expand-to-ref-CHD-PAR', VariationChain(default_variations, ExpandConceptsTowardsReference('CHD', 'PAR'))),
     ('expand-to-ref-RN-CHD', VariationChain(default_variations, ExpandConceptsTowardsReference('RN', 'CHD'))),
@@ -449,6 +502,21 @@ all_variations = OrderedDict([
     ('expand-to-ref-RN-CHD-RB-PAR', VariationChain(default_variations, ExpandConceptsTowardsReference('RN', 'CHD', 'RB', 'PAR'))),
     ('expand-to-ref-SIB-SY-RQ', VariationChain(default_variations, ExpandConceptsTowardsReference('SI', 'SY', 'RQ'))),
     ('expand-to-ref-*', VariationChain(default_variations, ExpandConceptsTowardsReference('RN', 'CHD', 'RB', 'PAR', 'SIB', 'SY', 'RQ'))),
+
+    ('expand-1-to-dnf-RN-RB', VariationChain(default_variations, ExpandConceptsTowardsMaxRecallDNF(1, 'RN', 'RB'))),
+    ('expand-1-to-dnf-CHD-PAR', VariationChain(default_variations, ExpandConceptsTowardsMaxRecallDNF(1, 'CHD', 'PAR'))),
+    ('expand-1-to-dnf-RN-CHD', VariationChain(default_variations, ExpandConceptsTowardsMaxRecallDNF(1, 'RN', 'CHD'))),
+    ('expand-1-to-dnf-RB-PAR', VariationChain(default_variations, ExpandConceptsTowardsMaxRecallDNF(1, 'RB', 'PAR'))),
+    ('expand-1-to-dnf-RN-CHD-RB-PAR', VariationChain(default_variations, ExpandConceptsTowardsMaxRecallDNF(1, 'RN', 'CHD', 'RB', 'PAR'))),
+
+    ('expand-2-to-dnf-RN-RB', VariationChain(default_variations, ExpandConceptsTowardsMaxRecallDNF(2, 'RN', 'RB'))),
+    ('expand-2-to-dnf-CHD-PAR', VariationChain(default_variations, ExpandConceptsTowardsMaxRecallDNF(2, 'CHD', 'PAR'))),
+    ('expand-2-to-dnf-RN-CHD', VariationChain(default_variations, ExpandConceptsTowardsMaxRecallDNF(2, 'RN', 'CHD'))),
+    ('expand-2-to-dnf-RB-PAR', VariationChain(default_variations, ExpandConceptsTowardsMaxRecallDNF(2, 'RB', 'PAR'))),
+    ('expand-2-to-dnf-RN-CHD-RB-PAR', VariationChain(default_variations, ExpandConceptsTowardsMaxRecallDNF(2, 'RN', 'CHD', 'RB', 'PAR'))),
+
+    ('expand-3-to-dnf-RN-CHD-RB-PAR', VariationChain(default_variations, ExpandConceptsTowardsMaxRecallDNF(3, 'RN', 'CHD', 'RB', 'PAR'))),
+
     ('related-FN', VariationChain(default_variations, IncludeRelatedCodes('FN'))),
     ('related-FN-FP', VariationChain(default_variations, IncludeRelatedCodes('FN-FP'))),
     ('related-concepts-RN', VariationChain(default_variations, IncludeRelatedConcepts('RN'))),

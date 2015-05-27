@@ -13,14 +13,21 @@ project = redo.base
 variation_ids = [
     'baseline',
     'maximum-recall',
-    'maximum-precision',
-    '3-letter-codes',
-    'expand-to-ref-RN-RB',
-    'expand-to-ref-CHD-PAR',
-    'expand-to-ref-RN-CHD',
-    'expand-to-ref-RB-PAR',
-    'expand-to-ref-RN-CHD-RB-PAR',
-    'expand-to-ref-SIB-SY-RQ',
+    # 'maximum-precision',
+    # '3-letter-codes',
+    # 'expand-to-ref-RN-RB',
+    # 'expand-to-ref-CHD-PAR',
+    # 'expand-to-ref-RN-CHD',
+    # 'expand-to-ref-RB-PAR',
+    # 'expand-to-ref-RN-CHD-RB-PAR',
+    # 'expand-to-ref-SIB-SY-RQ',
+    'expand-1-to-dnf-RN-RB',
+    'expand-1-to-dnf-CHD-PAR',
+    'expand-1-to-dnf-RN-CHD',
+    'expand-1-to-dnf-RB-PAR',
+    'expand-1-to-dnf-RN-CHD-RB-PAR',
+    'expand-2-to-dnf-RN-CHD-RB-PAR',
+    'expand-3-to-dnf-RN-CHD-RB-PAR',
 ]
 
 evaluation_filenames = [
@@ -30,7 +37,7 @@ evaluation_filenames = [
 
 with redo.ifchange(evaluation_files=evaluation_filenames) as files:
     evaluations = {
-        'by-variation': OrderedDict([
+        'by-variant': OrderedDict([
             (variation_id, yaml.load(f))
             for variation_id, f in zip(variation_ids, files['evaluation_files'])
         ])

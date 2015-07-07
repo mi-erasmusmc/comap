@@ -61,6 +61,9 @@ label {
   border: 1px solid #adadad;
   border-radius: 3px;
 }
+.concepts-grid .code {
+	display: block;
+}
 .comments-count::before {
 	content: "(";
 }
@@ -104,7 +107,24 @@ label {
 .tooltip-inner a {
   color: white;
 }
+.ngCell  {
+  display : table-cell;
+  height: auto !important;
+  overflow:visible;
+  position: static;
+}
 
+.ngRow {
+  display : table-row;
+  height: auto !important;
+  position: static;
+}
+
+.ngCellText{
+  height: auto !important;
+  white-space: normal;
+  overflow:visible;
+}
 .ngRow.selected.even {
   background-color: #C4E0E6;
 }

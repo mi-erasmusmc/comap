@@ -1017,7 +1017,8 @@ function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
                 displayName: codingSystem,
                 field: "codes." + codingSystem,
                 cellClass: 'scroll-y',
-                cellTemplate: "<span ng-repeat='code in row.getProperty(col.field)' ng-bind='code.id' title='{{code.preferredTerm}}'" +
+                cellTemplate:
+                	"<span ng-repeat='code in row.getProperty(col.field)' ng-bind='code.preferredTerm' title='{{code.id}}'" +
                         "class='code' ng-class=\"code.selected ? 'selected' : 'unselected'\"></span>",
                 sortFn: function(cs1, cs2) {
                     if (cs1.length != cs2.length) {

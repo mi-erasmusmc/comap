@@ -61,6 +61,15 @@ label {
   border: 1px solid #adadad;
   border-radius: 3px;
 }
+.comments-count::before {
+	content: "(";
+}
+.comments-count::after {
+	content: ")";
+}
+.comment-author::after {
+	content: ": ";
+}
 .code.unselected {
 	text-decoration: line-through;
 }

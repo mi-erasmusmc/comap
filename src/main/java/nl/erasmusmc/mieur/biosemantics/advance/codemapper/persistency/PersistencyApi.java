@@ -5,11 +5,15 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
 
 public class PersistencyApi {
 
@@ -128,6 +132,60 @@ public class PersistencyApi {
 			statement.executeUpdate();
 		} catch (SQLException e) {
 			throw CodeMapperException.server("Cannot execute query to set case definition", e);
+		}
+	}
+
+	public List<Comment> getComments(String project, String caseDefinition) throws CodeMapperException {
+		String query =
+				"SELECT users.username as author, `timestamp`, cui, content "
+				+ "FROM comments "
+				+ "INNER JOIN users ON comments.author = users.id "
+				+ "INNER JOIN case_definitions on comments.case_definition_id = case_definitions.id "
+				+ "INNER JOIN projects ON projects.id = case_definitions.project_id "
+				+ "WHERE projects.name = ? AND case_definitions.name = ? "
+				+ "ORDER BY `timestamp`";
+		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+			statement.setString(1, project);
+			statement.setString(2, caseDefinition);
+			System.out.println(statement);
+			ResultSet result = statement.executeQuery();
+			List<Comment> comments = new LinkedList<>(); 
+			while (result.next()) {
+				String author = result.getString("author");
+				Timestamp timestamp0 = result.getTimestamp("timestamp");
+				Calendar calendar = new GregorianCalendar();
+				calendar.setTime(timestamp0);
+				String timestamp = javax.xml.bind.DatatypeConverter.printDateTime(calendar);
+				String cui = result.getString("cui");
+				String content = result.getString("content");
+				Comment comment = new Comment(cui, author, timestamp, content);
+				comments.add(comment);
+			}
+			return comments;
+		} catch (SQLException e) {
+			throw CodeMapperException.server("Cannot execute query to get comments", e);
+		}
+	}
+
+	public void createComment(String project, String caseDefinition, User user, String cui, String content) throws CodeMapperException {
+		String query =
+				"INSERT INTO comments (case_definition_id, cui, author, content) "
+				+ "SELECT case_definitions.id, ?, users.id, ? "
+				+ "FROM users, projects "
+				+ "INNER JOIN case_definitions ON projects.id = case_definitions.project_id "
+				+ "WHERE projects.name = ? "
+				+ "AND case_definitions.name = ? "
+				+ "AND users.username = ?";
+		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+			statement.setString(1, cui);
+			statement.setString(2, content);
+			statement.setString(3, project);
+			statement.setString(4, caseDefinition);
+			statement.setString(5, user.getUsername());
+			System.out.println(statement);
+			statement.executeUpdate();
+		} catch (SQLException e) {
+			throw CodeMapperException.server("Cannot execute query to create comments", e);
 		}
 	}
 }

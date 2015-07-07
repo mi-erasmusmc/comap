@@ -1,0 +1,20 @@
+
+<div class="modal-header">
+  <h3 class="modal-title">Comments on {{concept.preferredName}}</h3>
+</div>
+<div class="modal-body ask-summary">
+  <ul>
+  	<li ng-repeat="comment in concept.comments">
+  		<span class="comment-author" ng-bind="comment.author" title="{{comment.timestamp}}"'></span>
+  		<span class="comment-content" ng-bind="comment.content"></span>
+  	</li>
+  	<li>
+  		<textarea ng-model="newComment" cols=50 rows=8>
+  		</textarea>
+  	</li>
+  </ul>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-primary" ng-click="save(newComment)" ng-disabled="newComment.length == 0">Save</button>
+  <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+</div>

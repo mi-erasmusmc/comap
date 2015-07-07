@@ -24,14 +24,20 @@ function UrlsService() {
 
     var persistencyApi = 'rest/persistency';
     this.projects = persistencyApi + '/projects';
+    this.project = function(project) {
+    	return this.projects + '/' + encodeURIComponent(project);
+    }
     this.caseDefinitions = function(project) {
-        return this.projects + '/' + encodeURIComponent(project) + '/case-definitions'; 
+        return this.project(project) + '/case-definitions'; 
     };
-    this.caseDefinition = function(project, caseDefinitionName) {
-        return this.caseDefinitions(project) + '/' +  encodeURIComponent(caseDefinitionName)
+    this.caseDefinition = function(project, caseDefinition) {
+        return this.caseDefinitions(project) + '/' +  encodeURIComponent(caseDefinition)
     };
     this.usersForProject = function(project) {
-        return this.projects + '/' + encodeURIComponent(project) + '/users';
+        return this.project(project) + '/users';
+    };
+    this.comments = function(project, caseDefinition) {
+    	return this.caseDefinition(project, caseDefinition) + '/comments';
     };
     
     var codeMapperApi = 'rest/code-mapper';

@@ -49,3 +49,14 @@ create table case_definitions (
   unique (project_id, name),
   primary key (id)
 );
+
+drop table if exists comments;
+
+create table comments (
+  id int not null auto_increment primary key,
+  `timestamp` TIMESTAMP not null default CURRENT_TIMESTAMP,
+  case_definition_id int not null references case_definitions(id),
+  cui char(8) not null,
+  author int not null references users(id),
+  content mediumtext not null
+);

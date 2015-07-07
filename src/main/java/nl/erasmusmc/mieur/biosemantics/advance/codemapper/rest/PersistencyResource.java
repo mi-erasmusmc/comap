@@ -17,6 +17,7 @@ import javax.ws.rs.core.SecurityContext;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.Comment;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.PersistencyApi;
 
 import org.apache.log4j.Logger;
@@ -110,6 +111,35 @@ public class PersistencyResource {
 			api.setCaseDefinition(project, name, stateJson);
 		} catch (CodeMapperException e) {
 			System.err.println("Couldn't save case definition");
+			e.printStackTrace();
+			throw new InternalServerErrorException(e);
+		}
+	}
+
+	@GET
+	@Path("projects/{project}/case-definitions/{case-definition}/comments")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<Comment> getComments(@PathParam("project") String project, @PathParam("case-definition") String caseDefinition, @Context User user) {
+		assertAdminOrProjectMember(user, project);
+		try {
+			return api.getComments(project, caseDefinition);
+		} catch (CodeMapperException e) {
+			System.err.println("Couldn't get comments");
+			e.printStackTrace();
+			throw new InternalServerErrorException(e);
+		}
+	}
+
+	@POST
+	@Path("projects/{project}/case-definitions/{case-definition}/comments")
+	@Produces(MediaType.APPLICATION_JSON)
+	public void createComment(@PathParam("project") String project, @PathParam("case-definition") String caseDefinition, @Context User user,
+			@FormParam("cui") String cui, @FormParam("comment") String comment) {
+		assertAdminOrProjectMember(user, project);
+		try {
+			api.createComment(project, caseDefinition, user, cui, comment);
+		} catch (CodeMapperException e) {
+			System.err.println("Couldn't create comment");
 			e.printStackTrace();
 			throw new InternalServerErrorException(e);
 		}

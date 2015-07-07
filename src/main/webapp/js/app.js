@@ -1,6 +1,11 @@
 
 var codeMapperApp =
     angular.module("CodeMapperApp", [ "ui.bootstrap", "ngSanitize", "ngGrid", "ngRoute", "blockUI" ])
+    	.factory('config', function() {
+    		return {
+    			commentsReloadInterval: 5000
+    		};
+    	})
         .config(function ConfigBlockUI(blockUIConfig) {
             blockUIConfig.message = 'Loading...';
             blockUIConfig.delay = 0;

@@ -45,7 +45,7 @@ function handleError(err, status) {
     }
 }
 
-function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $log, $routeParams, $location, urls, dataService, user) {
+function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $interval, $q, $log, $routeParams, $location, config, urls, dataService, user) {
     
     $scope.user = user;
     $scope.project = $routeParams.project;
@@ -142,7 +142,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
     
     /* CONCEPTS */
     
-    $scope.conceptsColumnDefs = createConceptsColumnDefs(true, []);
+    $scope.conceptsColumnDefs = createConceptsColumnDefs(true, [], true);
     $scope.conceptsGridOptions = {
         data: "state.mapping.concepts",
         rowHeight: 70,
@@ -228,7 +228,63 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
             })
             .length;
     }
-
+    
+    /* COMMENTS */
+    
+    $scope.showComments = function(concept) {
+    	showComments($modal, concept)
+    		.then(function(comment) {
+    			var url = urls.comments($scope.project, $scope.caseDefinitionName);
+    			var data = {
+					cui: concept.cui,
+					comment: comment
+    			};
+    			console.log(url, data);
+                return $http.post(url, data, FORM_ENCODED_POST)
+	            	.error(function(err, code) {
+	            		switch (code) {
+	            			case 401:
+	            				alert("You are not member for project " + $scope.project + ":(");
+	            				break;
+	            			default:
+	            				alert("Unknow error", err, code);
+	            		}
+	            	})
+                	.success(function() {
+                		$scope.setMessage("Comment posted");
+                		$scope.updateComments();
+                	});
+    		});
+    };
+    
+    $scope.updateComments = function() {
+    	if ($scope.state.mapping !== null) {
+			var url = urls.comments($scope.project, $scope.caseDefinitionName);
+	    	$http.get(url)
+	    		.error(function(err, code) {
+					alert("Cannot load comments", err, code);
+	    		})
+	    		.success(function(comments) {
+	    			var commentsByCui = {};
+	    			angular.forEach(comments, function(comment) {
+	    				if (!commentsByCui.hasOwnProperty(comment.cui)) {
+	    					commentsByCui[comment.cui] = []
+	    				}
+	    				commentsByCui[comment.cui].push(comment);
+	    			})
+	    			$scope.state.mapping.concepts.forEach(function(concept) {
+	    				if (commentsByCui.hasOwnProperty(concept.cui)) {
+	    					concept.comments = commentsByCui[concept.cui];
+	    				} else {
+	    					concept.comments = [];
+	    				}
+	    			});
+	    		})
+    	}
+    };
+    
+    $interval($scope.updateComments, config.commentsReloadInterval);
+    
     /* FUNCTIONS */
     
     /** Load coding or create new coding. */
@@ -257,7 +313,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $q, $
                 $scope.$broadcast("indexingUpdated", state.indexing);
                 $scope.$broadcast("setSelectedSemanticTypes", state.mapping.semanticTypes);
                 $scope.$broadcast("setSelectedCodingSystems", state.mapping.codingSystems);
-                $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems);
+                $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems, true);
                 $scope.activateTab("concepts-tab");
                 $scope.setMessage("Mapping for " + $scope.caseDefinitionName + " loaded.");
             })
@@ -875,6 +931,28 @@ function askSummary($modal, caseDefinitionName, history, numberUnsafedChanges) {
     return dialog.result;
 }
 
+function ShowCommentsCtrl($scope, $http, $modalInstance, concept) {
+	$scope.concept = concept;
+	$scope.save = function(newComment) {
+		$modalInstance.close(newComment);
+	};
+	$scope.cancel = function() {
+		$modalInstance.dismiss();
+	};
+}
+
+function showComments($modal, concept) {
+	var dialog = $modal.open({
+		templateUrl: 'partials/ShowComments.html',
+		controller: 'ShowCommentsCtrl',
+		size: 'lg',
+		resolve: {
+			concept: function() { return concept; }
+		}
+	});
+	return dialog.result;
+}
+
 var originColumnDef = {
     displayName: 'Origin',
     cellClass: 'scroll-y',
@@ -916,7 +994,7 @@ var originColumnDef = {
 
 
 /** Generate column definitions */
-function createConceptsColumnDefs(showOrigin, codingSystems) {
+function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
     var name = 
         { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip',
             cellTemplate: 
@@ -952,12 +1030,30 @@ function createConceptsColumnDefs(showOrigin, codingSystems) {
                 }
             };
         });
+    
+    var comments;
+    if (showComments)
+    	comments = [{
+    		displayName: "Comments",
+    		field: "comments",
+    		cellTemplate:
+    			"<div ng-if='row.entity.comments !== undefined'>" +
+    			"<button ng-click='showComments(row.entity)' title='Show and create comments'><i class='glyphicon glyphicon-comment'></i></button>" +
+    			"<span class='comments-count' ng-bind='row.entity.comments.length'></span>" +
+    			"</div>" +
+    			"<div ng-if='row.entity.comments == undefined'>" +
+    			"<i class='glyphicon glyphicon-option-horizontal'></i>" +
+    			"</div>"
+    	}];
+    else
+    	comments = [];
     return [].concat(
             [name],
             [semantics],
             showOrigin ? [originColumnDef] : [],
             SHOW_UMLS_COLUMN ? [cui] : [],
-            codingSystemsColumnDefs);
+            codingSystemsColumnDefs,
+            comments);
 }
 
 

@@ -8,9 +8,6 @@ import argparse
 import sys
 from itertools import groupby
 
-db = MySQLdb.connect("localhost","root","root","code-mapper")
-cur = db.cursor(MySQLdb.cursors.DictCursor)
-
 def sha256(password):
     return hashlib.sha256(password).hexdigest()
 
@@ -23,7 +20,7 @@ def create_user(username, password):
     password = password or read_password()
     cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)",
                 [username, sha256(password)])
-    print("Created project with ID", db.insert_id())
+    print("Created user with ID", db.insert_id())
     db.commit()
 
 def create_project(name):
@@ -40,11 +37,11 @@ def get_project(name):
     cur.execute("SELECT id FROM projects where name = %s", [name])
     return cur.fetchone()['id']
 
-def add_user_to_project(username, project):
+def add_user_to_project(username, project, role):
     user_id = get_user(username)
     project_id = get_project(project)
-    cur.execute("INSERT INTO users_projects (user_id, project_id) VALUES (%s, %s)",
-                [user_id, project_id])
+    cur.execute("INSERT INTO users_projects (user_id, project_id, role) VALUES (%s, %s, %s)",
+                [user_id, project_id, role])
     print("Added user %d to project %d with ID %d" %
           (user_id, project_id, db.insert_id()))
     db.commit()
@@ -58,7 +55,7 @@ def show(users, projects):
     cur.execute('SELECT * FROM users ORDER BY id')
     all_users = list(cur.fetchall())
 
-    cur.execute('SELECT users.username, projects.name, projects.id FROM users_projects '
+    cur.execute('SELECT users.username, projects.name, projects.id, users_projects.role FROM users_projects '
                 'INNER JOIN users ON users_projects.user_id = users.id '
                 'INNER JOIN projects ON users_projects.project_id = projects.id '
                 'ORDER BY project_id')
@@ -70,19 +67,17 @@ def show(users, projects):
             print("%s (%d)" % (user['username'], user['id']))
             for up in ups:
                if up['username'] == user['username']:
-                   print(" - %s" % up['name'])
+                   print(" - %s (%s)" % (up['name'], up['role']))
 
     if users and projects:
         print()
 
     if projects:
         print("# PROJECTS")
-        longest = max(len(up['name']) for up in ups)
         grouper = lambda up: {'name': up['name'], 'id': up['id']}
         for project, ups_in_project in groupby(ups, grouper):
-            prefix = " " * (longest - len(project['name']))
             print("\n## %s (%d)" % (project['name'], project['id']))
-            print("\nUsers: %s" % ", ".join(up['username'] for up in ups_in_project))
+            print("\nUsers: %s" % ", ".join('%s (%s)'%(up['username'], up['role']) for up in ups_in_project))
             print("\nCase definitions\n")
             cur.execute('SELECT * FROM case_definitions WHERE project_id = %s', [project['id']])
             for cd in cur.fetchall():
@@ -92,6 +87,10 @@ def show(users, projects):
     
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--db-host', required=True)
+    parser.add_argument('--db-name', required=True)
+    parser.add_argument('--db-user', required=True)
+    parser.add_argument('--db-password', required=True)
     subparsers = parser.add_subparsers()
 
     parser_create_user = subparsers.add_parser('create-user')
@@ -106,6 +105,7 @@ def main():
     parser_add_user_to_project = subparsers.add_parser('add-user-to-project')
     parser_add_user_to_project.add_argument('--username', required=True)
     parser_add_user_to_project.add_argument('--project', required=True)
+    parser_add_user_to_project.add_argument('--role', required=True)
     parser_add_user_to_project.set_defaults(func=add_user_to_project)
 
     parser_show = subparsers.add_parser('show')
@@ -114,10 +114,15 @@ def main():
     parser_show.set_defaults(func=show)
 
     args = parser.parse_args()
+
+    global db, cur
+    db = MySQLdb.connect(args.db_host, args.db_user, args.db_password, args.db_name)
+    cur = db.cursor(MySQLdb.cursors.DictCursor)
+
     kwargs = {
         key: value
         for key, value in vars(args).iteritems()
-        if key != "func"
+        if key != "func" and not key.startswith('db_')
     }
     args.func(**kwargs)
 

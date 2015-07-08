@@ -1,21 +1,22 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification;
 
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class User {
 	private String username;
-	private List<String> projects;
+	private Map<String, Set<ProjectPermission>> projectPermissions;
 	private boolean isAdmin;
 	public User() {
 		this(false, null, null);
 	}
-	public User(boolean isAdmin, String username, List<String> projects) {
+	public User(boolean isAdmin, String username, Map<String, Set<ProjectPermission>> projectPermissions) {
 		this.isAdmin = isAdmin;
 		this.username = username;
-		this.projects = projects;
+		this.projectPermissions = projectPermissions;
 	}
 	@Override
 	public String toString() {
@@ -33,10 +34,10 @@ public class User {
 	public void setUsername(String username) {
 		this.username = username;
 	}
-	public List<String> getProjects() {
-		return projects;
+	public Map<String, Set<ProjectPermission>> getProjectPermissions() {
+		return projectPermissions;
 	}
-	public void setProjects(List<String> projects) {
-		this.projects = projects;
+	public void setProjectPermissions(Map<String, Set<ProjectPermission>> projectPermissions) {
+		this.projectPermissions = projectPermissions;
 	}
 }

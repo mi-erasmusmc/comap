@@ -8,8 +8,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -115,9 +116,9 @@ public class AuthentificationApi {
 			if (result.next()) {
 				String passwordHash = result.getString(1);
 				if (passwordHash.equals(hash(password))) {
-					List<String> projects = persistencyApi.getProjects(username);
+					Map<String, Set<ProjectPermission>> projectPermissions = persistencyApi.getProjectPermissions(username);
 					boolean isAdmin = ADMIN_NAME.equals(username);
-					User user = new User(isAdmin, username, projects);
+					User user = new User(isAdmin, username, projectPermissions);
 					request.getSession().setAttribute(SESSION_ATTRIBUTE_USER, user);
 					return LoginResult.createSuccess(user);
 				} else

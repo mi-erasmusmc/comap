@@ -8,14 +8,16 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
     $scope.newNames = {};
     $rootScope.subtitle = "";
     
-    $http.get(urls.projects)
+    $http.get(urls.projectPermissions)
         .error(function(err) {
             var msg = "Couldn't load projects from url " + urls.projects;
             error(msg);
         })
-        .success(function(projects) {
-            $scope.projects = projects;
-            projects.forEach(function(project) {
+        .success(function(projectPermissions) {
+            angular.forEach(projectPermissions, function(perms, project) {
+            	$scope.projects.push(project);
+            });
+            $scope.projects.forEach(function(project) {
                 $scope.newNames[project] = "";
                 $http.get(urls.caseDefinitions(project))
                     .error(function(err) {
@@ -31,7 +33,7 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
                         error(msg);
                     })
                     .success(function(users) {
-                        $scope.usersForProject[project] = users.sort();
+                        $scope.usersForProject[project] = users;
                     });
             });
         });
@@ -42,5 +44,9 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
     
     $scope.create = function(project, name) {
         $location.path('/case-definition/' + encodeURIComponent(project) + '/' + encodeURIComponent(name));
+    }
+    
+    $scope.isMember = function(project) {
+    	return $scope.usersForProject[project].indexOf("Member") != -1;
     }
 }

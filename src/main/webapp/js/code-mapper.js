@@ -50,6 +50,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $scope.user = user;
     $scope.project = $routeParams.project;
     $scope.caseDefinitionName = $routeParams.caseDefinitionName;
+    $scope.roles = user.projectPermissions[$scope.project];
     
     $rootScope.subtitle = $scope.caseDefinitionName + " (" + $scope.project + ")";
     
@@ -79,6 +80,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             }
         }
     });
+    
+    $scope.userIsMember = function() {
+    	return user.projectPermissions[$scope.project].indexOf('Member') != -1;
+    }
     
     /* KEYBOARD */
     
@@ -232,58 +237,86 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     /* COMMENTS */
     
     $scope.showComments = function(concept) {
-    	showComments($modal, concept)
+    	showComments($modal, concept, $scope.numberUnsafedChanges == 0)
     		.then(function(comment) {
-    			var url = urls.comments($scope.project, $scope.caseDefinitionName);
-    			var data = {
-					cui: concept.cui,
-					comment: comment
-    			};
-    			console.log(url, data);
-                return $http.post(url, data, FORM_ENCODED_POST)
-	            	.error(function(err, code) {
-	            		switch (code) {
-	            			case 401:
-	            				alert("You are not member for project " + $scope.project + ":(");
-	            				break;
-	            			default:
-	            				alert("Unknow error", err, code);
-	            		}
-	            	})
-                	.success(function() {
-                		$scope.setMessage("Comment posted");
-                		$scope.updateComments();
-                	});
+        		if ($scope.numberUnsafedChanges != 0) {
+        			alert("Cannot post comment with unsafed changes to the case definition");
+        		} else {
+	   			    var url = urls.comments($scope.project, $scope.caseDefinitionName);
+	    			var data = {
+						cui: concept.cui,
+						comment: comment
+	    			};
+	    			console.log(url, data);
+	                return $http.post(url, data, FORM_ENCODED_POST)
+		            	.error(function(err, code) {
+		            		switch (code) {
+		            			case 401:
+		            				alert("You are not member for project " + $scope.project + ":(");
+		            				break;
+		            			default:
+		            				alert("Unknow error", err, code);
+		            		}
+		            	})
+	                	.success(function() {
+	                		$scope.setMessage("Comment posted");
+	                		$scope.updateComments();
+	                	});
+        		}
     		});
     };
     
     $scope.updateComments = function() {
     	if ($scope.state.mapping !== null) {
-			var url = urls.comments($scope.project, $scope.caseDefinitionName);
-	    	$http.get(url)
+	    	$http.get(urls.comments($scope.project, $scope.caseDefinitionName))
 	    		.error(function(err, code) {
-					alert("Cannot load comments", err, code);
+	    			switch (code) {
+	    				case 401:
+	    					alert("Not authorized. Please reload.", err)
+	    					break;
+	    				default:
+	    					alert("Cannot load comments", err, code);
+	    			}
 	    		})
 	    		.success(function(comments) {
 	    			var commentsByCui = {};
 	    			angular.forEach(comments, function(comment) {
+	    				comment.timestamp = new Date(comment.timestamp);
 	    				if (!commentsByCui.hasOwnProperty(comment.cui)) {
 	    					commentsByCui[comment.cui] = []
 	    				}
 	    				commentsByCui[comment.cui].push(comment);
 	    			})
 	    			$scope.state.mapping.concepts.forEach(function(concept) {
+	    				var comments;
 	    				if (commentsByCui.hasOwnProperty(concept.cui)) {
-	    					concept.comments = commentsByCui[concept.cui];
+	    					comments = commentsByCui[concept.cui];
 	    				} else {
-	    					concept.comments = [];
+	    					comments = [];
 	    				}
+	    				concept.comments = comments;
 	    			});
 	    		})
     	}
     };
+
+    $scope.updateCommentsPromise = null;
     
-    $interval($scope.updateComments, config.commentsReloadInterval);
+    $scope.intervalUpdateComments = function(startNotStop) {
+    	console.log("intervalUpdateComments", startNotStop, $scope.updateCommentsPromise);
+    	if (startNotStop) {
+    		$scope.updateComments();
+    		if ($scope.updateCommentsPromise == null) {
+    			$scope.updateCommentsPromise = $interval($scope.updateComments, config.commentsReloadInterval);
+    		}
+    	}
+	    else {
+	    	if ($scope.updateCommentsPromise != null) {
+	    		$scope.updateCommentsPromise.cancel();
+	    		$scope.updateCommentsPromise = null;	    		
+	    	}
+	    }
+    };
     
     /* FUNCTIONS */
     
@@ -315,7 +348,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 $scope.$broadcast("setSelectedCodingSystems", state.mapping.codingSystems);
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems, true);
                 $scope.activateTab("concepts-tab");
-                $scope.setMessage("Mapping for " + $scope.caseDefinitionName + " loaded.");
+                var msg = "Mapping for " + $scope.caseDefinitionName + " loaded.";
+                if (angular.equals($scope.roles, ['Commentator'])) {
+                	msg += " Use the speech baloon button to comment on a concept";
+                }
+				$scope.setMessage(msg);
+				$scope.intervalUpdateComments(true);
             })
             .finally(function() {
                 $scope.numberUnsafedChanges = 0;
@@ -332,8 +370,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         askSummary($modal, $scope.caseDefinitionName, $scope.state.mapping.history, $scope.numberUnsafedChanges)
             .then(function(summary) {
                 $scope.historyStep("Summarize", summary, null);
+                var state = angular.copy($scope.state);
+                angular.forEach(state.concepts, function(concept) {
+                	delete concept.comments;
+                });
                 var data = {
-                    state: angular.toJson($scope.state)
+                    state: angular.toJson(state)
                 };
                 $http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)
                     .error(function(e, status) {
@@ -346,6 +388,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     })
                     .success(function() {
                         $scope.setMessage("Saved with summary: " + summary);
+                        $scope.intervalUpdateComments(true);
                         $scope.numberUnsafedChanges = 0;
                     });
             });
@@ -514,6 +557,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         console.log("DISCARD");
         $scope.$apply(function() {
             $scope.state.mapping = null;
+            $scope.intervalUpdateComments(false);
             $scope.conceptsColumnDefs = createConceptsColumnDefs(true, []);
             $scope.setMessage("Current mapping has been discarded.");
         });
@@ -931,23 +975,26 @@ function askSummary($modal, caseDefinitionName, history, numberUnsafedChanges) {
     return dialog.result;
 }
 
-function ShowCommentsCtrl($scope, $http, $modalInstance, concept) {
+function ShowCommentsCtrl($scope, $http, $modalInstance, concept, canEnterNewComment) {
 	$scope.concept = concept;
+	$scope.canEnterNewComment = canEnterNewComment;
+	$scope.newComment = { text: "" };
 	$scope.save = function(newComment) {
-		$modalInstance.close(newComment);
+		$modalInstance.close(newComment.text);
 	};
 	$scope.cancel = function() {
 		$modalInstance.dismiss();
 	};
 }
 
-function showComments($modal, concept) {
+function showComments($modal, concept, canEnterNewComment) {
 	var dialog = $modal.open({
 		templateUrl: 'partials/ShowComments.html',
 		controller: 'ShowCommentsCtrl',
 		size: 'lg',
 		resolve: {
-			concept: function() { return concept; }
+			concept: function() { return concept; },
+			canEnterNewComment: function() { return canEnterNewComment; }
 		}
 	});
 	return dialog.result;
@@ -1038,13 +1085,11 @@ function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
     		displayName: "Comments",
     		field: "comments",
     		cellTemplate:
-    			"<div ng-if='row.entity.comments !== undefined'>" +
-    			"<button ng-click='showComments(row.entity)' title='Show and create comments'><i class='glyphicon glyphicon-comment'></i></button>" +
-    			"<span class='comments-count' ng-bind='row.entity.comments.length'></span>" +
-    			"</div>" +
-    			"<div ng-if='row.entity.comments == undefined'>" +
-    			"<i class='glyphicon glyphicon-option-horizontal'></i>" +
-    			"</div>"
+    			"<button title='Show and create comments' ng-click='showComments(row.entity)' ng-disabled='row.entity.comments | isUndefined'>" +
+    			"<i class='glyphicon glyphicon-comment'></i>" +
+    			"</button>" +
+    			"<i class='glyphicon glyphicon-option-horizontal' ng-if='row.entity.comments | isUndefined'></i>" +
+    			"<span class='comments-count' ng-bind='row.entity.comments.length' ng-if='row.entity.comments | isArray'></span>"
     	}];
     else
     	comments = [];

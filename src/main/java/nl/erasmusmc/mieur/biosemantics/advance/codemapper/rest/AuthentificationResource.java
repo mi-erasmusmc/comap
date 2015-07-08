@@ -39,6 +39,7 @@ public class AuthentificationResource {
 		try {
 			return api.login(username, password, request);
 		} catch (CodeMapperException e) {
+			e.printStackTrace();
 			throw new InternalServerErrorException(e);
 		}
 	}

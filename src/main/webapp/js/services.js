@@ -23,6 +23,7 @@ function UrlsService() {
     this.stopwords = "data/stopwords.json";
 
     var persistencyApi = 'rest/persistency';
+    this.projectPermissions = persistencyApi + '/project-permissions';
     this.projects = persistencyApi + '/projects';
     this.project = function(project) {
     	return this.projects + '/' + encodeURIComponent(project);

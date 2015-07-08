@@ -1,4 +1,4 @@
-package nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency;
+package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
 
 import javax.xml.bind.annotation.XmlRootElement;
 

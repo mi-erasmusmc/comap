@@ -7,12 +7,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.Comment;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.ProjectPermission;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
 
 public class PersistencyApi {
@@ -147,7 +154,6 @@ public class PersistencyApi {
 		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
 			statement.setString(1, project);
 			statement.setString(2, caseDefinition);
-			System.out.println(statement);
 			ResultSet result = statement.executeQuery();
 			List<Comment> comments = new LinkedList<>(); 
 			while (result.next()) {
@@ -182,7 +188,6 @@ public class PersistencyApi {
 			statement.setString(3, project);
 			statement.setString(4, caseDefinition);
 			statement.setString(5, user.getUsername());
-			System.out.println(statement);
 			statement.executeUpdate();
 		} catch (SQLException e) {
 			throw CodeMapperException.server("Cannot execute query to create comments", e);

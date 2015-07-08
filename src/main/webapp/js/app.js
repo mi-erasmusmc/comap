@@ -14,6 +14,9 @@ var codeMapperApp =
                 if (config.url.match(/autocomplete/)) {
                     return false;
                 }
+                if (config.method == "GET" && config.url.match(/\/comments$/)) {
+                	return false;
+                }
             };
         })
         .config(function($routeProvider) {
@@ -55,6 +58,12 @@ var codeMapperApp =
         })
         .filter('showConcepts', function() {
             return showConcepts;
+        })
+        .filter('isUndefined', function() {
+        	return angular.isUndefined;
+        })
+        .filter('isArray', function() {
+        	return angular.isArray;
         })
         .controller("ShowConceptsCtrl", ShowConceptsCtrl)
         .controller("CodingSystemsCtrl", CodingSystemsCtrl)

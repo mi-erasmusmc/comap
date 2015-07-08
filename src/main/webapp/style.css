@@ -64,14 +64,22 @@ label {
 .concepts-grid .code {
 	display: block;
 }
-.comments-count::before {
+.comment-timestamp::before, .comments-count::before {
 	content: "(";
 }
 .comments-count::after {
 	content: ")";
 }
-.comment-author::after {
-	content: ": ";
+.comment-timestamp::after {
+	content: ")";
+}
+.comment-content {
+	display: block;
+	margin-left: 2em;
+	white-space: pre;
+}
+.comment-author {
+	font-style: italic;
 }
 .code.unselected {
 	text-decoration: line-through;

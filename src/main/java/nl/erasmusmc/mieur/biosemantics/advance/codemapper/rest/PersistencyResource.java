@@ -1,6 +1,12 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.FormParam;
@@ -16,8 +22,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.Comment;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.ProjectPermission;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.Comment;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.PersistencyApi;
 
 import org.apache.log4j.Logger;

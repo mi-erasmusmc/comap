@@ -3,18 +3,22 @@
   <h3 class="modal-title">Comments on {{concept.preferredName}}</h3>
 </div>
 <div class="modal-body ask-summary">
+  <p class="alert alert-info" ng-if='!canEnterNewComment'>
+  To enter a new comment, you have to save the mapping first.
+  </p>
   <ul>
   	<li ng-repeat="comment in concept.comments">
-  		<span class="comment-author" ng-bind="comment.author" title="{{comment.timestamp}}"'></span>
+  		<span class="comment-author" ng-bind="comment.author"></span>
+  		<span class="comment-timestamp" ng-bind="comment.timestamp | date:'mediumDate'" title="{{comment.timestamp|date:'medium'}}"></span>
   		<span class="comment-content" ng-bind="comment.content"></span>
   	</li>
-  	<li>
-  		<textarea ng-model="newComment" cols=50 rows=8>
+  	<li ng-if='canEnterNewComment'>
+  		<textarea ng-model="newComment.text" cols=72 rows=4>
   		</textarea>
   	</li>
   </ul>
 </div>
 <div class="modal-footer">
-  <button class="btn btn-primary" ng-click="save(newComment)" ng-disabled="newComment.length == 0">Save</button>
+  <button class="btn btn-primary" ng-click="save(newComment)" ng-if='canEnterNewComment' ng-disabled="!newComment.text">Save</button>
   <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
 </div>

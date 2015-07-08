@@ -361,7 +361,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 				$scope.setMessage(msg);
 				$scope.intervalUpdateComments(true);
             })
-            .finally(function() {
+            ['finally'](function() {
                 $scope.numberUnsafedChanges = 0;
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems, true);
             });
@@ -684,7 +684,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         $scope.historyStep(operation, concepts.map(reduceConcept), selectedRelatedConcepts.map(reduceConcept), descr);
                     });
             })
-            .finally(function() {
+            ['finally'](function() {
                 blockUI.stop();
             });
     };

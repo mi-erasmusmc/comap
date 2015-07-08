@@ -24,9 +24,7 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest.CodeMapperApplica
 
 public class AuthentificationApi {
 
-	public static final String SESSION_ATTRIBUTE_USER= "user";
-	private static final Object ADMIN_NAME = "admin";
-
+	public static final String SESSION_ATTRIBUTE_USER = "user";
 
 	PersistencyApi persistencyApi = CodeMapperApplication.getPersistencyApi();
 	private String uri;
@@ -117,8 +115,7 @@ public class AuthentificationApi {
 				String passwordHash = result.getString(1);
 				if (passwordHash.equals(hash(password))) {
 					Map<String, Set<ProjectPermission>> projectPermissions = persistencyApi.getProjectPermissions(username);
-					boolean isAdmin = ADMIN_NAME.equals(username);
-					User user = new User(isAdmin, username, projectPermissions);
+					User user = new User(username, projectPermissions);
 					request.getSession().setAttribute(SESSION_ATTRIBUTE_USER, user);
 					return LoginResult.createSuccess(user);
 				} else

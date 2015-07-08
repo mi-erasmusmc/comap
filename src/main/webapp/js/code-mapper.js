@@ -50,7 +50,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $scope.user = user;
     $scope.project = $routeParams.project;
     $scope.caseDefinitionName = $routeParams.caseDefinitionName;
-    $scope.roles = user.projectPermissions[$scope.project];
+    
+    var roles = user.projectPermissions[$scope.project];
     
     $rootScope.subtitle = $scope.caseDefinitionName + " (" + $scope.project + ")";
     
@@ -81,8 +82,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         }
     });
     
-    $scope.userIsMember = function() {
-    	return user.projectPermissions[$scope.project].indexOf('Member') != -1;
+    $scope.userCanEdit = function() {
+    	return roles.indexOf('Editor') != -1;
     }
     
     /* KEYBOARD */
@@ -300,23 +301,28 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     	}
     };
 
-    $scope.updateCommentsPromise = null;
+    var updateCommentsPromise = null;
     
     $scope.intervalUpdateComments = function(startNotStop) {
-    	console.log("intervalUpdateComments", startNotStop, $scope.updateCommentsPromise);
+    	console.log("intervalUpdateComments", startNotStop, updateCommentsPromise);
     	if (startNotStop) {
     		$scope.updateComments();
-    		if ($scope.updateCommentsPromise == null) {
-    			$scope.updateCommentsPromise = $interval($scope.updateComments, config.commentsReloadInterval);
+    		if (updateCommentsPromise == null) {
+    			updateCommentsPromise = $interval($scope.updateComments, config.commentsReloadInterval);
     		}
     	}
 	    else {
-	    	if ($scope.updateCommentsPromise != null) {
-	    		$scope.updateCommentsPromise.cancel();
-	    		$scope.updateCommentsPromise = null;	    		
+	    	if (updateCommentsPromise != null) {
+	    		$interval.cancel(updateCommentsPromise);
+	    		updateCommentsPromise = null;	    		
 	    	}
 	    }
     };
+    
+    $scope.$on('$routeChangeStart', function(scope, next, current) {
+    	// Stop interval update comments when leaving
+	    $scope.intervalUpdateComments(false);
+	});
     
     /* FUNCTIONS */
     
@@ -357,7 +363,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             })
             .finally(function() {
                 $scope.numberUnsafedChanges = 0;
-                $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems);
+                $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems, true);
             });
     };
     
@@ -406,7 +412,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             semanticTypes: angular.copy($scope.selected.semanticTypes).map(getType),
             history: []
         };
-        $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems);
+        $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems, true);
         var concepts = $scope.state.indexing.concepts.filter($scope.conceptHasSelectedSemanticType);
         var data = {
             cuis: concepts.map(getCui),
@@ -558,7 +564,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         $scope.$apply(function() {
             $scope.state.mapping = null;
             $scope.intervalUpdateComments(false);
-            $scope.conceptsColumnDefs = createConceptsColumnDefs(true, []);
+            $scope.conceptsColumnDefs = createConceptsColumnDefs(true, [], false);
             $scope.setMessage("Current mapping has been discarded.");
         });
     };
@@ -837,7 +843,7 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
         filterOptions: { filterText: '' },
         enableRowSelection: $scope.selectable,
         showSelectionCheckbox: $scope.selectable,
-        columnDefs: createConceptsColumnDefs(true, codingSystems)
+        columnDefs: createConceptsColumnDefs(true, codingSystems, false)
     };
     
     if (selectable) {

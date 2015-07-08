@@ -9,24 +9,16 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class User {
 	private String username;
 	private Map<String, Set<ProjectPermission>> projectPermissions;
-	private boolean isAdmin;
 	public User() {
-		this(false, null, null);
+		this(null, null);
 	}
-	public User(boolean isAdmin, String username, Map<String, Set<ProjectPermission>> projectPermissions) {
-		this.isAdmin = isAdmin;
+	public User(String username, Map<String, Set<ProjectPermission>> projectPermissions) {
 		this.username = username;
 		this.projectPermissions = projectPermissions;
 	}
 	@Override
 	public String toString() {
 		return "User(" + username + ")";
-	}
-	public boolean isAdmin() {
-		return isAdmin;
-	}
-	public void setAdmin(boolean isAdmin) {
-		this.isAdmin = isAdmin;
 	}
 	public String getUsername() {
 		return username;

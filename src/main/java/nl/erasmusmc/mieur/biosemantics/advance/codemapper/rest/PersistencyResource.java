@@ -2,8 +2,6 @@ package nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,22 +36,22 @@ public class PersistencyResource {
 
 	private PersistencyApi api = CodeMapperApplication.getPersistencyApi();
 
-	private static void assertAdminOrProjectMember(User user, String project) {
+	/** Test if user has any of the projectPermissions in a project. */
+	private static void assertProjectRoles(User user, String project, ProjectPermission... projectPermissions) {
 		AuthentificationResource.assertAuthentificated(user);
-		if (!user.isAdmin() && !user.getProjects().contains(project))
-			throw new UnauthorizedException();
+		Set<ProjectPermission> perms = user.getProjectPermissions().get(project);
+		if (perms != null && !Collections.disjoint(perms, Arrays.asList(projectPermissions)))
+			return;
+		throw new UnauthorizedException();
 	}
 
 	@GET
-	@Path("projects")
+	@Path("project-permissions")
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<String> getProjects(@Context HttpServletRequest request, @Context User user) {
+	public Map<String, Set<ProjectPermission>> getProjectPermissions(@Context HttpServletRequest request, @Context User user) {
 		AuthentificationResource.assertAuthentificated(user);
 		try {
-			if (user.isAdmin())
-				return api.getProjects();
-			else
-				return api.getProjects(user.getUsername());
+			return api.getProjectPermissions(user.getUsername());
 		} catch (CodeMapperException e) {
 			System.err.println("Couldn't get projects");
 			e.printStackTrace();
@@ -64,8 +62,8 @@ public class PersistencyResource {
 	@GET
 	@Path("projects/{project}/users")
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<String> getUsersOfProject(@PathParam("project") String project, @Context HttpServletRequest request, @Context User user) {
-		assertAdminOrProjectMember(user, project);
+	public Map<String, Set<ProjectPermission>> getUsersOfProject(@PathParam("project") String project, @Context HttpServletRequest request, @Context User user) {
+		assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
 		try {
 			return api.getUsersOfProject(project);
 		} catch (CodeMapperException e) {
@@ -79,7 +77,7 @@ public class PersistencyResource {
 	@Path("projects/{project}/case-definitions")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<String> getCaseDefinitionNames(@PathParam("project") String project, @Context User user) {
-		assertAdminOrProjectMember(user, project);
+		assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
 		try {
 			return api.getCaseDefinitionsNames(project);
 		} catch (CodeMapperException e) {
@@ -94,7 +92,7 @@ public class PersistencyResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getCaseDefinition(@PathParam("project") String project, @PathParam("name") String name, @Context User user) {
 		logger.debug(String.format("Get case definition %s", name));
-		assertAdminOrProjectMember(user, project);
+		assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
 		try {
 			String stateJson = api.getCaseDefinition(project, name);
 			if (stateJson != null)
@@ -113,7 +111,7 @@ public class PersistencyResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public void setCaseDefinition(@PathParam("project") String project, @PathParam("name") String name, @FormParam("state") String stateJson, @Context User user) {
 		logger.debug(String.format("Set case definition %s", name));
-		assertAdminOrProjectMember(user, project);
+		assertProjectRoles(user, project, ProjectPermission.Editor);
 		try {
 			api.setCaseDefinition(project, name, stateJson);
 		} catch (CodeMapperException e) {
@@ -127,7 +125,7 @@ public class PersistencyResource {
 	@Path("projects/{project}/case-definitions/{case-definition}/comments")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<Comment> getComments(@PathParam("project") String project, @PathParam("case-definition") String caseDefinition, @Context User user) {
-		assertAdminOrProjectMember(user, project);
+		assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
 		try {
 			return api.getComments(project, caseDefinition);
 		} catch (CodeMapperException e) {
@@ -142,7 +140,7 @@ public class PersistencyResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public void createComment(@PathParam("project") String project, @PathParam("case-definition") String caseDefinition, @Context User user,
 			@FormParam("cui") String cui, @FormParam("comment") String comment) {
-		assertAdminOrProjectMember(user, project);
+		assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
 		try {
 			api.createComment(project, caseDefinition, user, cui, comment);
 		} catch (CodeMapperException e) {

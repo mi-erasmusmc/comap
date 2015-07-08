@@ -13,11 +13,10 @@
         <li ng-repeat="caseDefinition in caseDefinitions[project]">
           <a href="#/case-definition/{{project|encodeUriComponent}}/{{caseDefinition|encodeUriComponent}}" ng-bind="caseDefinition"></a>
         </li>
-        <li>
+        <li ng-if="canCreateCaseDefinition(project)">
           <form>
             <input type="text" ng-model="newNames[project]"></input>
             <button class="btn btn-primary btn-sm"
-            	ng-if="isMember(project)"
             	ng-click="create(project, newNames[project])"
             	ng-disabled="!validNewName(project, newNames[project])">Create new</button>
           </form>

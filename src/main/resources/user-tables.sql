@@ -30,7 +30,7 @@ drop table if exists users_projects;
 create table users_projects (
   user_id int not null references users(id),
   project_id int not null references projects(id),
-  -- M: member, C: commentator
+  -- E: editor, C: commentator
   role char(1) not null,
   unique (user_id, project_id, role)
 );

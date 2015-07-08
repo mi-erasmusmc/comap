@@ -32,8 +32,8 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
                         var msg = "Couldn't load users for project " + project;
                         error(msg);
                     })
-                    .success(function(users) {
-                        $scope.usersForProject[project] = users;
+                    .success(function(permissions) {
+                        $scope.usersForProject[project] = permissions;
                     });
             });
         });
@@ -46,7 +46,7 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
         $location.path('/case-definition/' + encodeURIComponent(project) + '/' + encodeURIComponent(name));
     }
     
-    $scope.isMember = function(project) {
-    	return $scope.usersForProject[project].indexOf("Member") != -1;
+    $scope.canCreateCaseDefinition = function(project) {
+    	return $scope.usersForProject[project][$scope.user.username].indexOf("Editor") != -1;
     }
 }

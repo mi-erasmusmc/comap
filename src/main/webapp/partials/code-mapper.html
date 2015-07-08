@@ -97,7 +97,7 @@
          <input title="Filter concepts" placeholder="Query" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
        </div>
         
-        <div class="modify-concepts col-md-4" ng-if="userIsMember()">
+        <div class="modify-concepts col-md-4" ng-if="userCanEdit()">
           <label>
             Modify {{selectedConcepts.length}} concept<span ng-if="selectedConcepts.length != 1">s</span>
           </label>
@@ -123,7 +123,7 @@
           </button>
         </div>
         
-        <div class="add-concepts col-md-3" ng-if="userIsMember()">
+        <div class="add-concepts col-md-3" ng-if="userCanEdit()">
           <label>Search and add concept</label>
           <input type="text" ng-model="searchQuery" 
             placeholder="Query" title="Search and add concepts"
@@ -139,7 +139,7 @@
           </button>
         </div>
         
-        <div class="on-case-definition col-md-3" ng-if="userIsMember()">
+        <div class="on-case-definition col-md-3" ng-if="userCanEdit()">
           <label>Mapping for <em ng-bind="caseDefinitionName"></em></label>
           <div class="btn-group">
             <button title="Save the mapping online" ng-click="saveMapping()" ng-disabled="numberUnsafedChanges == 0" class="btn btn-sm btn-default">

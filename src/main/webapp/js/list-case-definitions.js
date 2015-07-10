@@ -4,7 +4,8 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
     $scope.user = user;
     $scope.projects = [];
     $scope.caseDefinitions = {};
-    $scope.usersForProject = {};
+    $scope.rolesInProjects = {};
+    $scope.usersInProjects = {};
     $scope.newNames = {};
     $rootScope.subtitle = "";
     
@@ -16,6 +17,7 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
         .success(function(projectPermissions) {
             angular.forEach(projectPermissions, function(perms, project) {
             	$scope.projects.push(project);
+            	$scope.rolesInProjects[project] = perms;
             });
             $scope.projects.forEach(function(project) {
                 $scope.newNames[project] = "";
@@ -32,8 +34,8 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
                         var msg = "Couldn't load users for project " + project;
                         error(msg);
                     })
-                    .success(function(permissions) {
-                        $scope.usersForProject[project] = permissions;
+                    .success(function(perms) {
+                        $scope.usersInProjects[project] = perms;
                     });
             });
         });
@@ -47,6 +49,7 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
     }
     
     $scope.canCreateCaseDefinition = function(project) {
-    	return $scope.usersForProject[project][$scope.user.username].indexOf("Editor") != -1;
+    	console.log($scope.rolesInProjects);
+    	return $scope.rolesInProjects[project].indexOf("Editor") != -1;
     }
 }

@@ -33,7 +33,7 @@ public class PersistencyApi {
 	}
 
 	private Connection getConnection() throws SQLException {
-		if (connection == null || connection.isClosed())
+		if (connection == null || connection.isClosed() || !connection.isValid(1))
 			connection = DriverManager.getConnection(uri, connectionProperties);
 		return connection;
 	}

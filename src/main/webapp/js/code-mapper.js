@@ -307,7 +307,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     var updateCommentsPromise = null;
     
     $scope.intervalUpdateComments = function(startNotStop) {
-    	console.log("intervalUpdateComments", startNotStop, updateCommentsPromise);
     	if (startNotStop) {
     		$scope.updateComments();
     		if (updateCommentsPromise == null) {
@@ -344,7 +343,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         $scope.caseDefinition = "" + INITIAL.caseDefinition;
                         $scope.$broadcast("setSelectedSemanticTypes", INITIAL.semanticTypes);
                         $scope.$broadcast("setSelectedCodingSystems", INITIAL.codingSystems);
-                        $scope.setMessage("Mapping for " + $scope.caseDefinitionName + " initialized.");
+                        $scope.setMessage("Initialized.");
                         break;
                 } 
             })
@@ -357,7 +356,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 $scope.$broadcast("setSelectedCodingSystems", state.mapping.codingSystems);
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems, true);
                 $scope.activateTab("concepts-tab");
-                var msg = "Mapping for " + $scope.caseDefinitionName + " loaded.";
+                var msg = "Loaded.";
                 if (angular.equals($scope.roles, ['Commentator'])) {
                 	msg += " Use the speech baloon button to comment on a concept";
                 }
@@ -644,7 +643,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         .map(function(concept) {
                             return patchConcept(concept, $scope.state.mapping.codingSystems);
                         });
-                    console.log(hyponymsNotHypernyms, forCui, relatedConceptsForCui);
 
                     relatedConceptsForCui.forEach(function(c) {
                         c.origin = {

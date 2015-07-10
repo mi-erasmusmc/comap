@@ -38,7 +38,6 @@ function SemanticTypesCtrl($scope, $timeout, dataService) {
             var occurringTypes = [].concat
                 .apply([], indexing.concepts.map(function(c) { return c.semanticTypes; }))
                 .filter(isFirstOccurrence);
-            console.log(occurringTypes);
             $scope.semanticTypes.length = 0;
             $timeout(function() {
                 $scope.$apply(function() {

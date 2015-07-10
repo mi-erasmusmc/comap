@@ -65,6 +65,11 @@ var codeMapperApp =
         .filter('isArray', function() {
         	return angular.isArray;
         })
+        .filter('reverse', function() {
+        	return function(array) {
+        		return array.slice().reverse();
+        	};
+        })
         .controller("ShowConceptsCtrl", ShowConceptsCtrl)
         .controller("CodingSystemsCtrl", CodingSystemsCtrl)
         .controller("SemanticTypesCtrl", SemanticTypesCtrl)

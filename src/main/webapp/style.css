@@ -118,33 +118,6 @@ label {
 .tooltip-inner a {
   color: white;
 }
-.ngCell  {
-  display : table-cell;
-  height: auto !important;
-  overflow:visible;
-  position: static;
-}
-
-.ngRow {
-  display : table-row;
-  height: auto !important;
-  position: static;
-}
-
-.ngCellText{
-  height: auto !important;
-  white-space: normal;
-  overflow:visible;
-}
-.ngRow.selected.even {
-  background-color: #C4E0E6;
-}
-.ngRow.selected.odd {
-	background-color: #D1E9EE;
-}
-.ngAggregate {
-	background-color: #BFBFBF;
-}
 .noselect {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -167,10 +140,6 @@ label {
 }
 .emphasize {
 	font-style: italic;
-}
-.ngCell.scroll-y {
-	overflow-y: scroll;
-  overflow: -moz-scrollbars-none;
 }
 div[block-ui=inputBlockUi] .block-ui-container {
 	cursor: not-allowed;
@@ -231,4 +200,35 @@ hr {
 .info {
 	font-style: italic;
 	margin-left: 1em;
+}
+
+.ngCell  {
+  display : table-cell;
+  height: auto !important;
+  overflow: hidden;
+  position: static;
+}
+.ngCell.scroll-y {
+	overflow-y: hidden;
+	overflow-y: hidden;
+    overflow: -moz-scrollbars-none;
+}
+.ngCellText{
+  height: auto !important;
+  white-space: normal;
+  overflow:visible;
+}
+.ngRow {
+  display : table-row;
+  height: auto !important;
+  position: static;
+}
+.ngRow.selected.even {
+  background-color: #C4E0E6;
+}
+.ngRow.selected.odd {
+	background-color: #D1E9EE;
+}
+.ngAggregate {
+	background-color: #BFBFBF;
 }

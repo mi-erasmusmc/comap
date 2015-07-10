@@ -1050,21 +1050,30 @@ var originColumnDef = {
 
 /** Generate column definitions */
 function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
+	
+	var nameTooltip = 
+		'{{row.entity.preferredName}} ({{row.entity.cui}})<br/><br/>' +
+		'Semantic types: {{row.entity.semantic.types.join(", ")}}<br/><br/>' +
+		'{{row.entity.definition || "(no definition available)"}}';
+	
+	var nameCellTemplate = 
+        "<span " +
+	        "class='concept-name'" +
+	        "tooltip-html-unsafe='" + nameTooltip.replace("'", "\\'") + "' " +
+	        "tooltip-placement='right' " +
+	        "ng-bind='row.entity.preferredName'" +
+        "></span>";
+	
     var name = 
-        { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip',
-            cellTemplate: 
-                "<span tooltip-html-unsafe='{{row.entity.preferredName}} ({{row.entity.cui}})<br/><br/>{{row.entity.definition || \"(no definition available)\"}}' " +
-                "tooltip-placement='right' ng-bind='row.entity.preferredName' class='concept-name'></span>" };
+        { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip', cellTemplate: nameCellTemplate }
     
-    var origin = showOrigin ? [originColumnDef] : [];
-    
-    var semantics =
-        { displayName: "Semantic type", field: 'semantic.types',
-            cellTemplate: "<span class='semantic-type' ng-repeat='type in row.entity.semantic.types' ng-bind='type'></span>" };
-    
-    var cui =
-        { displayName: "UMLS", field: 'cui',
-            cellTemplate: "<span class='cui' ng-bind='row.entity.cui' title='{{row.entity.preferredName}}'></span>" };
+    var cuiCellTemplate =
+    	"<span " +
+	    	"class='cui' " +
+	    	"ng-bind='row.entity.cui' " +
+	    	"title='{{row.entity.preferredName}}'" +
+    	"></span>";
+    var cui = { displayName: "UMLS", field: 'cui', cellTemplate: cuiCellTemplate };
     
     var codingSystemsColumnDefs = 
         codingSystems.map(function(codingSystem) {
@@ -1087,27 +1096,23 @@ function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
             };
         });
     
-    var comments;
-    if (showComments)
-    	comments = [{
-    		displayName: "Comments",
-    		field: "comments",
-    		cellTemplate:
-    			"<button title='Show and create comments' ng-click='showComments(row.entity)' ng-disabled='row.entity.comments | isUndefined'>" +
-    			"<i class='glyphicon glyphicon-comment'></i>" +
-    			"</button>" +
-    			"<i class='glyphicon glyphicon-option-horizontal' ng-if='row.entity.comments | isUndefined'></i>" +
-    			"<span class='comments-count' ng-bind='row.entity.comments.length' ng-if='row.entity.comments | isArray'></span>"
-    	}];
-    else
-    	comments = [];
+    var comments = {
+		displayName: "Comments",
+		field: "comments",
+		cellTemplate:
+			"<button title='Show and create comments' ng-click='showComments(row.entity)' ng-disabled='row.entity.comments | isUndefined'>" +
+			"<i class='glyphicon glyphicon-comment'></i>" +
+			"</button>" +
+			"<i class='glyphicon glyphicon-option-horizontal' ng-if='row.entity.comments | isUndefined'></i>" +
+			"<span class='comments-count' ng-bind='row.entity.comments.length' ng-if='row.entity.comments | isArray'></span>"
+	};
+    
     return [].concat(
             [name],
-            [semantics],
             showOrigin ? [originColumnDef] : [],
             SHOW_UMLS_COLUMN ? [cui] : [],
             codingSystemsColumnDefs,
-            comments);
+            showComments ? [comments] : []);
 }
 
 

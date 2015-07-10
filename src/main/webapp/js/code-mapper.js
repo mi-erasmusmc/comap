@@ -638,7 +638,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             return currentCuis.indexOf(c.cui) == -1 // Not yet in mapping
                                 && relatedConceptsCuis.indexOf(c.cui) == -1 // Not a duplication for another CUI  
                                 && isFirstOccurrence(c, ix, a) // Not a duplication for this CUI
-                                && $scope.conceptHasSelectedSemanticType(c); // Right semantic types
+                                ;
                         })
                         .map(function(concept) {
                             return patchConcept(concept, $scope.state.mapping.codingSystems);

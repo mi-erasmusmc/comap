@@ -843,18 +843,9 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
         filterOptions: { filterText: '' },
         enableRowSelection: $scope.selectable,
         showSelectionCheckbox: $scope.selectable,
-        columnDefs: createConceptsColumnDefs(true, codingSystems, false)
+        columnDefs: createConceptsColumnDefs(false, codingSystems, false)
     };
     
-    if (selectable) {
-        $timeout(function() {
-            $scope.concepts.forEach(function(concept, index) {
-                if (concept.sourceConcepts.length > 0) {
-                    $scope.conceptsGridOptions.selectItem(index, true);
-                }
-            });
-        }, 0);
-    }
     
     $scope.ok = function () {
         $modalInstance.close(selectable ? $scope.conceptsGridOptions.$gridScope.selectedItems : concepts);

@@ -973,9 +973,8 @@ function askSummary($modal, caseDefinitionName, history, numberUnsafedChanges) {
     return dialog.result;
 }
 
-function ShowCommentsCtrl($scope, $http, $modalInstance, conceptPreferredName, comments, canEnterNewComment) {
-	$scope.conceptPreferredName = conceptPreferredName;
-	$scope.comments = comments;
+function ShowCommentsCtrl($scope, $http, $modalInstance, concept, canEnterNewComment) {
+	$scope.concept = concept;
 	$scope.canEnterNewComment = canEnterNewComment;
 	$scope.newComment = { text: "" };
 	$scope.save = function(newComment) {
@@ -992,8 +991,7 @@ function showComments($modal, concept, canEnterNewComment) {
 		controller: 'ShowCommentsCtrl',
 		size: 'lg',
 		resolve: {
-			conceptPreferredName: function() { return concept.preferredName; },
-			comments: function() { return concept.comments; },
+			concept: function() { return concept; },
 			canEnterNewComment: function() { return canEnterNewComment; }
 		}
 	});

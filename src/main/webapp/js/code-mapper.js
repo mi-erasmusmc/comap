@@ -238,38 +238,43 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     /* COMMENTS */
     
     $scope.showComments = function(concept) {
-    	showComments($modal, concept, $scope.numberUnsafedChanges == 0)
-    		.then(function(comment) {
-        		if ($scope.numberUnsafedChanges != 0) {
-        			alert("Cannot post comment with unsafed changes to the case definition");
-        		} else {
-	   			    var url = urls.comments($scope.project, $scope.caseDefinitionName);
-	    			var data = {
-						cui: concept.cui,
-						comment: comment
-	    			};
-	    			console.log(url, data);
-	                return $http.post(url, data, FORM_ENCODED_POST)
-		            	.error(function(err, code) {
-		            		switch (code) {
-		            			case 401:
-		            				alert("You are not member for project " + $scope.project + ":(");
-		            				break;
-		            			default:
-		            				alert("Unknow error", err, code);
-		            		}
-		            	})
-	                	.success(function() {
-	                		$scope.setMessage("Comment posted");
-	                		$scope.updateComments();
-	                	});
-        		}
+    	if ($scope.state.mapping !== null) {
+    		$scope.updateComments()
+    			.success(function() {
+			    	showComments($modal, concept, $scope.numberUnsafedChanges == 0)
+			    		.then(function(comment) {
+			        		if ($scope.numberUnsafedChanges != 0) {
+			        			alert("Cannot post comment with unsafed changes to the case definition");
+			        		} else {
+				   			    var url = urls.comments($scope.project, $scope.caseDefinitionName);
+				    			var data = {
+									cui: concept.cui,
+									comment: comment
+				    			};
+				    			console.log(url, data);
+				                return $http.post(url, data, FORM_ENCODED_POST)
+					            	.error(function(err, code) {
+					            		switch (code) {
+					            			case 401:
+					            				alert("You are not member for project " + $scope.project + ":(");
+					            				break;
+					            			default:
+					            				alert("Unknow error", err, code);
+					            		}
+					            	})
+				                	.success(function() {
+				                		$scope.setMessage("Comment posted");
+				                		$scope.updateComments();
+				                	});
+			        		}
+			    		});
     		});
+    	}
     };
     
     $scope.updateComments = function() {
     	if ($scope.state.mapping !== null) {
-	    	$http.get(urls.comments($scope.project, $scope.caseDefinitionName))
+	    	return $http.get(urls.comments($scope.project, $scope.caseDefinitionName))
 	    		.error(function(err, code) {
 	    			switch (code) {
 	    				case 401:
@@ -289,11 +294,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 	    				commentsByCui[comment.cui].push(comment);
 	    			})
 	    			$scope.state.mapping.concepts.forEach(function(concept) {
-	    				var comments;
+	    				var comments = [];
 	    				if (commentsByCui.hasOwnProperty(concept.cui)) {
 	    					comments = commentsByCui[concept.cui];
-	    				} else {
-	    					comments = [];
 	    				}
 	    				concept.comments = comments;
 	    			});

@@ -84,6 +84,9 @@ label {
 .code.unselected {
 	text-decoration: line-through;
 }
+.new-comment textarea, .new-comment button {
+	vertical-align: top;
+}
 .semantic-type, .semantic-group {
   background-color: #ffdac6;
   border: 1px solid #adadad;

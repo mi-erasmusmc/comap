@@ -49,7 +49,6 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
     }
     
     $scope.canCreateCaseDefinition = function(project) {
-    	console.log($scope.rolesInProjects);
     	return $scope.rolesInProjects[project].indexOf("Editor") != -1;
     }
 }

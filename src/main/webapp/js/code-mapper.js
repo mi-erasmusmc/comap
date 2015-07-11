@@ -153,10 +153,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         data: "state.mapping.concepts",
         rowHeight: 70,
         headerRowHeight: 35,
-        showSelectionCheckbox: true,
+        showSelectionCheckbox: $scope.userCanEdit(),
         columnDefs: 'conceptsColumnDefs',
-        enableRowSelection: true,
-        enableCellSelection: true,
+        enableRowSelection: $scope.userCanEdit,
+        enableCellSelection: $scope.userCanEdit,
         filterOptions: { filterText: '' },
         plugins: [new ngGridFlexibleHeightPlugin()]
     };

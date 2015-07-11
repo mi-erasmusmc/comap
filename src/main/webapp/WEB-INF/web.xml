@@ -6,6 +6,12 @@
     <servlet-class>nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest.CodeMapperApplication</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
+  <session-config>
+      <session-timeout>525600</session-timeout>
+      <cookie-config>
+          <max-age>31536000</max-age>
+      </cookie-config>
+  </session-config>
   <filter>
     <filter-name>CorsFilter</filter-name>
     <filter-class>org.apache.catalina.filters.CorsFilter</filter-class>

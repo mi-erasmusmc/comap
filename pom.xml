@@ -10,10 +10,26 @@
 
 	<name>ADVANCE Code Mapper</name>
 	<url>http://biosemantics.org</url>
-
+	<scm>
+	    <connection>scm:git:ssh:biosemantics.org:/var/git/AdvanceCodeMapper/</connection>
+	</scm>
+	
 	<build>
 		<finalName>CoMap</finalName>
 		<plugins>
+			<plugin>
+			    <groupId>org.codehaus.mojo</groupId>
+			    <artifactId>buildnumber-maven-plugin</artifactId>
+			    <version>1.1</version>
+			    <executions>
+			        <execution>
+			            <phase>validate</phase>
+			            <goals>
+			                <goal>create</goal>
+			            </goals>
+			         </execution>
+			    </executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -38,7 +54,7 @@
 				<artifactId>maven-war-plugin</artifactId>
 				<version>2.3</version>
 				<configuration>
-				   <warName>${project.build.finalName}##${version}</warName>
+				   <warName>${project.build.finalName}##${project.version}-GIT@${buildNumber}</warName>
 				</configuration>
 			</plugin>
 		</plugins>

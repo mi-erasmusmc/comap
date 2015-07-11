@@ -1,18 +1,22 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
+import javax.sql.DataSource;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Context;
 
 import org.apache.log4j.Logger;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
+
+import com.mchange.v2.c3p0.DataSources;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.AuthentificationApi;
@@ -22,6 +26,8 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext.Rcd2CodingSys
 
 @ApplicationPath("rest")
 public class CodeMapperApplication extends ResourceConfig {
+    
+    static Logger log = Logger.getLogger(CodeMapperApplication.class);
 
 	private static final String CODE_MAPPER_PROPERTIES = "/WEB-INF/code-mapper.properties";
 
@@ -41,6 +47,13 @@ public class CodeMapperApplication extends ResourceConfig {
 	}
 
 	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
+	
+	private DataSource getConnectionPool(Properties properties, String prefix) throws SQLException {
+        String uri = properties.getProperty(prefix + "uri");
+        String username = properties.getProperty(prefix + "username");
+        String password = properties.getProperty(prefix + "password");
+        return DataSources.unpooledDataSource(uri, username, password);
+	}
 
 	public CodeMapperApplication(@Context ServletContext context) throws IOException {
 		try {
@@ -68,33 +81,22 @@ public class CodeMapperApplication extends ResourceConfig {
 
 			peregrineResourceUrl = properties.getProperty("peregrine-resource-url");
 
-			String umlsDatabaseUri = properties.getProperty("umls-db-uri");
-			String umlsDatabaseUsername = properties.getProperty("umls-db-username");
-			String umlsDatabasePassword = properties.getProperty("umls-db-password");
-			Properties umlsConnectionProperties = new Properties();
-			umlsConnectionProperties.setProperty("user", umlsDatabaseUsername);
-			umlsConnectionProperties.setProperty("password", umlsDatabasePassword);
+			DataSource umlsConnectionPool = getConnectionPool(properties, "umls-db-");
+			umlsApi = new UmlsApi(umlsConnectionPool, availableCodingSystems, codingSystemsWithDefinition);
 
-			umlsApi = new UmlsApi(umlsDatabaseUri, umlsConnectionProperties, availableCodingSystems, codingSystemsWithDefinition);
+            DataSource umlsExtConnectionPool = getConnectionPool(properties, "umls-ext-db-");
+            umlsApi.registerCodingSystemsExtension(new Rcd2CodingSystem(umlsExtConnectionPool));
 
-			String umlsExtDatabaseUri = properties.getProperty("umls-ext-db-uri");
-			Properties umlsExtConnectionProperties = new Properties();
-			umlsExtConnectionProperties.setProperty("user", properties.getProperty("umls-ext-db-username"));
-			umlsExtConnectionProperties.setProperty("password", properties.getProperty("umls-ext-db-password"));
-			umlsApi.registerCodingSystemsExtension(new Rcd2CodingSystem(umlsExtDatabaseUri, umlsExtConnectionProperties));
+            DataSource codeMapperConnectionPool = getConnectionPool(properties, "code-mapper-db-");
+            persistencyApi = new PersistencyApi(codeMapperConnectionPool);
+            authentificationApi = new AuthentificationApi(codeMapperConnectionPool);
 
-			String codeMapperDatabaseUri = properties.getProperty("code-mapper-db-uri");
-			String codeMapperConnectionUsername = properties.getProperty("code-mapper-db-username");
-			String codeMapperConnectionPassword = properties.getProperty("code-mapper-db-password");
-			Properties codeMapperConnectionProperties = new Properties();
-			codeMapperConnectionProperties.setProperty("user", codeMapperConnectionUsername);
-			codeMapperConnectionProperties.setProperty("password", codeMapperConnectionPassword);
-
-			persistencyApi = new PersistencyApi(codeMapperDatabaseUri, codeMapperConnectionProperties);
-			authentificationApi = new AuthentificationApi(codeMapperDatabaseUri, codeMapperConnectionProperties);
 		} catch (LinkageError | ClassNotFoundException e) {
-			logger.error("Couldn't load MYSQL JDBC driver");
-		}
+			logger.error("Can't load MYSQL JDBC driver");
+		} catch (SQLException e) {
+		    logger.error("Cannot create pooled data source");
+            e.printStackTrace();
+        }
 	}
 
 	public static String getPeregrineResourceUrl() {

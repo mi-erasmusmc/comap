@@ -4,48 +4,36 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.sql.DataSource;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.PersistencyApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest.CodeMapperApplication;
 
 public class AuthentificationApi {
 
 	public static final String SESSION_ATTRIBUTE_USER = "user";
 
-	PersistencyApi persistencyApi = CodeMapperApplication.getPersistencyApi();
-	private String uri;
-	private Properties connectionProperties;
-	private Connection connection;
+    private DataSource connectionPool;
 
 	private static Logger logger = Logger.getLogger("AuthentificationApi");
 	static {
 		logger.setLevel(Level.ALL);
 	}
 
-	public AuthentificationApi(String uri, Properties connectionProperties) {
-		this.uri = uri;
-		this.connectionProperties = connectionProperties;
-	}
-
-	private Connection getConnection() throws SQLException {
-		if (connection == null || connection.isClosed())
-			connection = DriverManager.getConnection(uri, connectionProperties);
-		return connection;
-	}
+	public AuthentificationApi(DataSource connectionPool) {
+        this.connectionPool = connectionPool;
+    }
 
 	private String hash(String string) throws CodeMapperException {
 		try {
@@ -108,13 +96,15 @@ public class AuthentificationApi {
 		logger.debug("Authentificate " + username);
 
 		String query = "SELECT password FROM users WHERE username = ?";
-		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+        try (Connection connection = connectionPool.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
 			statement.setString(1, username);
 			ResultSet result = statement.executeQuery();
 			if (result.next()) {
 				String passwordHash = result.getString(1);
 				if (passwordHash.equals(hash(password))) {
-					Map<String, Set<ProjectPermission>> projectPermissions = persistencyApi.getProjectPermissions(username);
+					Map<String, Set<ProjectPermission>> projectPermissions =
+					        CodeMapperApplication.getPersistencyApi().getProjectPermissions(username);
 					User user = new User(username, projectPermissions);
 					request.getSession().setAttribute(SESSION_ATTRIBUTE_USER, user);
 					return LoginResult.createSuccess(user);

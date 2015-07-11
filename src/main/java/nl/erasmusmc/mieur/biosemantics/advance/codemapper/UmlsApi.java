@@ -1,7 +1,6 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,10 +11,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+
+import javax.sql.DataSource;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext.ExtCodingSystem;
 
@@ -33,24 +33,15 @@ import org.apache.log4j.Logger;
  */
 public class UmlsApi  {
 
-	private Connection connection;
-	private String uri;
-	private Properties connectionProperties;
+    private DataSource connectionPool;
 	private List<String> codingSystemsWithDefinition;
 	private List<String> availableCodingSystems;
 	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
 
-	public UmlsApi(String uri, Properties connectionProperties, List<String> availableCodingSystems, List<String> codingSystemsWithDefinition) {
-		this.uri = uri;
-		this.connectionProperties = connectionProperties;
+	public UmlsApi(DataSource connectionPool, List<String> availableCodingSystems, List<String> codingSystemsWithDefinition) {
+	    this.connectionPool = connectionPool;
 		this.availableCodingSystems = availableCodingSystems;
 		this.codingSystemsWithDefinition = codingSystemsWithDefinition;
-	}
-
-	private Connection getConnection() throws SQLException {
-		if (connection == null || connection.isClosed())
-			connection = DriverManager.getConnection(uri, connectionProperties);
-		return connection;
 	}
 
 	private Map<String, ExtCodingSystem> extCodingSystems = new HashMap<>();
@@ -91,7 +82,8 @@ public class UmlsApi  {
 			codingSystems.add(ext.getCodingSystem());
 
 		String query = "SELECT DISTINCT rsab, son, sf FROM MRSAB WHERE CURVER = 'Y'";
-		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+        try (Connection connection = connectionPool.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
 			ResultSet result = statement.executeQuery();
 			while (result.next()) {
 				String rsab = result.getString(1);
@@ -123,7 +115,8 @@ public class UmlsApi  {
 					+ "AND stt = 'PF'";
 			String query = String.format(queryFmt, Utils.sqlPlaceholders(cuis.size()));
 
-			try (PreparedStatement statement = connection.prepareStatement(query)) {
+			try (Connection connection = connectionPool.getConnection();
+			     PreparedStatement statement = connection.prepareStatement(query)) {
 
 				int offset = 1;
 				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
@@ -177,7 +170,8 @@ public class UmlsApi  {
 					+ "AND sty.tui IN (%s)"; // that have the selected semantic types
 
 			String query = String.format(queryFmt, Utils.sqlPlaceholders(codingSystems.size()), Utils.sqlPlaceholders(semanticTypes.size()));
-			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+			try (Connection connection = connectionPool.getConnection();
+			     PreparedStatement statement = connection.prepareStatement(query)) {
 				int offset = 1;
 				statement.setString(offset++, q + "%");
 				for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
@@ -210,7 +204,8 @@ public class UmlsApi  {
 					+ "ORDER BY cui, tui";
 			String query = String.format(queryFmt, Utils.sqlPlaceholders(cuis.size()));
 
-			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+			try (Connection connection = connectionPool.getConnection();
+			     PreparedStatement statement = connection.prepareStatement(query)) {
 
 				int offset = 1;
 
@@ -261,7 +256,8 @@ public class UmlsApi  {
 					Utils.sqlPlaceholders(cuis.size()),
 					Utils.sqlPlaceholders(codingSystems.size()));
 
-			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+			try (Connection connection = connectionPool.getConnection();
+			     PreparedStatement statement = connection.prepareStatement(query)) {
 
 				int offset = 1;
 
@@ -374,7 +370,8 @@ public class UmlsApi  {
 					Utils.sqlPlaceholders(cuis.size()),
 					Utils.sqlPlaceholders(relations.size()));
 
-			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+			try (Connection connection = connectionPool.getConnection();
+			     PreparedStatement statement = connection.prepareStatement(query)) {
 				int offset = 1;
 				for (int ix = 0; ix < cuis.size(); ix++, offset++)
 					statement.setString(offset, cuis.get(ix));
@@ -437,7 +434,8 @@ public class UmlsApi  {
 			String selector = hyponymsNotHypernyms ? "cui1" : "cui2";
 			String query = String.format(queryFmt, selection, selector, Utils.sqlPlaceholders(cuis.size()));
 
-			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+			try (Connection connection = connectionPool.getConnection();
+			     PreparedStatement statement = connection.prepareStatement(query)) {
 
 				int offset = 1;
 				for (int ix = 0; ix < cuis.size(); ix++, offset++)
@@ -486,7 +484,8 @@ public class UmlsApi  {
 			String queryFmt = "SELECT DISTINCT cui, sab, def FROM MRDEF WHERE cui IN (%s)";
 			String query = String.format(queryFmt, Utils.sqlPlaceholders(cuis.size()));
 
-			try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+			try (Connection connection = connectionPool.getConnection();
+			     PreparedStatement statement = connection.prepareStatement(query)) {
 
 				int offset = 1;
 				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)

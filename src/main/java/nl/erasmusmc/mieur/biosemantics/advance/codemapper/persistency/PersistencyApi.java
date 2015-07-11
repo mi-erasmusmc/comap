@@ -1,7 +1,6 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,8 +12,9 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
+
+import javax.sql.DataSource;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.Comment;
@@ -23,24 +23,16 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
 
 public class PersistencyApi {
 
-	private String uri;
-	private Properties connectionProperties;
-	private Connection connection;
+    private DataSource connectionPool;
 
-	public PersistencyApi(String uri, Properties connectionProperties) {
-		this.uri = uri;
-		this.connectionProperties = connectionProperties;
-	}
-
-	private Connection getConnection() throws SQLException {
-		if (connection == null || connection.isClosed() || !connection.isValid(1))
-			connection = DriverManager.getConnection(uri, connectionProperties);
-		return connection;
+	public PersistencyApi(DataSource connectionPool) {
+	    this.connectionPool = connectionPool;
 	}
 
 	public List<String> getProjects() throws CodeMapperException {
 		String query = "SELECT name FROM projects";
-		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+        try (Connection connection = connectionPool.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
 			ResultSet result = statement.executeQuery();
 			List<String> results = new LinkedList<>();
 			while (result.next())
@@ -52,26 +44,31 @@ public class PersistencyApi {
 	}
 
 	private List<String> parameterizedStringListQuery(String query, String... arguments) throws SQLException {
-		PreparedStatement statement = getConnection().prepareStatement(query);
-		for (int i = 0; i < arguments.length; i++)
-			statement.setString(i+1, arguments[i]);
-		ResultSet result = statement.executeQuery();
-		List<String> results = new LinkedList<>();
-		while (result.next())
-			results.add(result.getString(1));
-		return results;
-	}
+        try (Connection connection = connectionPool.getConnection();
+                PreparedStatement statement = connection.prepareStatement(query)) {
+            for (int i = 0; i < arguments.length; i++)
+                statement.setString(i + 1, arguments[i]);
+            ResultSet result = statement.executeQuery();
+            List<String> results = new LinkedList<>();
+            while (result.next())
+                results.add(result.getString(1));
+            return results;
+        }
+    }
 
 	private String parameterizedStringQuery(String query, String... arguments) throws SQLException {
-		PreparedStatement statement = getConnection().prepareStatement(query);
-		for (int i = 0; i < arguments.length; i++)
-			statement.setString(i+1, arguments[i]);
-		ResultSet result = statement.executeQuery();
-		if (result.next())
-			return result.getString(1);
-		else
-			return null;
-	}
+        try (Connection connection = connectionPool.getConnection();
+                PreparedStatement statement = connection.prepareStatement(query)) {
+            for (int i = 0; i < arguments.length; i++)
+                statement.setString(i + 1, arguments[i]);
+            ResultSet result = statement.executeQuery();
+            if (result.next())
+                return result.getString(1);
+            else
+                return null;
+        }
+    }
+
 
 	public Map<String, Set<ProjectPermission>> getProjectPermissions(String username) throws CodeMapperException {
 		String query =
@@ -80,7 +77,8 @@ public class PersistencyApi {
 				+ "INNER JOIN users_projects ON users_projects.user_id = users.id "
 				+ "INNER JOIN projects ON projects.id = users_projects.project_id "
 				+ "WHERE users.username = ?";
-		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+		try (Connection connection = connectionPool.getConnection();
+		     PreparedStatement statement = connection.prepareStatement(query)) {
 			statement.setString(1, username);
 			ResultSet result = statement.executeQuery();
 			Map<String, Set<ProjectPermission>> permissions = new HashMap<>();
@@ -105,7 +103,8 @@ public class PersistencyApi {
 				+ "INNER JOIN users_projects ON users_projects.project_id = projects.id "
 				+ "INNER JOIN users ON users.id = users_projects.user_id "
 				+ "WHERE projects.name = ?";
-		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+		try (Connection connection = connectionPool.getConnection();
+		     PreparedStatement statement = connection.prepareStatement(query)) {
 			statement.setString(1, project);
 			ResultSet result = statement.executeQuery();
 			Map<String, Set<ProjectPermission>> users = new HashMap<>();
@@ -155,7 +154,8 @@ public class PersistencyApi {
 						+ "FROM projects "
 						+ "WHERE projects.name = ? "
 						+ "ON DUPLICATE KEY UPDATE state = ?";
-		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+        try (Connection connection = connectionPool.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
 			statement.setString(1, caseDefinitionName);
 			statement.setString(2, stateJson);
 			statement.setString(3, project);
@@ -175,7 +175,8 @@ public class PersistencyApi {
 				+ "INNER JOIN projects ON projects.id = case_definitions.project_id "
 				+ "WHERE projects.name = ? AND case_definitions.name = ? "
 				+ "ORDER BY `timestamp`";
-		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+        try (Connection connection = connectionPool.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
 			statement.setString(1, project);
 			statement.setString(2, caseDefinition);
 			ResultSet result = statement.executeQuery();
@@ -206,7 +207,8 @@ public class PersistencyApi {
 				+ "WHERE projects.name = ? "
 				+ "AND case_definitions.name = ? "
 				+ "AND users.username = ?";
-		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+        try (Connection connection = connectionPool.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
 			statement.setString(1, cui);
 			statement.setString(2, content);
 			statement.setString(3, project);

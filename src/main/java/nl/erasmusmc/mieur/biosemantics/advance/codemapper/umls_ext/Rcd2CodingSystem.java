@@ -1,7 +1,6 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,8 +10,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
+
+import javax.sql.DataSource;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodingSystem;
@@ -31,19 +31,10 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 			+ "WHERE CAST(CTV3_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%s) "
 			+ "AND V2_CONCEPTID NOT IN ('_DRUG', '_NONE')";
 
-	private String uri;
-	private Properties connectionProperties;
-	private Connection connection;
+	private DataSource connectionPool;
 
-	public Rcd2CodingSystem(String uri, Properties connectionProperties) {
-		this.uri = uri;
-		this.connectionProperties = connectionProperties;
-	}
-
-	private Connection getConnection() throws SQLException {
-		if (connection == null || connection.isClosed())
-			connection = DriverManager.getConnection(uri, connectionProperties);
-		return connection;
+	public Rcd2CodingSystem(DataSource connectionPool) {
+		this.connectionPool = connectionPool;
 	}
 
 	@Override
@@ -73,7 +64,8 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 			return new HashMap<>();
 
 		String query = String.format(QUERY_FMT, Utils.sqlPlaceholders(codes.size()));
-		try (PreparedStatement statement = getConnection().prepareStatement(query)) {
+		try (Connection connection = connectionPool.getConnection();
+		     PreparedStatement statement = connection.prepareStatement(query)) {
 			int offset = 1;
 			for (Iterator<String> iter = codes.iterator(); iter.hasNext(); offset++)
 				statement.setString(offset, iter.next());

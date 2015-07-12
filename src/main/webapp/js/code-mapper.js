@@ -294,6 +294,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 	    				}
 	    				commentsByCui[comment.cui].push(comment);
 	    			})
+                            $timeout(function() {
 	    			$scope.state.mapping.concepts.forEach(function(concept) {
 	    				var comments = [];
 	    				if (commentsByCui.hasOwnProperty(concept.cui)) {
@@ -301,6 +302,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 	    				}
 	    				concept.comments = comments;
 	    			});
+                            }, 0);
 	    		})
     	}
     };

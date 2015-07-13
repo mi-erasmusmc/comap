@@ -1,73 +1,86 @@
-#!/usr/bin/env python2
-
-from __future__ import print_function
+#!/usr/bin/env python
 import MySQLdb
-from sql import *
 import hashlib
 import argparse
 import sys
 from itertools import groupby
 
+
 def sha256(password):
     return hashlib.sha256(password).hexdigest()
+
 
 def read_password():
     print("Enter password: ", end='')
     password = sys.stdin.readline()
     return password[:-1]
 
-def create_user(username, password):
+
+def create_user(db, username, password):
     password = password or read_password()
-    cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)",
-                [username, sha256(password)])
+    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)",
+                    [username, sha256(password)])
     print("Created user with ID", db.insert_id())
     db.commit()
 
-def create_project(name):
-    cur.execute("INSERT INTO projects (name) VALUES (%s)",
-                [name])
+
+def create_project(db, name):
+    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+        cur.execute("INSERT INTO projects (name) VALUES (%s)",
+                    [name])
     print("Created project with ID", db.insert_id())
     db.commit()
 
-def get_user(username):
-    cur.execute("SELECT id FROM users WHERE username = %s", username)
-    return cur.fetchone()['id']
 
-def get_project(name):
-    cur.execute("SELECT id FROM projects where name = %s", [name])
-    return cur.fetchone()['id']
+def get_user(db, username):
+    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+        cur.execute("SELECT id FROM users WHERE username = %s", username)
+        return cur.fetchone()['id']
 
-def add_user_to_project(username, project, role):
+
+def get_project(db, name):
+    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+        cur.execute("SELECT id FROM projects where name = %s", [name])
+        return cur.fetchone()['id']
+
+
+def add_user_to_project(db, username, project, role):
     user_id = get_user(username)
-    project_id = get_project(project)
-    cur.execute("INSERT INTO users_projects (user_id, project_id, role) VALUES (%s, %s, %s)",
-                [user_id, project_id, role])
-    print("Added user %d to project %d with ID %d" %
-          (user_id, project_id, db.insert_id()))
+    project_id = get_project(db, project)
+    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+        cur.execute("INSERT INTO users_projects (user_id, project_id, role) VALUES (%s, %s, %s)",
+                    [user_id, project_id, role])
+        print("Added user %d to project %d with ID %d" %
+              (user_id, project_id, db.insert_id()))
     db.commit()
 
-def show(users, projects):
 
-    if users == None and projects == None:
+def show(db, users, projects, comments):
+
+    if users is None and projects is None and comments is None:
         users = True
         projects = True
+        comments = True
 
-    cur.execute('SELECT * FROM users ORDER BY id')
-    all_users = list(cur.fetchall())
+    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+        cur.execute('SELECT * FROM users ORDER BY id')
+        all_users = list(cur.fetchall())
 
-    cur.execute('SELECT users.username, projects.name, projects.id, users_projects.role FROM users_projects '
-                'INNER JOIN users ON users_projects.user_id = users.id '
-                'INNER JOIN projects ON users_projects.project_id = projects.id '
-                'ORDER BY project_id')
-    ups = list(cur.fetchall())
+    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+        cur.execute('SELECT users.username, projects.name, projects.id, users_projects.role FROM users_projects '
+                    'INNER JOIN users ON users_projects.user_id = users.id '
+                    'INNER JOIN projects ON users_projects.project_id = projects.id '
+                    'ORDER BY project_id')
+        ups = list(cur.fetchall())
 
     if users:
         print("# USERS")
         for user in all_users:
             print("%s (%d)" % (user['username'], user['id']))
             for up in ups:
-               if up['username'] == user['username']:
-                   print(" - %s (%s)" % (up['name'], up['role']))
+                if up['username'] == user['username']:
+                    print(" - %s (%s)" % (up['name'], up['role']))
 
     if users and projects:
         print()
@@ -77,14 +90,31 @@ def show(users, projects):
         grouper = lambda up: {'name': up['name'], 'id': up['id']}
         for project, ups_in_project in groupby(ups, grouper):
             print("\n## %s (%d)" % (project['name'], project['id']))
-            print("\nUsers: %s" % ", ".join('%s (%s)'%(up['username'], up['role']) for up in ups_in_project))
+            print("\nUsers: %s" % ", ".join('%s (%s)' % (up['username'], up['role']) for up in ups_in_project))
             print("\nCase definitions\n")
-            cur.execute('SELECT * FROM case_definitions WHERE project_id = %s', [project['id']])
-            for cd in cur.fetchall():
-                print(" - %s" % cd['name'])
-        
+            with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+                cur.execute('SELECT * FROM case_definitions WHERE project_id = %s', [project['id']])
+                for cd in cur.fetchall():
+                    print(" - %s" % cd['name'])
 
-    
+    if projects and comments:
+        print()
+
+    print('# COMMENTS')
+
+    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+        cur.execute('select cd.name as cd_name, c.cui as cui, u.username as user, c.timestamp as timestamp, c.content as content '
+                    'from comments as c inner join case_definitions as cd '
+                    'on c.case_definition_id = cd.id '
+                    'inner join users as u on c.author = u.id '
+                    'order by cd_name, cui, timestamp')
+        comments = cur.fetchall()
+    for comment in comments:
+        print("{}/{}: {} ({}, {})".format(comment['cd_name'],
+                                          comment['cui'], comment['content'], comment['user'],
+                                          comment['timestamp']))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--db-host', required=True)
@@ -111,21 +141,19 @@ def main():
     parser_show = subparsers.add_parser('show')
     parser_show.add_argument("--users", action='store_true', default=None)
     parser_show.add_argument("--projects", action='store_true', default=None)
+    parser_show.add_argument("--comments", action='store_true', default=None)
     parser_show.set_defaults(func=show)
 
     args = parser.parse_args()
 
-    global db, cur
     db = MySQLdb.connect(args.db_host, args.db_user, args.db_password, args.db_name)
-    cur = db.cursor(MySQLdb.cursors.DictCursor)
-
     kwargs = {
         key: value
-        for key, value in vars(args).iteritems()
+        for key, value in vars(args).items()
         if key != "func" and not key.startswith('db_')
     }
-    args.func(**kwargs)
+    args.func(db, **kwargs)
 
-    
+
 if __name__ == "__main__":
     main()

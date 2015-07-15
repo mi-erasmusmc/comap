@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-import MySQLdb
+#!/usr/bin/env python3
+import pymysql
 import hashlib
 import argparse
 import sys
@@ -18,7 +18,7 @@ def read_password():
 
 def create_user(db, username, password):
     password = password or read_password()
-    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+    with db.cursor() as cur:
         cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)",
                     [username, sha256(password)])
     print("Created user with ID", db.insert_id())
@@ -26,7 +26,7 @@ def create_user(db, username, password):
 
 
 def create_project(db, name):
-    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+    with db.cursor() as cur:
         cur.execute("INSERT INTO projects (name) VALUES (%s)",
                     [name])
     print("Created project with ID", db.insert_id())
@@ -34,13 +34,13 @@ def create_project(db, name):
 
 
 def get_user(db, username):
-    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+    with db.cursor() as cur:
         cur.execute("SELECT id FROM users WHERE username = %s", username)
         return cur.fetchone()['id']
 
 
 def get_project(db, name):
-    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+    with db.cursor() as cur:
         cur.execute("SELECT id FROM projects where name = %s", [name])
         return cur.fetchone()['id']
 
@@ -48,7 +48,7 @@ def get_project(db, name):
 def add_user_to_project(db, username, project, role):
     user_id = get_user(username)
     project_id = get_project(db, project)
-    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+    with db.cursor() as cur:
         cur.execute("INSERT INTO users_projects (user_id, project_id, role) VALUES (%s, %s, %s)",
                     [user_id, project_id, role])
         print("Added user %d to project %d with ID %d" %
@@ -63,11 +63,12 @@ def show(db, users, projects, comments):
         projects = True
         comments = True
 
-    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+    print(db, type(db))
+    with db.cursor() as cur:
         cur.execute('SELECT * FROM users ORDER BY id')
         all_users = list(cur.fetchall())
 
-    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+    with db.cursor() as cur:
         cur.execute('SELECT users.username, projects.name, projects.id, users_projects.role FROM users_projects '
                     'INNER JOIN users ON users_projects.user_id = users.id '
                     'INNER JOIN projects ON users_projects.project_id = projects.id '
@@ -92,7 +93,7 @@ def show(db, users, projects, comments):
             print("\n## %s (%d)" % (project['name'], project['id']))
             print("\nUsers: %s" % ", ".join('%s (%s)' % (up['username'], up['role']) for up in ups_in_project))
             print("\nCase definitions\n")
-            with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+            with db.cursor() as cur:
                 cur.execute('SELECT * FROM case_definitions WHERE project_id = %s', [project['id']])
                 for cd in cur.fetchall():
                     print(" - %s" % cd['name'])
@@ -102,7 +103,7 @@ def show(db, users, projects, comments):
 
     print('# COMMENTS')
 
-    with db.cursor(MySQLdb.cursors.DictCursor) as cur:
+    with db.cursor() as cur:
         cur.execute('select cd.name as cd_name, c.cui as cui, u.username as user, c.timestamp as timestamp, c.content as content '
                     'from comments as c inner join case_definitions as cd '
                     'on c.case_definition_id = cd.id '
@@ -146,13 +147,19 @@ def main():
 
     args = parser.parse_args()
 
-    db = MySQLdb.connect(args.db_host, args.db_user, args.db_password, args.db_name)
-    kwargs = {
-        key: value
-        for key, value in vars(args).items()
-        if key != "func" and not key.startswith('db_')
-    }
-    args.func(db, **kwargs)
+    db = pymysql.connect(args.db_host, args.db_user,
+                         args.db_password, args.db_name,
+                         cursorclass=pymysql.cursors.DictCursor)
+    try:
+        kwargs = {
+            key: value
+            for key, value in vars(args).items()
+            if key != "func" and not key.startswith('db_')
+        }
+        args.func(db, **kwargs)
+    finally:
+        db.close()
+    
 
 
 if __name__ == "__main__":

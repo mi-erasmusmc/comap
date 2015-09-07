@@ -2,10 +2,13 @@
     <wb-module deploy-name="CodeMapper">
         <wb-resource deploy-path="/WEB-INF/web.xml" source-path="/src/main/webapp/WEB-INF/web.xml"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/main/java"/>
-        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/main/resources"/>
+        <wb-resource deploy-path="/" source-path="/WebContent"/>
         <wb-resource deploy-path="/" source-path="/target/m2e-wtp/web-resources"/>
         <wb-resource deploy-path="/" source-path="/src/main/webapp" tag="defaultRootSource"/>
+        <wb-resource deploy-path="/" source-path="/src/main/webapp/WEB-INF"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/target/classes"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/main/resources"/>
         <property name="java-output-path" value="/AdvanceCodeMapper/target/classes"/>
-        <property name="context-root" value="CoMap"/>
+        <property name="context-root" value="CoMap##1.0-SNAPSHOT@${buildNumber}"/>
     </wb-module>
 </project-modules>

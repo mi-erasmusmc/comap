@@ -29,7 +29,7 @@ public class CodeMapperApplication extends ResourceConfig {
     
     static Logger log = Logger.getLogger(CodeMapperApplication.class);
 
-	private static final String CODE_MAPPER_PROPERTIES = "/WEB-INF/code-mapper.properties";
+	private static final String CODE_MAPPER_PROPERTIES = "/code-mapper.properties";
 
 	private static String peregrineResourceUrl;
 	private static UmlsApi umlsApi;
@@ -52,26 +52,30 @@ public class CodeMapperApplication extends ResourceConfig {
         String uri = properties.getProperty(prefix + "uri");
         String username = properties.getProperty(prefix + "username");
         String password = properties.getProperty(prefix + "password");
+        log.info("Get connection pool " + prefix);
         return DataSources.unpooledDataSource(uri, username, password);
 	}
 
 	public CodeMapperApplication(@Context ServletContext context) throws IOException {
+		
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
-			packages("nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest");
-			register(CodeMapperResource.class);
-			register(PersistencyResource.class);
-			register(AuthentificationResource.class);
-			register(new AbstractBinder() {
-	            @Override
-	            protected void configure() {
-	                bindFactory(HttpSessionFactory.class).to(HttpSession.class);
-	                bindFactory(UserFactory.class).to(User.class);
-	            }
-	        });
+		} catch (LinkageError | ClassNotFoundException e) {
+			logger.error("Can't load MYSQL JDBC driver");
+		}
 
+		packages(getClass().getPackage().getName());
+		register(new AbstractBinder() {
+            @Override
+            protected void configure() {
+                bindFactory(HttpSessionFactory.class).to(HttpSession.class);
+                bindFactory(UserFactory.class).to(User.class);
+            }
+        });
+
+		try {
 			Properties properties = new Properties();
-			properties.load(context.getResourceAsStream(CODE_MAPPER_PROPERTIES));
+			properties.load(getClass().getResourceAsStream(CODE_MAPPER_PROPERTIES));
 
 			List<String> availableCodingSystems = Arrays.asList(
 					properties.getProperty("available-coding-systems").split(",\\s*"));
@@ -91,8 +95,6 @@ public class CodeMapperApplication extends ResourceConfig {
             persistencyApi = new PersistencyApi(codeMapperConnectionPool);
             authentificationApi = new AuthentificationApi(codeMapperConnectionPool);
 
-		} catch (LinkageError | ClassNotFoundException e) {
-			logger.error("Can't load MYSQL JDBC driver");
 		} catch (SQLException e) {
 		    logger.error("Cannot create pooled data source");
             e.printStackTrace();

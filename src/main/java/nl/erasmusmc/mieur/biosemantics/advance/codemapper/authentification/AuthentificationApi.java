@@ -125,7 +125,6 @@ public class AuthentificationApi {
 	}
 
 	public void logout(HttpServletRequest request) {
-//		request.getSession().setAttribute(SESSION_ATTRIBUTE_USER, null);
 		request.getSession().invalidate();
 	}
 

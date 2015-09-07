@@ -17,9 +17,9 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
 
 @Path("authentification")
 public class AuthentificationResource {
-
+	
 	AuthentificationApi api = CodeMapperApplication.getAuthentificationApi();
-
+	
 	public static void assertAuthentificated(User user) {
 		if (user == null)
 			throw new UnauthorizedException();

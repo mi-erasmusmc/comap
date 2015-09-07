@@ -7,7 +7,7 @@ from itertools import groupby
 
 
 def sha256(password):
-    return hashlib.sha256(password).hexdigest()
+    return hashlib.sha256(password.encode()).hexdigest()
 
 
 def read_password():
@@ -46,7 +46,7 @@ def get_project(db, name):
 
 
 def add_user_to_project(db, username, project, role):
-    user_id = get_user(username)
+    user_id = get_user(db, username)
     project_id = get_project(db, project)
     with db.cursor() as cur:
         cur.execute("INSERT INTO users_projects (user_id, project_id, role) VALUES (%s, %s, %s)",

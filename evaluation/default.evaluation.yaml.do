@@ -6,7 +6,7 @@ import json
 import yaml
 import re
 import redo
-redo.ifchange('comap.py'); import comap
+import comap
 
 project, variation_id = redo.base.split('.')
 project_path = Path('projects') / project

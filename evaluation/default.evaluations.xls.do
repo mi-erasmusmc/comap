@@ -2,7 +2,6 @@
 from collections import OrderedDict
 import yaml
 from pathlib import Path
-import pandas as pd
 import redo
 import comap # Just for the YAML converters
 
@@ -28,4 +27,5 @@ with redo.ifchange(casedefs=casedef_paths) as files:
         for outcome_id, f in files['casedefs'].items()
     }
 
-comap.evaluations_to_xls(redo.temp, evaluations, databases, )
+comap.evaluations_to_xls(redo.temp, evaluations, databases)
+

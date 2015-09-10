@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 from collections import OrderedDict, defaultdict
 from pathlib import Path
-import os
-import json
 import yaml
-import re
 import redo
-redo.ifchange('comap.py'); import comap
+import comap
 
 """
 

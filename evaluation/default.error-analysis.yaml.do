@@ -3,10 +3,8 @@ from collections import OrderedDict, defaultdict
 from pathlib import Path
 import os
 import yaml
-import pandas as pd
-import pymysql
 import redo
-redo.ifchange('comap.py'); import comap
+import comap
 
 project, variation_id = redo.base.split('.')
 project_path = Path('projects') / project

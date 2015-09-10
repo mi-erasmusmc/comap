@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
-from collections import OrderedDict, defaultdict
-from pathlib import Path
-import os
-import json
+from collections import OrderedDict
 import yaml
-import re
 import redo
-redo.ifchange('comap.py'); import comap
+import comap
 
 project = redo.base
 
@@ -45,4 +41,3 @@ with redo.ifchange(evaluation_files=evaluation_filenames) as files:
 
 with redo.output() as f:
     yaml.dump(evaluations, f)
-

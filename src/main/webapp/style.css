@@ -10,6 +10,7 @@ html, body {
 }
 .concepts-grid, .history-grid, .semantic-types-grid, .coding-systems-grid  {
 	margin-top: 1em;
+	height: 600px;
 }
 textarea.case-definition {
 	height: 600px;

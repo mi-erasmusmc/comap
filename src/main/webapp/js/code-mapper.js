@@ -11,9 +11,9 @@ var INITIAL = {
     concepts: [],
     codingSystems: [ "ICD10CM", "ICD9CM", "ICPC2P", "RCD", "MSH", "MDR" ],
     semanticTypes:
-        // Group "DISO" ("Findings": T033)
-        [ "T020", "T190", "T049", "T019", "T047", "T050", "T037", "T048", "T191", "T046", "T184", "T033" ]
-     + [ "T005", "T004", "T204", "T007" ] // Some from group "LIVB",
+    // Group "DISO" ("Findings": T033)
+    [ "T020", "T190", "T049", "T019", "T047", "T050", "T037", "T048", "T191", "T046", "T184", "T033" ]
+        + [ "T005", "T004", "T204", "T007" ] // Some from group "LIVB",
 };
 
 var SHOW_UMLS_COLUMN = false;
@@ -39,7 +39,7 @@ function historyDatumToString(data) {
 
 function handleError(err, status) {
     if (status == 401) {
-        alert("Your session has timed out :( You have to re-login!")
+        alert("Your session has timed out :( You have to re-login!");
     } else {
         alert(err, status);
     }
@@ -75,7 +75,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     
     $scope.$on('$locationChangeStart', function(ev) {
         if ($scope.numberUnsafedChanges > 0) {
-            var really = confirm("Your unsafed changes are lost when navigating away. Really?")
+            var really = confirm("Your unsafed changes are lost when navigating away. Really?");
             if (!really) {
                 ev.preventDefault();
             }
@@ -84,14 +84,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     
     $scope.userCanEdit = function() {
     	return roles.indexOf('Editor') != -1;
-    }
+    };
     
     /* KEYBOARD */
     
     var ctrlKeydownCallbacks = {
         48 /* 0 */: function() {
             console.log("State", $scope.state);
-        },
+        }
     };
     
     $rootScope.onKeydown = function(event) {
@@ -121,7 +121,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     };
     $scope.unsetMessage = function() {
         $scope.message = null;
-    }
+    };
     
     /* HISTORY */
     
@@ -143,7 +143,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         rowHeight: 70,
         headerRowHeight: 35,
         columnDefs: historyColumnDefs,
-        enableRowSelection: false,
+        enableRowSelection: false
     };
     
     /* CONCEPTS */
@@ -183,7 +183,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 $scope.conceptsGridOptions.selectItem(index, selected);
             });
         }, 0);
-    }
+    };
     
     // Patch: adapt concepts for the code mapper application
     function patchConcept(concept0, codingSystems) {
@@ -234,100 +234,102 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 return $scope.state.mapping.semanticTypes.indexOf(type) != -1;
             })
             .length;
-    }
+    };
     
     /* COMMENTS */
     
     $scope.showComments = function(concept) {
     	if ($scope.state.mapping !== null) {
-    		$scope.updateComments()
-    			.success(function() {
-			    	showComments($modal, concept, $scope.numberUnsafedChanges == 0)
-			    		.then(function(comment) {
-			        		if ($scope.numberUnsafedChanges != 0) {
-			        			alert("Cannot post comment with unsafed changes to the case definition");
-			        		} else {
-				   			    var url = urls.comments($scope.project, $scope.caseDefinitionName);
-				    			var data = {
-									cui: concept.cui,
-									comment: comment
-				    			};
-				    			console.log(url, data);
-				                return $http.post(url, data, FORM_ENCODED_POST)
-					            	.error(function(err, code) {
-					            		switch (code) {
-					            			case 401:
-					            				alert("You are not member for project " + $scope.project + ":(");
-					            				break;
-					            			default:
-					            				alert("Unknow error", err, code);
-					            		}
-					            	})
-				                	.success(function() {
-				                		$scope.setMessage("Comment posted");
-				                		$scope.updateComments();
-				                	});
-			        		}
-			    		});
+    	    $scope.updateComments()
+    		.success(function() {
+		    showComments($modal, concept, $scope.numberUnsafedChanges == 0)
+			.then(function(comment) {
+			    if ($scope.numberUnsafedChanges != 0) {
+			        alert("Cannot post comment with unsafed changes to the case definition");
+                                return null;
+			    } else {
+				var url = urls.comments($scope.project, $scope.caseDefinitionName);
+				var data = {
+				    cui: concept.cui,
+				    comment: comment
+				};
+				console.log(url, data);
+				return $http.post(url, data, FORM_ENCODED_POST)
+				    .error(function(err, code) {
+					switch (code) {
+					case 401:
+					    alert("You are not member for project " + $scope.project + ":(");
+					    break;
+					default:
+					    alert("Unknow error", err, code);
+					}
+				    })
+				    .success(function() {
+				        $scope.setMessage("Comment posted");
+				        $scope.updateComments();
+				    });
+			    }
+			});
     		});
     	}
     };
     
     $scope.updateComments = function() {
     	if ($scope.state.mapping !== null) {
-	    	return $http.get(urls.comments($scope.project, $scope.caseDefinitionName))
-	    		.error(function(err, code) {
-	    			switch (code) {
-	    				case 401:
-	    					alert("Not authorized. Please reload.", err)
-	    					break;
-	    				default:
-	    					alert("Cannot load comments", err, code);
-	    			}
-	    		})
-	    		.success(function(comments) {
-	    			var commentsByCui = {};
-	    			angular.forEach(comments, function(comment) {
-	    				comment.timestamp = new Date(comment.timestamp);
-	    				if (!commentsByCui.hasOwnProperty(comment.cui)) {
-	    					commentsByCui[comment.cui] = []
-	    				}
-	    				commentsByCui[comment.cui].push(comment);
-	    			})
-                            $timeout(function() {
-	    			$scope.state.mapping.concepts.forEach(function(concept) {
-	    				var comments = [];
-	    				if (commentsByCui.hasOwnProperty(concept.cui)) {
-	    					comments = commentsByCui[concept.cui];
-	    				}
-	    				concept.comments = comments;
-	    			});
-                            }, 0);
-	    		})
-    	}
+	    return $http.get(urls.comments($scope.project, $scope.caseDefinitionName))
+	    	.error(function(err, code) {
+	    	    switch (code) {
+	    	    case 401:
+	    		alert("Not authorized. Please reload.", err);
+	    		break;
+	    	    default:
+	    		alert("Cannot load comments", err, code);
+	    	    }
+	    	})
+	    	.success(function(comments) {
+	    	    var commentsByCui = {};
+	    	    angular.forEach(comments, function(comment) {
+	    		comment.timestamp = new Date(comment.timestamp);
+	    		if (!commentsByCui.hasOwnProperty(comment.cui)) {
+	    		    commentsByCui[comment.cui] = [];
+	    		}
+	    		commentsByCui[comment.cui].push(comment);
+	    	    });
+                    $timeout(function() {
+	    		$scope.state.mapping.concepts.forEach(function(concept) {
+	    		    var comments = [];
+	    		    if (commentsByCui.hasOwnProperty(concept.cui)) {
+	    			comments = commentsByCui[concept.cui];
+	    		    }
+	    		    concept.comments = comments;
+	    		});
+                    }, 0);
+	    	});
+    	} else {
+            return null;
+        }
     };
 
     var updateCommentsPromise = null;
     
     $scope.intervalUpdateComments = function(startNotStop) {
     	if (startNotStop) {
-    		$scope.updateComments();
-    		if (updateCommentsPromise == null) {
-    			updateCommentsPromise = $interval($scope.updateComments, config.commentsReloadInterval);
-    		}
-    	}
-	    else {
-	    	if (updateCommentsPromise != null) {
-	    		$interval.cancel(updateCommentsPromise);
-	    		updateCommentsPromise = null;	    		
-	    	}
+    	    $scope.updateComments();
+    	    if (updateCommentsPromise == null) {
+    		updateCommentsPromise = $interval($scope.updateComments, config.commentsReloadInterval);
+    	    }
+    	} else {
+	    if (updateCommentsPromise != null) {
+	    	$interval.cancel(updateCommentsPromise);
+	    	updateCommentsPromise = null;	    		
 	    }
+	}
     };
     
     $scope.$on('$routeChangeStart', function(scope, next, current) {
     	// Stop interval update comments when leaving
-	    $scope.intervalUpdateComments(false);
-	});
+	$scope.intervalUpdateComments(false);
+    });
     
     /* FUNCTIONS */
     
@@ -336,18 +338,18 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         $http.get(urls.caseDefinition($scope.project, $scope.caseDefinitionName))
             .error(function(err, code, a2) {
                 switch (code) {
-                    case 401:
-                        alert("You are not member for project " + $scope.project + ":(");
-                        $location.path('/projects');
-                        break;
-                    case 404:
-                        $scope.state.mapping = null;
-                        $scope.state.indexing = null;
-                        $scope.caseDefinition = "" + INITIAL.caseDefinition;
-                        $scope.$broadcast("setSelectedSemanticTypes", INITIAL.semanticTypes);
-                        $scope.$broadcast("setSelectedCodingSystems", INITIAL.codingSystems);
-                        $scope.setMessage("Initialized.");
-                        break;
+                case 401:
+                    alert("You are not member for project " + $scope.project + ":(");
+                    $location.path('/projects');
+                    break;
+                case 404:
+                    $scope.state.mapping = null;
+                    $scope.state.indexing = null;
+                    $scope.caseDefinition = "" + INITIAL.caseDefinition;
+                    $scope.$broadcast("setSelectedSemanticTypes", INITIAL.semanticTypes);
+                    $scope.$broadcast("setSelectedCodingSystems", INITIAL.codingSystems);
+                    $scope.setMessage("Initialized.");
+                    break;
                 } 
             })
             .success(function(state) {
@@ -361,15 +363,15 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 $scope.activateTab("concepts-tab");
                 var msg = "Loaded.";
                 if (angular.equals($scope.roles, ['Commentator'])) {
-                	msg += " Use the speech baloon button to comment on a concept";
+                    msg += " Use the speech baloon button to comment on a concept";
                 }
-				$scope.setMessage(msg);
-				$scope.intervalUpdateComments(true);
+		$scope.setMessage(msg);
+		$scope.intervalUpdateComments(true);
             })
-            ['finally'](function() {
-                $scope.numberUnsafedChanges = 0;
-                $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems, true);
-            });
+        ['finally'](function() {
+            $scope.numberUnsafedChanges = 0;
+            $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems, true);
+        });
     };
     
     /** Ask a summary of recent changes and save/upload the coding. */ 
@@ -383,7 +385,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 $scope.historyStep("Summarize", summary, null);
                 var state = angular.copy($scope.state);
                 angular.forEach(state.concepts, function(concept) {
-                	delete concept.comments;
+                    delete concept.comments;
                 });
                 var data = {
                     state: angular.toJson(state)
@@ -391,7 +393,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 $http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)
                     .error(function(e, status) {
                         if (status == 401) {
-                            alert("Your session has timed out :( You have to re-login!")
+                            alert("Your session has timed out :( You have to re-login!");
                         } else {
                             var msg = "ERROR: An error occurred while saving";
                             alert(msg, err);
@@ -462,6 +464,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             return s1.preferredName.length - s2.preferredName.length
                                 || s1.preferredName.localeCompare(s2.preferredName);
                         });
+                } else {
+                    return null;
                 }
             });
     };
@@ -518,9 +522,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         if (filteredByCurrentConcepts.length > 0) {
                             comments.push("filtered " + filteredByCurrentConcepts.length + " by current coding"); 
                         }
-                        comments = comments.length > 0 ? " (" + comments.join(", ") + ")" : ""
+                        comments = comments.length > 0 ? " (" + comments.join(", ") + ")" : "";
                         if (concepts.length == 0) {
                             $scope.setMessage("No concepts found" + comments);
+                            return null;
                         } else {
                             var title = "Concepts for search query \"" + searchQuery + "\"";
                             var message = "Found " + concepts.length + " concepts" + comments;
@@ -610,7 +615,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             return;
         }
         var conceptNames =concepts.length <= 3
-            ? concepts.map(function(c) { return c.preferredName; }).join(", ")
+                ? concepts.map(function(c) { return c.preferredName; }).join(", ")
             : concepts.length + " " + pluralize("concept", concepts);
         var hyponymOrHypernym = hyponymsNotHypernyms ? "hyponym" : "hypernym";
         var cuis = concepts.map(getCui);
@@ -624,7 +629,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         $http.post(urls.relatedConcepts, data, FORM_ENCODED_POST)
             .error(function(err, status) {
                 if (status == 401) {
-                    alert("Your session has timed out :( You have to re-login!")
+                    alert("Your session has timed out :( You have to re-login!");
                 } else {
                     var msg = "ERROR: Couldn't lookup related concepts at " + urls.relatedConcepts;
                     alert(msg);
@@ -641,7 +646,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             return currentCuis.indexOf(c.cui) == -1 // Not yet in mapping
                                 && relatedConceptsCuis.indexOf(c.cui) == -1 // Not a duplication for another CUI  
                                 && isFirstOccurrence(c, ix, a) // Not a duplication for this CUI
-                                ;
+                            ;
                         })
                         .map(function(concept) {
                             return patchConcept(concept, $scope.state.mapping.codingSystems);
@@ -663,7 +668,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 var title = "Concepts that are more " + specificOrGeneral + " than " + conceptNames;
                 selectConceptsInDialog($modal, relatedConcepts, title, true, null, $scope.state.mapping.codingSystems)
                     .then(function(selectedRelatedConcepts) {
-                    
+                        
                         // Search position of original inital concepts
                         var conceptOffsets = {};
                         cuis.forEach(function(cui) {
@@ -673,7 +678,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                                 }
                             });
                         });
-    
+                        
                         // Insert each related concept in list of concepts
                         selectedRelatedConcepts.forEach(function(related, ix) {
                             var offset = ++conceptOffsets[related.origin.data.cui];
@@ -682,8 +687,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         $scope.setSelectedConcepts(selectedRelatedConcepts.map(getCui));
                         
                         var descr = "Expanded " + conceptNames +
-                            " with " + selectedRelatedConcepts.length + 
-                            " " + pluralize(hyponymOrHypernym, selectedRelatedConcepts);
+                                " with " + selectedRelatedConcepts.length + 
+                                " " + pluralize(hyponymOrHypernym, selectedRelatedConcepts);
                         var operation = hyponymsNotHypernyms ? "Expand to more specific" : "Expand to more general";
                         $scope.historyStep(operation, concepts.map(reduceConcept), selectedRelatedConcepts.map(reduceConcept), descr);
                     });
@@ -699,7 +704,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 function isSelected(cui, codingSystem, id) {
                     return codes.filter(function(code) {
                         return code.cui == cui && code.codingSystem == codingSystem && code.id == id;
-                    }).length != 0
+                    }).length != 0;
                 };
                 var added = [];
                 var removed = [];
@@ -787,7 +792,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     if (code.selected) {
                         data.push([codingSystem, code.id, code.preferredTerm, concept.preferredName, concept.cui, origin, root]);
                     }
-                })
+                });
             });
         });
         
@@ -863,16 +868,16 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
 function selectConceptsInDialog($modal, concepts, title, selectable, message, codingSystems) {
     // Display retrieved concepts in a dialog
     var dialog = $modal.open({
-      templateUrl: 'partials/ShowConcepts.html',
-      controller: 'ShowConceptsCtrl',
-      size: 'lg',
-      resolve: {
-        title: function() { return title; },
-        concepts: function() { return concepts.sort(compareByCodeCount); },
-        codingSystems: function() { return codingSystems; },
-        selectable: function() { return selectable; },
-        message: function() { return message; }
-      }
+        templateUrl: 'partials/ShowConcepts.html',
+        controller: 'ShowConceptsCtrl',
+        size: 'lg',
+        resolve: {
+            title: function() { return title; },
+            concepts: function() { return concepts.sort(compareByCodeCount); },
+            codingSystems: function() { return codingSystems; },
+            selectable: function() { return selectable; },
+            message: function() { return message; }
+        }
     });
     return dialog.result;
 };
@@ -891,9 +896,9 @@ function EditCodesCtrl($scope, $modalInstance, $timeout, concepts, codes) {
         columnDefs: [
             { displayName: 'Coding system', field: 'codingSystem' },
             { displayName: 'Code', field: 'id',
-                cellTemplate:
-                    "<span ng-bind='row.getProperty(col.field)' title='{{row.entity.preferredTerm}}' " +
-                    "class='code' ng-class=\"row.selected ? 'selected' : 'unselected'\"></span>"
+              cellTemplate:
+              "<span ng-bind='row.getProperty(col.field)' title='{{row.entity.preferredTerm}}' " +
+              "class='code' ng-class=\"row.selected ? 'selected' : 'unselected'\"></span>"
             },
             { displayName: 'Preferred term (in coding system)', field: 'preferredTerm' },
             { displayName: 'Concept', field: 'conceptName' }
@@ -970,35 +975,35 @@ function askSummary($modal, caseDefinitionName, history, numberUnsafedChanges) {
             caseDefinitionName: function() { return caseDefinitionName; },
             changes: function() {
                 return history.slice(history.length - numberUnsafedChanges);
-            },
+            }
         }
-      });       
+    });       
     return dialog.result;
 }
 
 function ShowCommentsCtrl($scope, $http, $modalInstance, concept, canEnterNewComment) {
-	$scope.concept = concept;
-	$scope.canEnterNewComment = canEnterNewComment;
-	$scope.newComment = { text: "" };
-	$scope.save = function(newComment) {
-		$modalInstance.close(newComment.text);
-	};
-	$scope.cancel = function() {
-		$modalInstance.dismiss();
-	};
+    $scope.concept = concept;
+    $scope.canEnterNewComment = canEnterNewComment;
+    $scope.newComment = { text: "" };
+    $scope.save = function(newComment) {
+	$modalInstance.close(newComment.text);
+    };
+    $scope.cancel = function() {
+	$modalInstance.dismiss();
+    };
 }
 
 function showComments($modal, concept, canEnterNewComment) {
-	var dialog = $modal.open({
-		templateUrl: 'partials/ShowComments.html',
-		controller: 'ShowCommentsCtrl',
-		size: 'lg',
-		resolve: {
-			concept: function() { return concept; },
-			canEnterNewComment: function() { return canEnterNewComment; }
-		}
-	});
-	return dialog.result;
+    var dialog = $modal.open({
+	templateUrl: 'partials/ShowComments.html',
+	controller: 'ShowCommentsCtrl',
+	size: 'lg',
+	resolve: {
+	    concept: function() { return concept; },
+	    canEnterNewComment: function() { return canEnterNewComment; }
+	}
+    });
+    return dialog.result;
 }
 
 var originColumnDef = {
@@ -1043,22 +1048,22 @@ var originColumnDef = {
 
 /** Generate column definitions */
 function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
-	
-	var nameTooltip = 
-		'{{row.entity.preferredName}} ({{row.entity.cui}})<br/><br/>' +
-		'Semantic types: {{row.entity.semantic.types.join(", ")}}<br/><br/>' +
-		'{{row.entity.definition || "(no definition available)"}}';
-	
-	var nameCellTemplate = 
-        "<span " +
-	        "class='concept-name'" +
-	        "tooltip-html-unsafe='" + nameTooltip.replace("'", "\\'") + "' " +
-	        "tooltip-placement='right' " +
-	        "ng-bind='row.entity.preferredName'" +
-        "></span>";
-	
+    
+    var nameTooltip = 
+	    '{{row.entity.preferredName}} ({{row.entity.cui}})<br/><br/>' +
+	    'Semantic types: {{row.entity.semantic.types.join(", ")}}<br/><br/>' +
+	    '{{row.entity.definition || "(no definition available)"}}';
+    
+    var nameCellTemplate = 
+            "<span " +
+	    "class='concept-name'" +
+	    "tooltip-html-unsafe='" + nameTooltip.replace("'", "\\'") + "' " +
+	    "tooltip-placement='right' " +
+	    "ng-bind='row.entity.preferredName'" +
+            "></span>";
+    
     var name = 
-        { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip', cellTemplate: nameCellTemplate }
+            { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip', cellTemplate: nameCellTemplate };
     
     var cuiCellTemplate =
     	"<span " +
@@ -1068,53 +1073,53 @@ function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
     	"></span>";
     var cui = { displayName: "UMLS", field: 'cui', cellTemplate: cuiCellTemplate };
     
-    var codingSystemsColumnDefs = 
-        codingSystems.map(function(codingSystem) {
-            return {
-                displayName: codingSystem,
-                field: "codes." + codingSystem,
-                cellClass: 'scroll-y',
-                cellTemplate:
-                	"<span ng-repeat='code in row.getProperty(col.field)' ng-bind='code.preferredTerm' title='{{code.id}}'" +
+    var codingSystemsColumnDefs = codingSystems
+            .map(function(codingSystem) {
+                return {
+                    displayName: codingSystem,
+                    field: "codes." + codingSystem,
+                    cellClass: 'scroll-y',
+                    cellTemplate:
+                    "<span ng-repeat='code in row.getProperty(col.field)' ng-bind='code.preferredTerm' title='{{code.id}}'" +
                         "class='code' ng-class=\"code.selected ? 'selected' : 'unselected'\"></span>",
-                sortFn: function(cs1, cs2) {
-                    if (cs1.length != cs2.length) {
-                        return cs2.length - cs1.length;
-                    } else {
-                        var s1 = cs1.join();
-                        var s2 = cs2.join();
-                        return s1 < s2 ? -1 : (s2 < s1 ? 1 : 0);
+                    sortFn: function(cs1, cs2) {
+                        if (cs1.length != cs2.length) {
+                            return cs2.length - cs1.length;
+                        } else {
+                            var s1 = cs1.join();
+                            var s2 = cs2.join();
+                            return s1 < s2 ? -1 : (s2 < s1 ? 1 : 0);
+                        }
                     }
-                }
-            };
-        });
+                };
+            });
     
     var comments = {
-		displayName: "Comments",
-		field: "comments",
-		cellTemplate:
-			"<button title='Show and create comments' ng-click='showComments(row.entity)' ng-disabled='row.entity.comments | isUndefined'>" +
-			"<i class='glyphicon glyphicon-comment'></i>" +
-			"</button>" +
-			"<i class='glyphicon glyphicon-option-horizontal' ng-if='row.entity.comments | isUndefined'></i>" +
-			"<span class='comments-count' ng-bind='row.entity.comments.length' ng-if='row.entity.comments | isArray'></span>"
-	};
+	displayName: "Comments",
+	field: "comments",
+	cellTemplate:
+	"<button title='Show and create comments' ng-click='showComments(row.entity)' ng-disabled='row.entity.comments | isUndefined'>" +
+	    "<i class='glyphicon glyphicon-comment'></i>" +
+        "</button>" +
+	"<i class='glyphicon glyphicon-option-horizontal' ng-if='row.entity.comments | isUndefined'></i>" +
+	"<span class='comments-count' ng-bind='row.entity.comments.length' ng-if='row.entity.comments | isArray'></span>"
+    };
     
     return [].concat(
-            [name],
-            showOrigin ? [originColumnDef] : [],
-            SHOW_UMLS_COLUMN ? [cui] : [],
-            codingSystemsColumnDefs,
-            showComments ? [comments] : []);
+        [name],
+        showOrigin ? [originColumnDef] : [],
+        SHOW_UMLS_COLUMN ? [cui] : [],
+        codingSystemsColumnDefs,
+        showComments ? [comments] : []);
 }
 
 
 var historyColumnDefs = [
-     { field: "date", displayName: "Date" },
-     { field: "user", displayName: "User" },
-     { field: "operation", displayName: "Operation" },
-     { field: "argument", displayName: "Argument",
-         cellTemplate: "<span>{{row.entity[col.field] | historyDatumToString}}</span>" },
-     { field: "result", displayName: "Result",
-         cellTemplate: "<span>{{row.entity[col.field] | historyDatumToString}}</span>" }
- ];
+    { field: "date", displayName: "Date" },
+    { field: "user", displayName: "User" },
+    { field: "operation", displayName: "Operation" },
+    { field: "argument", displayName: "Argument",
+      cellTemplate: "<span>{{row.entity[col.field] | historyDatumToString}}</span>" },
+    { field: "result", displayName: "Result",
+      cellTemplate: "<span>{{row.entity[col.field] | historyDatumToString}}</span>" }
+];

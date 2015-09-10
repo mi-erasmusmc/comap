@@ -442,6 +442,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     });
                 var descr = "Automatic mapping created.";
                 $scope.historyStep("Automatic coding", null, $scope.state.mapping.concepts.map(reduceConcept), descr);
+                $scope.intervalUpdateComments(true);
             });
     };
     

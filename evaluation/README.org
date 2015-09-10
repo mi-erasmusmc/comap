@@ -1,0 +1,69 @@
+* Temporary files
+
+#+BEGIN_SRC yaml
+  project."evaluations.yaml": &evalutations
+    "by-variant":
+      variant: *evaluation
+
+  project.variation."evaluation.yaml": &evaluation
+    "name": TEXT
+    "by-outcome":
+      outcome:
+        "generated-cuis": [CUI, ...]
+        "by-cui": # Varied CUIs, only for variation "maximum-recall"
+          cui:
+            "name": TEXT
+            "by-coding-system":
+              coding-system:
+                code: [NAME, ("TP" | "FP")]
+        "by-database":
+          database:
+            "confusion": &confusion
+            "measures": &measures
+
+  project.variation."weighted-measures.yaml":
+    "by-outcome":
+      outcome:
+        "by-database":
+          database:
+            weighting-name: &measures
+
+  project.variation."error-analysis.yaml": &error-analysis
+    "by-outcome":
+      outcome:
+        analysis:
+          "FN-count": NUMBER
+          "FN-clusters-VARIATION":
+            "count": NUMBER
+            "clusters":
+              cui: [CUI]
+          "FN-terms":
+            cui: [NAME, ...]
+
+  confusion: &confusion
+    "TP": [ID, ...]
+    "FN": [ID, ...]
+    "FP": [ID, ...]
+
+  measures: &measures
+    "recall": NUMBER
+    "precision": NUMBER
+
+  project.outcome."concepts.json": &concepts
+    list: *concept
+          
+  project.outcome."child-concepts.json": &child-concepts
+    CUI:
+      list: *concept
+
+  concept: &concept
+    "cui": CUI
+    "sourceConcepts":
+      list:
+        "id", "cui", "codingSystem", "preferredTerm": TEXT
+    "semanticType": [TYPE]
+    "definition": TEXT?
+    "preferredName": TEXT
+
+#+END_SRC
+* 

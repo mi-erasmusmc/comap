@@ -11,13 +11,16 @@ function LoginCtrl($scope, $rootScope, $location, $http, urls) {
             password: password
         };
         return $http.post(urls.login, data, FORM_ENCODED_POST)
-            .success(function(result) {
-                if (result.success) {
-                    $rootScope.user = result.user;
+            .then(function(result) {
+                if (result.data.success) {
+                    $rootScope.user = result.data.user;
                     $location.path('/projects');
                 } else {
-                    $scope.error = result.error;
+                    $scope.error = result.data.error;
                 }
+            }, function(error) {
+                alert("Error when logging in: ", error.statusText);
+                console.log("Couldn't login", error);
             });
     };
 }

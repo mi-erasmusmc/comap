@@ -26,29 +26,19 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext.Rcd2CodingSys
 
 @ApplicationPath("rest")
 public class CodeMapperApplication extends ResourceConfig {
-    
-    static Logger log = Logger.getLogger(CodeMapperApplication.class);
 
 	private static final String CODE_MAPPER_PROPERTIES = "/code-mapper.properties";
+	
+	private static Logger log = Logger.getLogger(CodeMapperApplication.class);
 
 	private static String peregrineResourceUrl;
 	private static UmlsApi umlsApi;
 	private static PersistencyApi persistencyApi;
 	private static AuthentificationApi authentificationApi;
 
-	public static UmlsApi getUmlsApi() {
-		return umlsApi;
-	}
-	public static PersistencyApi getPersistencyApi() {
-		return persistencyApi;
-	}
-	public static AuthentificationApi getAuthentificationApi() {
-		return authentificationApi;
-	}
-
 	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
 	
-	private DataSource getConnectionPool(Properties properties, String prefix) throws SQLException {
+	private DataSource getConnectionPool(String prefix, Properties properties) throws SQLException {
         String uri = properties.getProperty(prefix + "uri");
         String username = properties.getProperty(prefix + "username");
         String password = properties.getProperty(prefix + "password");
@@ -85,13 +75,13 @@ public class CodeMapperApplication extends ResourceConfig {
 
 			peregrineResourceUrl = properties.getProperty("peregrine-resource-url");
 
-			DataSource umlsConnectionPool = getConnectionPool(properties, "umls-db-");
+			DataSource umlsConnectionPool = getConnectionPool("umls-db-", properties);
 			umlsApi = new UmlsApi(umlsConnectionPool, availableCodingSystems, codingSystemsWithDefinition);
 
-            DataSource umlsExtConnectionPool = getConnectionPool(properties, "umls-ext-db-");
+            DataSource umlsExtConnectionPool = getConnectionPool("umls-ext-db-", properties);
             umlsApi.registerCodingSystemsExtension(new Rcd2CodingSystem(umlsExtConnectionPool));
 
-            DataSource codeMapperConnectionPool = getConnectionPool(properties, "code-mapper-db-");
+            DataSource codeMapperConnectionPool = getConnectionPool("code-mapper-db-", properties);
             persistencyApi = new PersistencyApi(codeMapperConnectionPool);
             authentificationApi = new AuthentificationApi(codeMapperConnectionPool);
 
@@ -103,5 +93,17 @@ public class CodeMapperApplication extends ResourceConfig {
 
 	public static String getPeregrineResourceUrl() {
 		return peregrineResourceUrl;
+	}
+
+	public static UmlsApi getUmlsApi() {
+		return umlsApi;
+	}
+	
+	public static PersistencyApi getPersistencyApi() {
+		return persistencyApi;
+	}
+	
+	public static AuthentificationApi getAuthentificationApi() {
+		return authentificationApi;
 	}
 }

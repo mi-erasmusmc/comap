@@ -189,8 +189,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     function patchConcept(concept0, codingSystems) {
         var concept = angular.copy(concept0);
         // Add field `codes` that is a mapping from coding systems to
-        // source
-        // concepts
+        // source concepts
         concept.codes = {};
         codingSystems.forEach(function(codingSystem) {
             concept.codes[codingSystem] = concept.sourceConcepts
@@ -229,11 +228,11 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     }
     
     $scope.conceptHasSelectedSemanticType = function(concept) {
-        return 0 < concept.semanticTypes
+        return concept.semanticTypes
             .filter(function(type) {
                 return $scope.state.mapping.semanticTypes.indexOf(type) != -1;
             })
-            .length;
+            .length > 0;
     };
     
     /* COMMENTS */
@@ -705,7 +704,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 function isSelected(cui, codingSystem, id) {
                     return codes.filter(function(code) {
                         return code.cui == cui && code.codingSystem == codingSystem && code.id == id;
-                    }).length != 0;
+                    }).length > 0;
                 };
                 var added = [];
                 var removed = [];

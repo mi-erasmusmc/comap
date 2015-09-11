@@ -448,9 +448,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     /** Generate a list of UMLS concept names with a given prefix. */
     $scope.autocompleteConcepts = function(str) {
         var params = {
-            str: str,
-            codingSystems: $scope.state.mapping.codingSystems,
-            semanticTypes: $scope.state.mapping.semanticTypes
+            str: str
+            // codingSystems: $scope.state.mapping.codingSystems,
+            // semanticTypes: $scope.state.mapping.semanticTypes
         };
         return $http.get(urls.autocomplete, { params: params })
             .then(function(completions) {
@@ -489,11 +489,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         if (!newInMapping) {
                             filteredByCurrentConcepts.push(c);
                         }
-                        var hasSelectedSemanticType = $scope.conceptHasSelectedSemanticType(c);
-                        if (!hasSelectedSemanticType) {
-                            filteredBySemanticType.push(c);
-                        }
-                        return newInMapping && hasSelectedSemanticType;
+                        return newInMapping;
                     })
                     .map(getCui);
             })

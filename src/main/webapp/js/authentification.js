@@ -14,12 +14,18 @@ function LoginCtrl($scope, $rootScope, $location, $http, urls) {
             .then(function(result) {
                 if (result.data.success) {
                     $rootScope.user = result.data.user;
-                    $location.path('/projects');
+                    var path;
+                    if (angular.isString($rootScope.requestedLocationPath)) {
+                        $location.path($rootScope.requestedLocationPath);
+                        $rootScope.requestedLocationPath = null;
+                    } else {
+                        $location.path('/projects');
+                    }
                 } else {
                     $scope.error = result.data.error;
                 }
             }, function(error) {
-                alert("Error when logging in: ", error.statusText);
+                $scope.error = "Error when logging in (" +  error.status + ", " + error.statusText + ")";
                 console.log("Couldn't login", error);
             });
     };
@@ -33,7 +39,7 @@ function LoggedInCtrl($scope, $rootScope, $location, $http, urls) {
                 $rootScope.user = null;
                 $location.path('/login');
             });
-    }
+    };
 }
 
 function resolveUserOrNull($q, $http, $location, urls) {
@@ -44,7 +50,7 @@ function resolveUserOrNull($q, $http, $location, urls) {
                 user = null;
             }
             deferred.resolve(user);
-        })
+        });
     return deferred.promise;
 }
 
@@ -57,6 +63,7 @@ function resolveUser($rootScope, $q, $http, $location, urls) {
                 deferred.resolve(user);
             } else {
                 deferred.reject();
+                $rootScope.requestedLocationPath = $location.path();
                 $location.path('/login');
             }
         });

@@ -1,6 +1,6 @@
 <form ng-if="!user.authentificated" ng-submit="login(username, password)">
   <label for="username">Username</label>
-  <input id="username" type="text" ng-model="username">
+  <input id="username" type="text" ng-model="username" autofocus>
   <label for="password">Password</label>
   <input id="password" type="password" ng-model="password">
   <div ng-bind="error"></div>

@@ -12,18 +12,18 @@ html, body {
 	margin-top: 1em;
 	height: 600px;
 }
+.selection-grid, .codes-grid {
+	height: 500px;
+}
+.changes-grid {
+	height: 400px;
+}
 textarea.case-definition {
 	height: 600px;
 	width: 72em;
 }
 #highlightedCaseDefinition {
   width: 72em;
-}
-.selection-grid, .codes-grid {
-	height: 500px;
-}
-.changes-grid {
-	height: 400px;
 }
 #search-concepts {
 	margin-top: 1em;

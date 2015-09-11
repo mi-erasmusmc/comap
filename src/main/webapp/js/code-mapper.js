@@ -157,8 +157,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         columnDefs: 'conceptsColumnDefs',
         enableRowSelection: $scope.userCanEdit,
         enableCellSelection: $scope.userCanEdit,
-        filterOptions: { filterText: '' },
-        plugins: [new ngGridFlexibleHeightPlugin()]
+        filterOptions: { filterText: '' }
+        //plugins: [new ngGridFlexibleHeightPlugin()]
     };
     
     $scope.$watch('state.mapping', function(mapping) {

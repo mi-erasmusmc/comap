@@ -16,6 +16,19 @@
   </session-config>
   
   <filter>
+    <filter-name>noCache</filter-name>
+    <filter-class>com.samaxes.filter.NoCacheFilter</filter-class>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>noCache</filter-name>
+    <url-pattern>/index.html</url-pattern>
+    <url-pattern>/style.css</url-pattern>
+    <url-pattern>/js/*</url-pattern>
+    <url-pattern>/partials/*</url-pattern>
+  </filter-mapping>
+  
+  <filter>
     <filter-name>cors</filter-name>
     <filter-class>org.apache.catalina.filters.CorsFilter</filter-class>
   </filter>
@@ -23,7 +36,7 @@
     <filter-name>cors</filter-name>
     <url-pattern>/*</url-pattern>
   </filter-mapping>
-  
+
   <context-param>
     <param-name>log4j.appender.FILE.File</param-name>
     <param-value>../logs/codemapper.log</param-value>

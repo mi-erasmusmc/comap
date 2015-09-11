@@ -15,8 +15,9 @@ var codeMapperApp =
                     return false;
                 }
                 if (config.method == "GET" && config.url.match(/\/comments$/)) {
-                	return false;
+                    return false;
                 }
+                return undefined;
             };
         })
         .config(function($routeProvider) {

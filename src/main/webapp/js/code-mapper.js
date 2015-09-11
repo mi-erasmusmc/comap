@@ -9,7 +9,7 @@ var INITIAL = {
     caseDefinition: "",
     history: [],
     concepts: [],
-    codingSystems: [ "ICD10CM", "ICD9CM", "ICPC2P", "RCD", "MSH", "MDR" ],
+    codingSystems: [ "ICD9CM", "ICD10CM", "ICPC2P", "ICPC2PEENG", "RCD", "RCD2", "LNC", "MSH", "MDR" ],
     semanticTypes:
     // Group "DISO" ("Findings": T033)
     [ "T020", "T190", "T049", "T019", "T047", "T050", "T037", "T048", "T191", "T046", "T184", "T033" ]

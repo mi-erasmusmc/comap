@@ -154,29 +154,41 @@ public class UmlsApi  {
 				else
 					codingSystems.add(abbr);
 
-			String queryFmt =
-					"SELECT DISTINCT m1.cui, m1.str " // Get the distinct MRCONSO.str
-					+ "FROM MRCONSO AS m1 "
-					+ "INNER JOIN MRCONSO AS m2 "
-					+ "INNER JOIN MRSTY AS sty "
-					+ "ON m1.cui = m2.cui "
-					+ "AND m1.cui = sty.cui "
-					+ "WHERE m1.ts = 'P' " // from preferred terms in MRCONSO ...
-					+ "AND m1.stt = 'PF' "
-					+ "AND m1.ispref = 'Y' "
-					+ "AND m1.lat = 'ENG' "
-					+ "AND m1.str LIKE ? " // that match the query string
-					+ "AND m2.sab IN (%s) " // that are in selected coding systems
-					+ "AND sty.tui IN (%s)"; // that have the selected semantic types
+                        String semanticTypesPlaceholdersMaybe = "";
+                        if (semanticTypes != null)
+                            semanticTypesPlaceholdersMaybe = String.format("AND sty.tui IN (%s)", // that have the selected semantic types
+                                                                      Utils.sqlPlaceholders(semanticTypes.size()));
 
-			String query = String.format(queryFmt, Utils.sqlPlaceholders(codingSystems.size()), Utils.sqlPlaceholders(semanticTypes.size()));
+			String query =
+                            "SELECT DISTINCT m1.cui, m1.str " // Get the distinct MRCONSO.str
+                            + "FROM MRCONSO AS m1 "
+                            + "INNER JOIN MRCONSO AS m2 "
+                            + "ON m1.cui = m2.cui "
+                            + "INNER JOIN MRSTY AS sty "
+                            + "ON m1.cui = sty.cui "
+                            + "WHERE m1.ts = 'P' " // from preferred terms in MRCONSO ...
+                            + "AND m1.stt = 'PF' "
+                            + "AND m1.ispref = 'Y' "
+                            + "AND m1.lat = 'ENG' "
+                            + "AND m1.str LIKE ? " // that match the query string
+                            + (codingSystems != null && !codingSystems.isEmpty()
+                               ? String.format("AND m2.sab IN (%s) ", // that are in selected coding systems
+                                               Utils.sqlPlaceholders(codingSystems.size()))
+                               : "")
+                            + (semanticTypes != null && !semanticTypes.isEmpty()
+                               ? String.format("AND sty.tui IN (%s) ", // that have the selected semantic types
+                                               Utils.sqlPlaceholders(semanticTypes.size()))
+                               : "");
+
 			try (Connection connection = connectionPool.getConnection();
 			     PreparedStatement statement = connection.prepareStatement(query)) {
 				int offset = 1;
 				statement.setString(offset++, q + "%");
-				for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
+                                if (codingSystems != null && !codingSystems.isEmpty())
+                                    for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
 					statement.setString(offset, iter.next());
-				for (Iterator<String> iter = semanticTypes.iterator(); iter.hasNext(); offset++)
+                                if (semanticTypes != null && !semanticTypes.isEmpty())
+                                    for (Iterator<String> iter = semanticTypes.iterator(); iter.hasNext(); offset++)
 					statement.setString(offset, iter.next());
 				ResultSet result = statement.executeQuery();
 				List<UmlsConcept> completions = new LinkedList<>();

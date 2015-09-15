@@ -1,7 +1,8 @@
 
 <div>
   
-  <alert ng-if="message != null" type="success" close="unsetMessage()">{{message}}</alert>
+  <alert ng-if="message != null" type="success">{{message}}
+    (<a ng-click="unsetMessage()">close message</a>)</alert>
   
   <tabset>
 

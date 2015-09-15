@@ -360,9 +360,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 $scope.$broadcast("setSelectedCodingSystems", state.mapping.codingSystems);
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems, true);
                 $scope.activateTab("concepts-tab");
-                var msg = "Loaded.";
-                if (angular.equals($scope.roles, ['Commentator'])) {
-                    msg += " Use the speech baloon button to comment on a concept";
+                var msg = "Loaded mapping.";
+                if (angular.isArray(roles) && roles.indexOf('Commentator') != -1) {
+                    msg += " Use the buttons with the speech baloon on the left to view or add comments on a concept.";
                 }
 		$scope.setMessage(msg);
 		$scope.intervalUpdateComments(true);

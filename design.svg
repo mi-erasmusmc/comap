@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.5 r10040"
+   sodipodi:docname="favicon.svg">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.76367532"
+     inkscape:cx="4729.1595"
+     inkscape:cy="637.10563"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:window-width="1859"
+     inkscape:window-height="1180"
+     inkscape:window-x="-2"
+     inkscape:window-y="-3"
+     inkscape:window-maximized="1"
+     inkscape:snap-global="false">
+    <sodipodi:guide
+       orientation="0,1"
+       position="4616.6667,850"
+       id="guide3769" />
+    <sodipodi:guide
+       orientation="0,1"
+       position="2666.0545,347.00611"
+       id="guide3771" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       style="color:#000000;fill:none;stroke:#001ea7;stroke-width:76.1622467;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       d="m 4034.581,257.22382 c -35.7645,-62.47817 -91.1997,-62.47817 -141.2702,-62.47817 -50.0705,0 -203.8583,51.49132 -205.6465,212.17402 -1.7883,160.68271 112.8229,275.32304 239.7872,275.32304 201.1913,-2.84987 343.1379,-306.46894 464.125,-487.49706"
+       id="path2986"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="csscc"
+       inkscape:export-filename="/home/benus/aktuell/code-mapping/AdvanceCodeMapper/src/main/webapp/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       style="color:#000000;fill:none;stroke:#00d2fb;stroke-width:76.1622467;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       d="m 3934.8742,568.24026 c 103.7174,-59.05433 239.2787,-319.2375 253.5846,-373.49461 10.7294,56.98475 55.0911,231.56763 55.0911,231.56763 0,0 106.8211,-164.73928 149.2911,-231.56763 9.3878,94.54102 23.6643,246.15721 110.8703,374.23008"
+       id="path2988"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccc"
+       inkscape:export-filename="/home/benus/aktuell/code-mapping/AdvanceCodeMapper/src/main/webapp/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <text
+       xml:space="preserve"
+       style="font-size:75.34937286px;font-style:normal;font-weight:normal;line-height:100%;letter-spacing:0px;word-spacing:0px;fill:#001ea7;fill-opacity:1;stroke:none;font-family:Sans"
+       x="4571.7925"
+       y="435.59338"
+       id="text2995"
+       sodipodi:linespacing="100%"
+       inkscape:export-filename="/home/benus/aktuell/code-mapping/AdvanceCodeMapper/src/main/webapp/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
+         sodipodi:role="line"
+         id="tspan2997"
+         x="4571.7925"
+         y="435.59338"
+         style="font-size:169.53608704px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:100%;fill:#000c19;fill-opacity:1;font-family:Syntax LT Std;-inkscape-font-specification:Syntax LT Std">CODE</tspan><tspan
+         sodipodi:role="line"
+         x="4571.7925"
+         y="605.12946"
+         style="font-size:169.53608704px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:100%;fill:#000c19;fill-opacity:1;font-family:Syntax LT Std;-inkscape-font-specification:Syntax LT Std"
+         id="tspan3782">MAPPER</tspan></text>
+  </g>
+</svg>

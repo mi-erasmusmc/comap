@@ -14,7 +14,7 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.48.5 r10040"
-   sodipodi:docname="favicon.svg">
+   sodipodi:docname="design.svg">
   <defs
      id="defs4" />
   <sodipodi:namedview
@@ -24,9 +24,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.76367532"
-     inkscape:cx="4729.1595"
-     inkscape:cy="637.10563"
+     inkscape:zoom="0.54"
+     inkscape:cx="4520.8796"
+     inkscape:cy="885.48512"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -37,14 +37,14 @@
      inkscape:window-x="-2"
      inkscape:window-y="-3"
      inkscape:window-maximized="1"
-     inkscape:snap-global="false">
+     inkscape:snap-global="true">
     <sodipodi:guide
        orientation="0,1"
-       position="4616.6667,850"
+       position="4547.7442,895.66859"
        id="guide3769" />
     <sodipodi:guide
        orientation="0,1"
-       position="2666.0545,347.00611"
+       position="4545.1253,332.60208"
        id="guide3771" />
   </sodipodi:namedview>
   <metadata
@@ -65,27 +65,27 @@
      id="layer1">
     <path
        style="color:#000000;fill:none;stroke:#001ea7;stroke-width:76.1622467;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-       d="m 4034.581,257.22382 c -35.7645,-62.47817 -91.1997,-62.47817 -141.2702,-62.47817 -50.0705,0 -203.8583,51.49132 -205.6465,212.17402 -1.7883,160.68271 112.8229,275.32304 239.7872,275.32304 201.1913,-2.84987 343.1379,-306.46894 464.125,-487.49706"
+       d="m 4034.581,257.22382 c -35.7645,-62.47817 -91.1997,-62.47817 -141.2702,-62.47817 -50.0705,0 -203.8583,51.49132 -205.6465,212.17402 -1.7883,160.68271 112.8229,275.32304 239.7872,275.32304 201.1913,-2.84987 387.6594,-269.80414 464.125,-487.49706"
        id="path2986"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="csscc"
-       inkscape:export-filename="/home/benus/aktuell/code-mapping/AdvanceCodeMapper/src/main/webapp/logo.png"
+       inkscape:export-filename="/home/benus/aktuell/code-mapping/AdvanceCodeMapper/src/main/webapp/favicon.png"
        inkscape:export-xdpi="90"
        inkscape:export-ydpi="90" />
     <path
        style="color:#000000;fill:none;stroke:#00d2fb;stroke-width:76.1622467;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-       d="m 3934.8742,568.24026 c 103.7174,-59.05433 239.2787,-319.2375 253.5846,-373.49461 10.7294,56.98475 55.0911,231.56763 55.0911,231.56763 0,0 106.8211,-164.73928 149.2911,-231.56763 9.3878,94.54102 23.6643,246.15721 110.8703,374.23008"
+       d="m 3934.8742,568.24026 c 152.1673,-61.67324 239.2787,-319.2375 253.5846,-373.49461 10.7294,56.98475 90.119,241.38856 90.119,241.38856 0,0 87.5066,-168.01292 112.9537,-241.38856 9.3878,94.54102 45.9251,354.84214 108.2514,484.22447"
        id="path2988"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccc"
-       inkscape:export-filename="/home/benus/aktuell/code-mapping/AdvanceCodeMapper/src/main/webapp/logo.png"
+       inkscape:export-filename="/home/benus/aktuell/code-mapping/AdvanceCodeMapper/src/main/webapp/favicon.png"
        inkscape:export-xdpi="90"
        inkscape:export-ydpi="90" />
     <text
        xml:space="preserve"
-       style="font-size:75.34937286px;font-style:normal;font-weight:normal;line-height:100%;letter-spacing:0px;word-spacing:0px;fill:#001ea7;fill-opacity:1;stroke:none;font-family:Sans"
-       x="4571.7925"
-       y="435.59338"
+       style="font-size:92.96092987px;font-style:normal;font-weight:normal;line-height:100%;letter-spacing:0px;word-spacing:0px;fill:#001ea7;fill-opacity:1;stroke:none;font-family:Sans"
+       x="4577.124"
+       y="302.44046"
        id="text2995"
        sodipodi:linespacing="100%"
        inkscape:export-filename="/home/benus/aktuell/code-mapping/AdvanceCodeMapper/src/main/webapp/logo.png"
@@ -93,13 +93,28 @@
        inkscape:export-ydpi="90"><tspan
          sodipodi:role="line"
          id="tspan2997"
-         x="4571.7925"
-         y="435.59338"
-         style="font-size:169.53608704px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:100%;fill:#000c19;fill-opacity:1;font-family:Syntax LT Std;-inkscape-font-specification:Syntax LT Std">CODE</tspan><tspan
+         x="4577.124"
+         y="302.44046"
+         style="font-size:209.16207886px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:100%;fill:#000c19;fill-opacity:1;font-family:Syntax LT Std;-inkscape-font-specification:Syntax LT Std">ADVANCE</tspan><tspan
          sodipodi:role="line"
-         x="4571.7925"
-         y="605.12946"
-         style="font-size:169.53608704px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:100%;fill:#000c19;fill-opacity:1;font-family:Syntax LT Std;-inkscape-font-specification:Syntax LT Std"
+         x="4577.124"
+         y="511.60254"
+         style="font-size:209.16207886px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:100%;fill:#000c19;fill-opacity:1;font-family:Syntax LT Std;-inkscape-font-specification:Syntax LT Std"
+         id="tspan3047">CODE</tspan><tspan
+         sodipodi:role="line"
+         x="4577.124"
+         y="720.76465"
+         style="font-size:209.16207886px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:100%;fill:#000c19;fill-opacity:1;font-family:Syntax LT Std;-inkscape-font-specification:Syntax LT Std"
          id="tspan3782">MAPPER</tspan></text>
+    <rect
+       style="color:#000000;fill:none;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect3055"
+       width="945.42798"
+       height="945.42798"
+       x="3618.4338"
+       y="-27.868221"
+       inkscape:export-filename="/home/benus/aktuell/code-mapping/AdvanceCodeMapper/src/main/webapp/favicon.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
   </g>
 </svg>

@@ -490,6 +490,11 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             filteredByCurrentConcepts.push(c);
                         }
                         return newInMapping;
+                        // var hasSelectedSemanticType = $scope.conceptHasSelectedSemanticType(c);
+                        // if (!hasSelectedSemanticType) {
+                        //     filteredBySemanticType.push(c);
+                        // }
+                        // return newInMapping && hasSelectedSemanticType;
                     })
                     .map(getCui);
             })
@@ -748,6 +753,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             });
     };
 
+    $scope.downloadConceptsAsExcel = function() {
+        var url = urls.downloadExcel +
+                '?project=' + encodeURIComponent($scope.project) +
+                '&caseDefinition=' + encodeURIComponent($scope.caseDefinitionName) +
+                '&url=' + encodeURIComponent(window.location.href);
+        window.open(url, '_blank');
+    };
+
     $scope.downloadConcepts = function() {
         if ($scope.state.mapping == null) {
             error("CodeMapperCtrl.downloadConcepts called without state");
@@ -756,34 +769,34 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         console.log("Download concepts");
 
         var data = [];
-        
-        [ ["CASE DEFINITION"], 
-          [$scope.caseDefinitionName, "(Mapping created with ADVANCE Code Mapper)"]
+
+        [ ["CASE DEFINITION", $scope.caseDefinitionName],
+          ["ADVANCE Code Mapper", $location.absUrl()]
         ].forEach(function(row) { data.push(row); });
         
         [ [],
           ["CODES"],
-          ["CODING SYSTEMS", "CODE", "NAME IN CODING SYSTEM", "CONCEPT NAME", "UMLS ID", "ORIGIN", "ROOT CONCEPT"]
+          ["CODING SYSTEMS", "CODE", "NAME IN CODING SYSTEM", "UMLS CONCEPT NAME", "UMLS ID", "ORIGIN", "ROOT CONCEPT"]
         ].forEach(function(row) { data.push(row); });
         $scope.state.mapping.codingSystems.forEach(function(codingSystem) {
             $scope.state.mapping.concepts.forEach(function(concept) {
                 var origin = "?";
                 if (concept.origin.type == "spans") {
-                    origin = "Found in case definition (\"" + concept.origin.data.text + "\")";
+                    origin = "In case definition (\"" + concept.origin.data.text + "\")";
                 }
                 if (concept.origin.type == "hyponym") {
-                    origin = "Expanded more specific than " + concept.origin.data.preferredName;
+                    origin = "More specific than " + concept.cui + " (" + concept.origin.data.preferredName + ")";
                 }
                 if (concept.origin.type == "hypernym") {
-                    origin = "Expanded more general than " + concept.origin.data.preferredName;
+                    origin = "More general than " + concept.cui + " (" + concept.origin.data.preferredName + ")";
                 }
                 if (concept.origin.type == "search") {
-                    origin = "Search with query \"" + concept.origin.data + "\"";
+                    origin = "By query \"" + concept.origin.data + "\"";
                 }
                 if (concept.origin.type == "add") {
                     origin = "Added";
                 }
-                var root = angular.isObject(concept.origin.root) ? concept.origin.root.preferredName : "";
+                var root = angular.isObject(concept.origin.root) ? concept.origin.root.cui : "";
                 concept.codes[codingSystem].forEach(function(code) {
                     if (code.selected) {
                         data.push([codingSystem, code.id, code.preferredTerm, concept.preferredName, concept.cui, origin, root]);
@@ -794,12 +807,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         
         [ [],
           ["HISTORY"],
-          ["DATE", "STEP", "ARGUMENT", "RESULT"]
+          ["DATE", "OPERATION", "ARGUMENT", "RESULT"]
         ].forEach(function(row) { data.push(row); });
         if ($scope.state.mapping.history) {
             $scope.state.mapping.history.forEach(function(step) {
-                data.push([step.date,
-                           step.name,
+                data.push([step.date.toLocaleString(),
+                           step.operation,
                            historyDatumToString(step.argument), 
                            historyDatumToString(step.result)]);
             });

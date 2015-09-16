@@ -37,7 +37,7 @@ public class PersistencyResource {
 	private PersistencyApi api = CodeMapperApplication.getPersistencyApi();
 
 	/** Test if user has any of the projectPermissions in a project. */
-	private static void assertProjectRoles(User user, String project, ProjectPermission... projectPermissions) {
+	public static void assertProjectRoles(User user, String project, ProjectPermission... projectPermissions) {
 		AuthentificationResource.assertAuthentificated(user);
 		Set<ProjectPermission> perms = user.getProjectPermissions().get(project);
 		if (perms != null && !Collections.disjoint(perms, Arrays.asList(projectPermissions)))

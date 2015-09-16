@@ -27,12 +27,12 @@ function UrlsService() {
     this.projects = persistencyApi + '/projects';
     this.project = function(project) {
     	return this.projects + '/' + encodeURIComponent(project);
-    }
+    };
     this.caseDefinitions = function(project) {
         return this.project(project) + '/case-definitions'; 
     };
     this.caseDefinition = function(project, caseDefinition) {
-        return this.caseDefinitions(project) + '/' +  encodeURIComponent(caseDefinition)
+        return this.caseDefinitions(project) + '/' +  encodeURIComponent(caseDefinition);
     };
     this.usersForProject = function(project) {
         return this.project(project) + '/users';
@@ -52,6 +52,9 @@ function UrlsService() {
     this.login = authentificationApi + '/login';
     this.logout = authentificationApi + '/logout';
     this.user = authentificationApi + '/user';
+
+    var downloadApi = 'rest/services/download';
+    this.downloadExcel = downloadApi + '/case-definition-xls';
 }
 
 /** Retrieve and provide stopwords, semantic types and coding systems. */

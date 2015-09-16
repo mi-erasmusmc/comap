@@ -22,6 +22,8 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.UmlsApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.AuthentificationApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.PersistencyApi;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.service.DownloadApi;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.service.DownloadResource;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext.Rcd2CodingSystem;
 
 @ApplicationPath("rest")
@@ -35,6 +37,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static UmlsApi umlsApi;
 	private static PersistencyApi persistencyApi;
 	private static AuthentificationApi authentificationApi;
+	private static DownloadApi downloadApi;
 
 	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
 	
@@ -54,7 +57,7 @@ public class CodeMapperApplication extends ResourceConfig {
 			logger.error("Can't load MYSQL JDBC driver");
 		}
 
-		packages(getClass().getPackage().getName());
+		packages(getClass().getPackage().getName(), DownloadResource.class.getPackage().getName());
 		register(new AbstractBinder() {
             @Override
             protected void configure() {
@@ -84,6 +87,7 @@ public class CodeMapperApplication extends ResourceConfig {
             DataSource codeMapperConnectionPool = getConnectionPool("code-mapper-db-", properties);
             persistencyApi = new PersistencyApi(codeMapperConnectionPool);
             authentificationApi = new AuthentificationApi(codeMapperConnectionPool);
+            downloadApi = new DownloadApi();
 
 		} catch (SQLException e) {
 		    logger.error("Cannot create pooled data source");
@@ -105,5 +109,9 @@ public class CodeMapperApplication extends ResourceConfig {
 	
 	public static AuthentificationApi getAuthentificationApi() {
 		return authentificationApi;
+	}
+
+	public static DownloadApi getDownloadApi() {
+		return downloadApi;
 	}
 }

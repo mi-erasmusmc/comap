@@ -1,0 +1,14 @@
+project: safeguard
+databases: [ Medicare, IPCI, CPRD, GePaRD ]
+coding-systems:
+  Lombardy: ICD9CM
+  IPCI: ICPC2EENG
+  CPRD: RCD2
+  GePaRD: ICD10CM
+  BIFAB: ICPC2EENG
+  Medicare: ICD9CM
+  unknown: ICD10CM
+  Puglia: ICD9CM
+  PHARMO: ICD9CM
+semantic-types: [T020, T190, T049, T019, T047, T050, T037, T048, T191,
+  T046, T184, T033, T005, T004, T204, T007]

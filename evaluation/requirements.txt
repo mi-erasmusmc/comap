@@ -1,5 +1,0 @@
-pandas
-requests
-pyyaml
-xlwt
-PyMySQL

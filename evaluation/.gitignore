@@ -1,12 +1,7 @@
+*.json
 .redo
-.comap-cookies
-py3-env
-*.index.json
-*.concepts.json
-*.child-concepts.json
+.ipynb_checkpoints
 __pycache__
-\#*\#
-.\#*
-.~*
-/safeguard.*
-/emif.*
+do/.comap-cookies
+*.evaluations.csv
+*.evaluations.xls

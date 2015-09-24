@@ -1,9 +1,0 @@
-databases:
-  - [ICD10, ICD10]
-  - [ICD9CM, ICD9CM]
-  - [ICPC2P, ICPC2P]
-  - [READ, RCD2]
-outcome_ids:
-  - dementia
-  - diabetes
-  - fattyliver

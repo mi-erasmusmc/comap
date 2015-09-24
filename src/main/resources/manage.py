@@ -18,6 +18,10 @@ def read_password():
 
 def create_user(db, username, password):
     password = password or read_password()
+    print(password, type(password))
+    print("Create user {}? (y/*) > ".format(username), end='', flush=True)
+    if sys.stdin.readline().strip() != 'y':
+        return
     with db.cursor() as cur:
         cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)",
                     [username, sha256(password)])
@@ -63,7 +67,6 @@ def show(db, users, projects, comments):
         projects = True
         comments = True
 
-    print(db, type(db))
     with db.cursor() as cur:
         cur.execute('SELECT * FROM users ORDER BY id')
         all_users = list(cur.fetchall())
@@ -77,7 +80,7 @@ def show(db, users, projects, comments):
 
     if users:
         print("# USERS")
-        for user in all_users:
+        for user in sorted(all_users, key=lambda user: user['username']):
             print("%s (%d)" % (user['username'], user['id']))
             for up in ups:
                 if up['username'] == user['username']:

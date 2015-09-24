@@ -9,7 +9,7 @@ project = redo.base
 project_path = Path('projects') / project
 
 with redo.ifchange(evaluation_config=project_path / 'evaluation-config.yaml',
-                   evaluation=redo.target.replace('.xls', '.yaml')) as files:
+                   evaluation="{}.evaluations-all.yaml".format(project)) as files:
     evaluation_config = yaml.load(files['evaluation_config'])
     evaluations = yaml.load(files['evaluation'])
 

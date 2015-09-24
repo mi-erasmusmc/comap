@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 
 """
 A thin wrapper of redo.
@@ -25,13 +26,22 @@ A thin wrapper of redo.
 
 - It provides the redo command line arguments as `redo.target`,
   `redo.base` and `redo.temp`.
-
 """
+logger = logging.getLogger("redo")
 
+def running():
+    """ Check if the process is really running a redo script """
+    return sys.argv[0][-3:] == '.do'
 
-target = sys.argv[1]
-base = sys.argv[2]
-temp = sys.argv[3]
+class NoRedoProcess(Exception):
+    pass
+
+if running():
+    target = sys.argv[1]
+    base = sys.argv[2]
+    temp = sys.argv[3]
+else:
+    target, base, temp = None, None, None
 
 
 def output(mode='w'):
@@ -41,18 +51,23 @@ def output(mode='w'):
 
 def ifchange(*args, **kwargs):
     """Run the `redo-ifchange` command on all files in **kwargs. """
-    return RedoCommand('redo-ifchange', *args, **kwargs)
+    return RedoCommand('redo-ifchange', args, kwargs)
+
+def ifchange_binary(*args, **kwargs):
+    """Run the `redo-ifchange` command on all files in **kwargs. """
+    return RedoCommand('redo-ifchange', args, kwargs, mode='rb')
 
 
 def delegate(*args, **kwargs):
     """Run the `redo-ifchange` command on all files in **kwargs. """
-    return RedoCommand('redo-delegate', *args, **kwargs)
+    return RedoCommand('redo-delegate', args, kwargs)
 
 
 class RedoCommand(object):
 
-    def __init__(self, command_name, *args, **kwargs):
+    def __init__(self, command_name, args, kwargs, mode='r'):
         self.command_name = command_name
+        self.mode = mode
         assert args or kwargs, "Provide either *args or **kwargs."
         if args and kwargs:
             self.filenames = (args, kwargs)
@@ -87,9 +102,15 @@ class RedoCommand(object):
         os.system(command)
 
     def __enter__(self):
-        f = lambda filename: open(str(filename))
+        if not running():
+            logger.warn("No running redo, not generating anything")
+            raise NoRedoProcess()
+        f = lambda filename: open(str(filename), self.mode)
         self.files = self.map_list_or_dict(self.filenames, f)
-        return self.files
+        if type(self.files) == tuple and len(self.files) == 1:
+            return self.files[0]
+        else:
+            return self.files
 
     def __exit__(self, type_, value, traceback):
         self.map_list_or_dict(self.files, lambda f: f.close())

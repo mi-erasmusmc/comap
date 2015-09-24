@@ -38,7 +38,7 @@ def get_cuis_for_codes(coding_system, codes):
             select distinct cui, code from MRCONSO
             where sab = %s and code in %s
         """
-        with comap.umls_db.cursor() as cursor:
+        with comap.get_umls_db().cursor() as cursor:
             cursor.execute(query, (coding_system, codes))
             for cui, code in cursor.fetchall():
                 res[code].add(cui)
@@ -52,7 +52,7 @@ def get_terms_for_cuis(cuis):
             select distinct cui, str, ispref = 'Y' and ts = 'P' and stt = 'PF' as preferred
             from MRCONSO where cui in %s
         """
-        with comap.umls_db.cursor() as cursor:
+        with comap.get_umls_db().cursor() as cursor:
             cursor.execute(query, (cuis))
             for cui, term, preferred in cursor.fetchall():
                 if preferred:

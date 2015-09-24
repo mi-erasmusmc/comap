@@ -8,7 +8,9 @@ project = redo.base
 
 variation_ids = [
     'baseline',
+    'baseline-filter-generated',
     'maximum-recall',
+    'maximum-recall-filter-generated',
     # 'maximum-precision',
     # '3-letter-codes',
     # 'expand-to-ref-RN-RB',
@@ -24,6 +26,7 @@ variation_ids = [
     'expand-1-to-dnf-RN-CHD-RB-PAR',
     'expand-2-to-dnf-RN-CHD-RB-PAR',
     'expand-3-to-dnf-RN-CHD-RB-PAR',
+    'expand-3-to-dnf-RN-CHD-RB-PAR-filter-generated',
 ]
 
 evaluation_filenames = [

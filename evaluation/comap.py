@@ -1,4 +1,6 @@
 from collections import OrderedDict, defaultdict
+import logging
+import logging.config
 import pandas as pd
 from itertools import chain
 import requests
@@ -9,6 +11,9 @@ import os
 import yaml
 import pymysql
 
+logging.config.fileConfig('logging.config')
+
+DEBUG = bool(os.getenv('DEBUG'))
 
 def construct_OrderedDict(loader, node):
     loader.flatten_mapping(node)
@@ -20,8 +25,13 @@ def represent_OrderedDict(dumper, data):
 yaml.add_representer(OrderedDict, represent_OrderedDict, yaml.dumper.Dumper)
 
 
-COMAP_API_URL = 'http://localhost:8080/AdvanceCodeMapper/rest'
+COMAP_API_URL = 'http://euadr.erasmusmc.nl:8080/CoMap/rest'
 COMAP_COOKIES_FILE = '.comap-cookies'
+
+
+def debug(*args, **kwargs):
+    if DEBUG:
+        print(*args, **kwargs)
 
 
 def get_cookies():
@@ -30,16 +40,21 @@ def get_cookies():
             cookies = pickle.load(f)
         url = COMAP_API_URL + '/authentification/user'
         r = requests.post(url, cookies=cookies)
-        if not r.json():
-            raise
-        return cookies
-    except:
-        url = COMAP_API_URL + '/authentification/login'
-        data = dict(username='b.becker', password='Codemapper2015')
-        r = requests.post(url, data=data)
-        with open(COMAP_COOKIES_FILE, 'wb') as f:
-            pickle.dump(r.cookies, f)
-        return r.cookies
+        if not r.ok:
+            cookies = login()
+    except IOError:
+        cookies = login()
+    return cookies
+
+
+def login():
+    debug("Login")
+    url = COMAP_API_URL + '/authentification/login'
+    data = dict(username='b.becker', password='Codemapper2015')
+    r = requests.post(url, data=data)
+    with open(COMAP_COOKIES_FILE, 'wb') as f:
+        pickle.dump(r.cookies, f)
+    return r.cookies
 
 
 def cui_of_id(id):
@@ -99,16 +114,36 @@ class ComapClient(object):
             raise Exception("Couldn't retrieve related concepts")
 
 
+__comap_client = None
+def get_client():
+    global __comap_client
+    if not __comap_client:
+        __comap_client = ComapClient()
+    return __comap_client
+
+
 db_access = dict(host='127.0.0.1', user='root', password='root')
-umls_db = pymysql.connect(db='UMLS2014AB_CoMap', **db_access)
-umls_ext_db = pymysql.connect(db='UMLS_ext_mappings', **db_access)
+
+_umls_db = None
+def get_umls_db():
+    global _umls_db
+    if _umls_db is None:
+        _umls_db = pymysql.connect(db='UMLS2014AB_CoMap', **db_access)
+    return _umls_db
+
+_umls_ext_db = None
+def get_umls_ext_db():
+    global _umls_ext_db
+    if _umls_ext_db is None:
+        _umls_ext_db = pymysql.connect(db='UMLS_ext_mappings', **db_access)
+    return _umls_ext_db
 
 
 def translation_read_2to3(codes):
     """ { read2_code: { read3_code } } """
     translation = defaultdict(set)
     if codes:
-        with umls_ext_db.cursor() as cursor:
+        with get_umls_ext_db().cursor() as cursor:
             query = """
                 select distinct V2_CONCEPTID, CTV3_CONCEPTID
                 from RCD_V3_to_V2
@@ -124,7 +159,7 @@ def translation_read_3to2(codes):
     """ { read2_code: { read3_code } } """
     translation = defaultdict(set)
     if codes:
-        with umls_ext_db.cursor() as cursor:
+        with get_umls_ext_db().cursor() as cursor:
             query = """
                 select distinct V2_CONCEPTID, CTV3_CONCEPTID
                 from RCD_V3_to_V2
@@ -391,7 +426,7 @@ class RegexHierarchy(ParentsHierarchy):
 
     TYPES = {
         # Letter Digit Digit
-        'LDD': re.compile(r'(?P<parent>[A-Za-z]\d{2})\.(\d)'),
+        'LDD': re.compile(r'(?P<parent>[A-Za-z]\d{2})\.(?P<detail>\d)'),
         # Digit Digit Digit
         'DDD': re.compile(r'(?P<parent>\d{3})\.(\d)'),
     }
@@ -533,7 +568,7 @@ def cosynonym_codes(codes, coding_system, coding_systems):
 
     res = defaultdict(lambda: defaultdict(set))
 
-    with umls_db.cursor() as cursor:
+    with get_umls_db().cursor() as cursor:
         cursor.execute(query, (sorted(coding_systems), coding_system, sorted(codes)))
         for cui, sab, code in cursor.fetchall():
             res[cui][sab].add(code)
@@ -842,7 +877,7 @@ def relations_for_cuis(cuis, relations):
     if not cuis or not relations:
         return res
 
-    with umls_db.cursor() as cursor:
+    with get_umls_db().cursor() as cursor:
         cursor.execute(query, (cuis, relations))
         for cui1, cui2 in cursor.fetchall():
             res[cui2].add(cui1)
@@ -915,7 +950,8 @@ def evaluations_to_xls(filename, evaluations, databases, outcomes=None, show_gen
         ]
     )
 
-    str_of_list = lambda v: '{}: {}'.format(len(v), ' '.join(str(v0) for v0 in v))
+    #str_of_list = lambda v: '{}: {}'.format(len(v), ' '.join(str(v0) for v0 in v))
+    str_of_list = lambda v: len(v)
     index, rows = [], []
 
     def average_if_notnull(series):
@@ -939,13 +975,14 @@ def evaluations_to_xls(filename, evaluations, databases, outcomes=None, show_gen
             row = []
             if show_generated_cuis:
                 row.append(str_of_list(for_outcome['generated-cuis']))
-            measures_over_databases = pd.DataFrame(columns=['recall', 'precision'])
+            recall_precision = ('recall', 'precision')
+            measures_over_databases = pd.DataFrame(columns=recall_precision)
             for database_id in databases:
                 comparison = for_outcome['by-database'].get(database_id)
                 if comparison:
                     confusion, measures = comparison['confusion'], comparison['measures']
-                    measures_over_databases.ix[database_id] = measures
-                    measures_over_outcomes[database_id].ix[outcome_id] = measures
+                    measures_over_databases.ix[database_id] = [measures[c] for c in recall_precision]
+                    measures_over_outcomes[database_id].ix[outcome_id] = [measures[c] for c in recall_precision]
                     row.extend([
                         str_of_list(confusion['TP']),
                         str_of_list(confusion['FN']),
@@ -979,3 +1016,13 @@ def evaluations_to_xls(filename, evaluations, databases, outcomes=None, show_gen
     df = pd.DataFrame(rows, index=pd.Index(index), columns=columns)
     df.to_excel(writer, float_format='%.2f')
     writer.save()
+
+
+def get(data, variant=None, outcome=None, database=None):
+    if variant is not None:
+        data = data['by-variant'][variant]
+        if outcome is not None:
+            data = data['by-outcome'][outcome]
+            if database is not None:
+                data = data['by-database'][database]
+    return data

@@ -13,11 +13,11 @@ casedef_path = Path('projects') / project / 'case-definitions' / \
 
 with redo.ifchange(peregrine_config='config/peregrine.yaml',
                    casedef=casedef_path) as files:
-    peregrine_config = yaml.load(files['peregrine_config'])
+    peregrine_url = yaml.load(files['peregrine_config'])['api']['url']
     casedef = yaml.load(files['casedef'])
 
 text = casedef['name'] + ' ' + casedef['definition']
-spans = comap.peregrine_index(text, peregrine_config['api']['url'])
+spans = comap.peregrine_index(text, peregrine_url)
 
 for span in spans:
     span['cui'] = comap.cui_of_id(span['id'])

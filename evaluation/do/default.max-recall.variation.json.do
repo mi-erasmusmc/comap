@@ -1,37 +1,90 @@
 #!/usr/bin/env python3
 from collections import defaultdict
+import os
 import json
 import yaml
 import redo
 import comap
-from data import Databases, Variation, CodesInDbs, Mappings, Concepts, Dnf
+from data import Databases, Variation, Mappings, Concepts, Dnf
 import normalize
 import utils
 
 logger = utils.get_logger(__name__)
 
-def dnf_to_cosynonyms(dnf):
-    result = defaultdict(lambda: defaultdict(set))
-    for cuis in dnf.cui_sets():
-        codes_by_voc = dnf.get(cuis)
-        for voc, codes in codes_by_voc.items():
-            for cui in cuis:
-                result[cui][voc].update(codes)
-    return {
-        cui: dict(result[cui])
-        for cui in result
-    }
+def max_recall_cuis(cosynonyms, mapping, coding_systems, min_codes=None):
+    
+    """
+    The CUIs such that their codes capture the mapping with minimal codes
+    outside the mapping, i.e.
 
-def get_minimal_covering_cuis(dnf, mapping, databases):
-    coding_systems = databases.coding_systems_data()
-    cosynonyms = dnf_to_cosynonyms(dnf)
-    mapping = mapping.to_data()
-    return comap.mapping_to_max_recall_cuis_aux(coding_systems, cosynonyms, mapping)
+        ⋃_{v ∈ V_DB} \{
+           argmin_{cui ∈ UMLS}
+             | m_v ∩ codes(cui) |
+        \}
 
-def get_concepts(dnf, mapping, databases):
-    cuis = get_minimal_covering_cuis(dnf, mapping, databases)
-    data = comap.get_client().umls_concepts(cuis, databases.coding_systems())
-    return Concepts.of_raw_data(data)
+    The implementation below selects the concepts only locally. This
+    might be sub-optimal, but the optimal selection is NP-complete
+    problem: finding the cheapest binding for a DNF formula over CUIS
+    with the number of irrevant codes as costs for each CUI.
+
+    >>> coding_systems = {'D1': 'V1', 'D2': 'V2'}
+    >>> mapping = {
+    ...    'D1': {1,2},
+    ...    'D2': {3,4},
+    ... }
+    >>> cosynonyms = {
+    ...    'A': {'V1': {1}, 'V2': {3}},
+    ...    'B': {'V1': {2}},
+    ...    'C': {'V2': {4, 6}},
+    ...    'D': {'V2': {4, 6, 7}},
+    ...    'E': {'V1': {1}, 'V2': {5}},
+    ... }
+    >>> max_recall_cuis_aux(cosynonyms, mapping, coding_systems) ==\
+         { 'A', 'B', 'C' }
+    True
+    >>> max_recall_cuis_aux(cosynonyms, mapping, coding_systems, min_codes=2) ==\
+         {'A'}
+    True
+    """
+
+    cosynonyms = defaultdict(lambda: defaultdict(set), {
+        key: defaultdict(set, value)
+        for key, value in cosynonyms.items()
+    })
+
+    # Include only cuis that have more than `min_codes` in `mapping`
+    if min_codes is not None:
+        for cui in list(cosynonyms):
+            num_tp = 0
+            for database_id, codes in mapping.items():
+                if codes is not None:
+                    generated = cosynonyms[cui][coding_systems[database_id]]
+                    num_tp += len(set(codes) & generated)
+            if num_tp < min_codes:
+                del cosynonyms[cui]
+
+    cuis = set()
+    for database, reference in mapping.items():
+        coding_system = coding_systems[database]
+        if reference is not None:
+            for code in reference:
+                # Find the `cui` that implicates `code` with the least
+                # number of irrelevant codes.
+                candidates = set()
+                for cui in cosynonyms.keys():
+                    if code in cosynonyms[cui][coding_system]:
+                        num_fn = 0
+                        for database0, reference0 in mapping.items():
+                            if reference0 is not None:
+                                coding_system0 = coding_systems[database0]
+                                generated0 = cosynonyms[cui][coding_system0]
+                                num_fn += len(generated0 - set(reference0))
+                        candidates.add((cui, num_fn))
+                candidates = sorted(candidates, key=lambda x: x[1])
+                if candidates:
+                    cuis.add(candidates[0][0])
+    return cuis
+
 
 if redo.running():
     
@@ -40,17 +93,31 @@ if redo.running():
 
     with redo.ifchange(project_path / 'config.yaml') as f:
         databases = Databases.of_config(yaml.load(f))
+    with redo.ifchange(project_path / 'events.yaml') as f:
+        events = yaml.load(f)    
     with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data(yaml.load(f))
+        mappings = Mappings.of_raw_data(yaml.load(f), events, databases)
         mappings = normalize.mappings(mappings, databases)
         mapping = mappings.get(event)
     with redo.ifchange('{}.{}.dnf.json'.format(project, event)) as f:
         dnf = Dnf.of_data(json.load(f))
-    with redo.ifchange('codes-in-dbs.json') as f:
-        codes_in_dbs = CodesInDbs.of_data(json.load(f))
 
-    concepts = get_concepts(dnf, mapping, databases)
+    cosynonyms = dnf.to_cosynonyms()
+    coding_systems = {
+        database: databases.coding_system(database)
+        for database in databases.databases()
+    }
+    cuis = max_recall_cuis(cosynonyms, mapping.to_data(), coding_systems)
+    concepts_raw_data = comap.get_client().umls_concepts(cuis, databases.coding_systems())
+    concepts = Concepts.of_raw_data(concepts_raw_data)
+    concepts = normalize.concepts(concepts, databases.coding_systems())
+
     variation = Variation(concepts, mapping)
 
     with redo.output() as f:
         json.dump(variation.to_data(), f)
+
+
+if os.getenv('DOCTEST'):
+    import doctest
+    doctest.testmod(report=True)

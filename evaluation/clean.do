@@ -1,1 +1,1 @@
-rm *.json *.csv
+rm -f *.json *.csv

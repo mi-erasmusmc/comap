@@ -3,7 +3,7 @@ import json
 import yaml
 import redo
 import comap
-from data import Dnf, Databases, Variation, CodesInDbs, Concepts
+from data import Dnf, Databases, Variation, Concepts
 import normalize
 import utils
 
@@ -44,8 +44,6 @@ if redo.running():
         variation0_id = '{}-{}.expand'.format(n-1, '-'.join(relations))
     with redo.ifchange('{}.{}.{}.variation.json'.format(project, event, variation0_id)) as f:
         variation0 = Variation.of_data(json.load(f))
-    with redo.ifchange('codes-in-dbs.json') as f:
-        codes_in_dbs = CodesInDbs.of_data(json.load(f))
     with redo.ifchange('{}.{}.dnf.json'.format(project, event)) as f:
         dnf = Dnf.of_data(json.load(f))    
 

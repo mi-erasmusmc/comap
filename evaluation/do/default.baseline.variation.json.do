@@ -15,10 +15,12 @@ if redo.running():
     
     with redo.ifchange(project_path / 'config.yaml') as f:
         databases = Databases.of_config(yaml.load(f))
+    with redo.ifchange(project_path / 'events.yaml') as f:
+        events = yaml.load(f)    
     with redo.ifchange('{}.{}.concepts.json'.format(project, event)) as f:
         concepts = Concepts.of_data(json.load(f))
     with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data(yaml.load(f))
+        mappings = Mappings.of_raw_data(yaml.load(f), events, databases)
         mappings = normalize.mappings(mappings, databases)
         mapping = mappings.get(event)
         

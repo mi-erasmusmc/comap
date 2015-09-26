@@ -81,14 +81,11 @@ class CodesByCodingSystems:
 
     def filter_codes_in_dbs(self, codes_in_dbs):
         def aux(voc, codes):
-            available_codes = codes_in_dbs.get(voc)
-            if available_codes is None:
-                return codes
-            else:
-                return {
-                    code for code in codes
-                    if code in available_codes
-                }
+            codes_in_db = codes_in_dbs.get(voc)
+            return {
+                code for code in codes
+                if codes_in_db.exists(code)
+            }
         return CodesByCodingSystems({
             voc: aux(voc, self._by_coding_systems[voc])
             for voc in self._by_coding_systems
@@ -112,10 +109,10 @@ class Mappings:
         self._by_events = by_events or {}
 
     @classmethod
-    def of_raw_data(cls, data):
+    def of_raw_data(cls, data, events, databases):
         return Mappings({
-            event: Mapping.of_raw_data(for_event)
-            for event, for_event in data['by-event'].items()
+            event: Mapping.of_raw_data(data['by-event'][event], databases)
+            for event in events
         })
 
     def events(self):
@@ -127,6 +124,20 @@ class Mappings:
 
     def get(self, event):
         return self._by_events[event]
+
+    def all_codes(self, database):
+        codes = set()
+        for event in self._by_events:
+            codes.update(self.get(event).codes(database) or [])
+        return codes
+
+    # def normalize(self, normalizers):
+    #     result = Mappings()
+    #     for event in mappings.events():
+    #         mapping = mappings.get(event)
+    #         mapping = mapping.normalize(normalizers)
+    #         result.add(event, mapping)
+    #     return result
 
 
 class Mapping:
@@ -148,16 +159,15 @@ class Mapping:
         }
 
     @classmethod
-    def of_raw_data(cls, for_event):
+    def of_raw_data(cls, for_event, databases):
         def codes(for_database):
             if 'inclusion' in for_database:
-                return set(for_database['inclusion']) | \
-                    set(for_database.get('exclusion') or [])
+                return set(for_database['inclusion']) | set(for_database.get('exclusion') or [])
             else:
                 return None
         return Mapping({
-            database: codes(for_database)
-            for database, for_database in for_event['by-database'].items()
+            database: codes(for_event['by-database'][database])
+            for database in databases.databases()
         })
 
     def filter_codes_in_dbs(self, codes_in_dbs, databases=None):
@@ -185,6 +195,52 @@ class Mapping:
 
     def keys(self):
         return list(self._mapping.keys())
+
+    # def normalize(self, databases, normalizers):
+    #     result = Mapping()
+    #     for database in mapping.keys():
+    #         coding_system = databases.coding_system(database)
+    #         normalizer = normalizers.get(coding_system)
+    #             codes = mapping.codes(database)
+    #             if codes is not None:
+    #                 codes = normalizer(codes)
+    #                 result_mapping.add(database, codes)
+    #         result.add(event, result_mapping)
+
+            
+# def Normalizers:
+
+#     def __init__(self, normalizers):
+#         self._normalizers = normalizers
+
+#     def get(self, coding_system):
+#         for coding_system0 in self._normalizers:
+#             if coding_system.startswith(coding_system0):
+#                 return _normalizers[coding_system0]
+#         logger.error("No normalizer for coding system %s", coding_system)
+
+
+# def Normalizer:
+
+#     def __init__(self, f):
+#         self._f = f
+
+#     @classmethod
+#     def chain(fs):
+#         def f(code):
+#             for f in fs:
+#                 res = f(code)
+#                 if res is not None:
+#                     code = res
+#             return code
+#         return Normalizer(f)
+
+#     def code(self, code):
+#         return self._f(code)
+
+#     def codes(self, codes):
+#         return { self._f(code) for code in codes }
+        
 
 class Evaluations:
 
@@ -295,10 +351,10 @@ class Databases:
         return self._coding_systems[database]
 
     def coding_systems(self):
-        return sorted(set(self._coding_systems.values()))
-
-    def coding_systems_data(self):
-        return self._coding_systems
+        return sorted({
+            self._coding_systems[database]
+            for database in self._databases
+        })
 
 
 class CodesInDbs:
@@ -308,12 +364,36 @@ class CodesInDbs:
 
     @classmethod
     def of_data(cls, data):
-        return CodesInDbs(data)
+        return CodesInDbs({
+            coding_system: CodesInDb.of_data(codes)
+            for coding_system, codes in data.items()
+        })
 
     def get(self, coding_system):
         for coding_system0 in self._by_coding_systems:
             if coding_system.startswith(coding_system0):
                 return self._by_coding_systems[coding_system0]
+
+    def codes(self, coding_system):
+        return self._by_coding_systems[coding_system].codes()
+
+class CodesInDb:
+
+    def __init__(self, codes):
+        self._codes = codes
+
+    @classmethod
+    def of_data(cls, data):
+        return CodesInDb(set(data))
+
+    def exists(self, code):
+        return code in self._codes
+
+    def filter(self, codes):
+        return { code for code in codes if self.exists(code) }
+
+    def codes(self):
+        return self._codes
 
 
 class Dnf:
@@ -340,6 +420,21 @@ class Dnf:
             for cuis, by_coding_systems in data
         })
 
+    @classmethod
+    def of_cosynonyms(cls, cosynonyms):
+        # cosynonyms: { cui: { voc: { code } } }
+        tmp = defaultdict(lambda: defaultdict(set))
+        for cui in cosynonyms:
+            for voc, codes in cosynonyms[cui].items():
+                for code in codes:
+                    tmp[voc][code].add(cui)
+
+        res = defaultdict(lambda: defaultdict(set))
+        for voc in tmp:
+            for code, cuis in tmp[voc].items():
+                res[frozenset(cuis)][voc].add(code)
+
+        return Dnf(res)
     
     def add(self, cuis, coding_system, code):
         cuis = frozenset(cuis)
@@ -349,8 +444,30 @@ class Dnf:
             self._disjunction[cuis][coding_system] = set()
         self._disjunction[cuis][coding_system].add(code)
 
+    def disjunction(self):
+        return {
+            cuis: { voc: codes for voc, codes in self._disjunction[cuis].items() }
+            for cuis in self._disjunction
+        }
+
     def cui_sets(self):
         return list(self._disjunction.keys())
 
     def get(self, cuis):
         return self._disjunction[cuis]
+
+    def codes(self, coding_system):
+        res = set()
+        for code_sets in self._disjunction.values():
+            res.update(code_sets.get(coding_system) or [])
+        return res
+
+    def to_cosynonyms(self):
+        # {cui: {voc: {code}}}
+        res = defaultdict(lambda: defaultdict(set))
+        for cuis in self._disjunction:
+            for voc, codes in self._disjunction[cuis].items():
+                for cui in cuis:
+                    res[cui][voc].update(codes)
+        return res
+

@@ -1,5 +1,7 @@
 # -*- mode: sh -*-
 
 export PYTHONPATH=$PWD/lib
-redo-ifchange safeguard.evaluations.xls safeguard.evaluations.csv lib/plots.ipynb
-ipython nbconvert --execute --to html --output plots.html lib/plots.ipynb
+export COMAP_PROJECT=safeguard
+redo-ifchange $COMAP_PROJECT.evaluations.xls $COMAP_PROJECT.evaluations.csv $COMAP_PROJECT.code-stats.csv
+ipython nbconvert --execute --to pdf --output "CoMap evaluation - $COMAP_PROJECT" \
+        "lib/CoMap evaluation.ipynb"

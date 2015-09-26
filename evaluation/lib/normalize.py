@@ -1,6 +1,5 @@
 import logging
 import re
-import comap
 from data import Mapping, Mappings, Concepts, CodesByCodingSystems
 
 logger = logging.getLogger(__name__)
@@ -18,13 +17,18 @@ def normalize_drop_suffix_dot(code):
 def normalize_3letters(code):
     return code[:3]
 
+# Letter Digit Digit
+CODE_LLD_RE = re.compile(r'(?P<parent>[A-Za-z]\d{2})\.(?P<detail>\d)')
+# Digit Digit Digit
+CODE_DDD_RE = re.compile(r'(?P<parent>\d{3})\.(\d)')
+
 def normalize_xdd_code(code):
     code = code.upper()
-    m1 = re.match(comap.RegexHierarchy.TYPES['LDD'], code)
+    m1 = re.match(CODE_LLD_RE, code)
     try:
         return m1.group('parent')
     except:
-        m2 = re.match(comap.RegexHierarchy.TYPES['DDD'], code)
+        m2 = re.match(CODE_DDD_RE, code)
         try:
             return m2.group('parent')
         except:
@@ -44,7 +48,7 @@ def normalize_read(code):
         return m.group('code')
     else:
         logger.warn("Not a READ2 code: %s", code)
-        return code
+        return None
 
 _normalizers = {
     'ICPC': [normalize_upper, normalize_drop_suffix_dot, normalize_xdd_code, normalize_3letters],
@@ -54,11 +58,13 @@ _normalizers = {
 
 def chain(fs):
     def f(codes):
-        result = []
+        result = set()
         for code in codes:
             for f in fs:
-                code = f(code)
-            result.append(code)
+                res = f(code)
+                if res is not None:
+                    code = res
+            result.add(code)
         return result
     return f
 
@@ -74,7 +80,7 @@ def mappings(mappings, databases):
     for event in mappings.events():
         mapping = mappings.get(event)
         result_mapping = Mapping()
-        for database in mapping.keys():
+        for database in databases.databases():
             coding_system = databases.coding_system(database)
             normalizer = get_normalizer(coding_system)
             codes = mapping.codes(database)
@@ -94,3 +100,4 @@ def concepts(concepts, coding_systems):
             codes_by_coding_system.add(coding_system, codes)
         result.add(cui, codes_by_coding_system)
     return result
+

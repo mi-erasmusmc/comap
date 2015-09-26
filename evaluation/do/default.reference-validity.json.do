@@ -19,7 +19,7 @@ def create(mappings, events, codes_in_dbs, databases):
                 if codes:
                     all_codes.update(codes)
         codes_in_db = codes_in_dbs.get(coding_system)
-        filtered = { code for code in all_codes if code in codes_in_db }
+        filtered = { code for code in all_codes if codes_in_db.exists(code) }
         if all_codes:
             r = len(filtered) / len(all_codes)
         else:
@@ -39,7 +39,7 @@ if redo.running():
     with redo.ifchange(project_path / 'events.yaml') as f:
         events = yaml.load(f)
     with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data(yaml.load(f))
+        mappings = Mappings.of_raw_data(yaml.load(f), events, databases)
         mappings = normalize.mappings(mappings, databases)
     with redo.ifchange('codes-in-dbs.json') as f:
         codes_in_dbs = CodesInDbs.of_data(json.load(f))

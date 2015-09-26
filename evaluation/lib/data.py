@@ -162,7 +162,7 @@ class Mapping:
     def of_raw_data(cls, for_event, databases):
         def codes(for_database):
             if 'inclusion' in for_database:
-                return set(for_database['inclusion']) | set(for_database.get('exclusion') or [])
+                return set(for_database['inclusion']) # | set(for_database.get('exclusion') or [])
             else:
                 return None
         return Mapping({

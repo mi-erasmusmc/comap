@@ -19,8 +19,8 @@ def get_cookies():
         with open(COMAP_COOKIES_FILE, 'rb') as f:
             cookies = pickle.load(f)
         url = COMAP_API_URL + '/authentification/user'
-        r = requests.post(url, cookies=cookies)
-        if not r.ok:
+        r = requests.get(url, cookies=cookies)
+        if not r.ok or r.status_code != 200:
             cookies = login()
     except IOError:
         cookies = login()

@@ -415,6 +415,55 @@ class CodesInDb:
         return self._codes
 
 
+class Cosynonyms:
+
+    def __init__(self, cosynonyms):
+        self._cosynonyms = cosynonyms
+
+    @classmethod
+    def of_data(self, data):
+        return Cosynonyms({
+            cui: {
+                voc: set(codes)
+                for voc, codes in data[cui].items()
+            }
+            for cui in data
+        })
+
+    def to_data(self):
+        return {
+            cui: {
+                voc: list(codes)
+                for voc, codes in self._cosynonyms[cui].items()
+            }
+            for cui in self._cosynonyms
+        }
+
+    def to_dnf(self):
+        tmp = defaultdict(lambda: defaultdict(set))
+        for cui in self._cosynonyms:
+            for voc, codes in self._cosynonyms[cui].items():
+                for code in codes:
+                    tmp[voc][code].add(cui)
+
+        res = defaultdict(lambda: defaultdict(set))
+        for voc in tmp:
+            for code, cuis in tmp[voc].items():
+                res[frozenset(cuis)][voc].add(code)
+
+        return Dnf(res)
+
+    def contains_code(self, code, coding_system):
+        """ Test if any CUI contains `code` in the given `coding_system`. """
+        for cui in self._cosynonyms:
+            if code in self._cosynonyms[cui].get(coding_system, []):
+                return True
+        return False
+
+    def equals(self, other):
+        return self._cosynonyms == other._cosynonyms
+
+
 class Dnf:
 
     def __init__(self, disjunction=None):
@@ -438,22 +487,6 @@ class Dnf:
             }
             for cuis, by_coding_systems in data
         })
-
-    @classmethod
-    def of_cosynonyms(cls, cosynonyms):
-        # cosynonyms: { cui: { voc: { code } } }
-        tmp = defaultdict(lambda: defaultdict(set))
-        for cui in cosynonyms:
-            for voc, codes in cosynonyms[cui].items():
-                for code in codes:
-                    tmp[voc][code].add(cui)
-
-        res = defaultdict(lambda: defaultdict(set))
-        for voc in tmp:
-            for code, cuis in tmp[voc].items():
-                res[frozenset(cuis)][voc].add(code)
-
-        return Dnf(res)
     
     def add(self, cuis, coding_system, code):
         cuis = frozenset(cuis)

@@ -48,7 +48,10 @@ def max_recall_cuis(cosynonyms, mapping, coding_systems, min_codes=None):
     """
 
     cosynonyms = defaultdict(lambda: defaultdict(set), {
-        key: defaultdict(set, value)
+        key: defaultdict(set, {
+            key1: set(value1)
+            for key1, value1 in value.items()
+        })
         for key, value in cosynonyms.items()
     })
 
@@ -107,7 +110,7 @@ if redo.running():
         database: databases.coding_system(database)
         for database in databases.databases()
     }
-    cuis = max_recall_cuis(cosynonyms, mapping.to_data(), coding_systems)
+    cuis = max_recall_cuis(cosynonyms.to_data(), mapping.to_data(), coding_systems)
     concepts_raw_data = comap.get_client().umls_concepts(cuis, databases.coding_systems())
     concepts = Concepts.of_raw_data(concepts_raw_data)
     concepts = normalize.concepts(concepts, databases.coding_systems())

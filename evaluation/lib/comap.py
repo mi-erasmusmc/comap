@@ -1,4 +1,5 @@
 from collections import defaultdict
+import re
 import requests
 import pickle
 import pymysql
@@ -43,6 +44,7 @@ def cui_of_id(id):
 
 def peregrine_index(text):
     logger.info('Indexing...')
+    text = re.sub(r'\s', ' ', text)
     r = requests.get(PEREGRINE_API_URL + '/index', params=dict(text=text))
     return r.json()['spans']
 

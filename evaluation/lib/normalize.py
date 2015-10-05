@@ -84,9 +84,18 @@ def mappings(mappings, databases):
             coding_system = databases.coding_system(database)
             normalizer = get_normalizer(coding_system)
             codes = mapping.codes(database)
-            if codes is not None:
+            if codes is None:
+                result_mapping.add(database, None)
+            else:
                 codes = normalizer(codes)
-            result_mapping.add(database, codes)
+                result_mapping.add(database, codes)
+            exclusion_codes = mapping.exclusion_codes(database)
+            if exclusion_codes is None:
+                result_mapping.add_exclusion(database, None)
+            else:
+                exclusion_codes = normalizer(exclusion_codes)
+                result_mapping.add_exclusion(database, exclusion_codes)
+
         result.add(event, result_mapping)
     return result
 

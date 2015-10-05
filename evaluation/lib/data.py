@@ -142,8 +142,9 @@ class Mappings:
 
 class Mapping:
 
-    def __init__(self, mapping=None):
+    def __init__(self, mapping=None, exclusion_mapping=None):
         self._mapping = mapping or {}
+        self._exclusion_mapping = exclusion_mapping or {}
 
     @classmethod
     def of_data(cls, data):
@@ -165,8 +166,19 @@ class Mapping:
                 return set(for_database['inclusion']) # | set(for_database.get('exclusion') or [])
             else:
                 return None
+        def exclusion_codes(for_database):
+            if 'inclusion' in for_database:
+                if 'exclusion' in for_database:
+                    return set(for_database['exclusion'])
+                else:
+                    return set()
+            else:
+                return None
         return Mapping({
             database: codes(for_event['by-database'][database])
+            for database in databases.databases()
+        }, {
+            database: exclusion_codes(for_event['by-database'][database])
             for database in databases.databases()
         })
 
@@ -190,8 +202,15 @@ class Mapping:
         assert key not in self._mapping
         self._mapping[key] = codes
 
+    def add_exclusion(self, key, exclusion_codes):
+        assert key not in self._exclusion_mapping
+        self._exclusion_mapping[key] = exclusion_codes
+
     def codes(self, key):
         return self._mapping[key]
+
+    def exclusion_codes(self, key):
+        return self._exclusion_mapping[key]
 
     def keys(self):
         return list(self._mapping.keys())

@@ -36,6 +36,7 @@ function CaseDefinitionCtrl($scope, $timeout, $http, $compile, urls, dataService
 function normalize(text) {
     // Python: print "".join(r"\u%x" % ord(c) for c in u"–—")
     return text
+        .replace(/\s/g, ' ')
         .replace(/[\u201e\u201c\u201d]/g, '"')
         .replace(/[\u201a\u2018\u2019\u0060]/g, "'")
         .replace(/[\u2013\u2014]/g, "-")
@@ -184,8 +185,12 @@ function highlight(dataService, text, spans, concepts) {
             result += "<concept-in-case-def cuis='" + cuisStr + "' types='" + typesStr + "'>";
             ends.push(end);
         });
-        if (c == '\n') {
-            result += "<br/>";
+        if (c == '\n' || c == '\r') {
+            if (ends.length == 0) {
+                result += "<br/>";
+            } else {
+                result += ' ';
+            }
         } else {
             result += $('<div/>').text(c).html();
         }

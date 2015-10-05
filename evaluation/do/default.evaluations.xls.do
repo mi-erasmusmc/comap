@@ -8,7 +8,7 @@ from data import Databases
 
 logger = logging.getLogger(__name__)
 
-def average_and_format(df, variations, events, databases):
+def average_and_format(df, variation_ids, events, databases):
     databases_with_coding_systems = {
         database: '{} ({})'.format(database, databases.coding_system(database))
         for database in databases.databases()
@@ -28,7 +28,7 @@ def average_and_format(df, variations, events, databases):
             return len(li)
     
     result = pd.DataFrame(columns=columns)
-    for variation in variations:
+    for variation in variation_ids:
         variation_data = []
         for event in events:
             cuis = df[(df['variation'] == variation) & (df['event'] == event)].iloc[0].cuis
@@ -72,10 +72,10 @@ if redo.running():
     with redo.ifchange(project_path / 'events.yaml') as f:
         events = yaml.load(f)
     with redo.ifchange(project_path / 'variations.yaml') as f:
-        variations = yaml.load(f)
+        variation_ids = yaml.load(f)
     with redo.ifchange('{}.evaluations.csv'.format(project)) as f:
         df = pd.read_csv(f)
 
-    df = average_and_format(df, variations, events, databases)
+    df = average_and_format(df, variation_ids, events, databases)
 
     df.to_excel(redo.temp) #float_format='%.2f'

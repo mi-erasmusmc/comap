@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 class Concepts:
 
@@ -271,7 +271,7 @@ class Evaluations:
         return Evaluations({
             variation_id: {
                 event: {
-                    database: Evaluation.of_data(evaluation_data)
+                    database: None if evaluation_data is None else Evaluation.of_data(evaluation_data)
                     for database, evaluation_data in data[variation_id][event].items()
                 }
                 for event in data[variation_id]
@@ -308,7 +308,7 @@ class Evaluations:
     
 class Evaluation:
 
-    def __init__(self, cuis, generated, reference, tp, fp, fn, recall, precision):
+    def __init__(self, cuis, generated, reference, tp, fp, fn, recall, precision, error_analysis=None):
         for v in [cuis, generated, reference, tp, fp, fn]:
             assert type(v) == set, (type(v), v)
         self.cuis = cuis
@@ -319,20 +319,33 @@ class Evaluation:
         self.fn = fn
         self.recall = recall
         self.precision = precision
+        self.error_analysis = error_analysis
 
     @classmethod
     def of_data(cls, data):
+        def for_value(key, value):
+            if key == 'error_analysis':
+                return ErrorAnalysis.of_data(value)
+            if type(value) == list:
+                return set(value)
+            return value
         return Evaluation(**{
-            key: set(value) if type(value) == list else value
+            key: for_value(key, value)
             for key, value in data.items()
         })
 
     def to_data(self):
-        return {
-            key: list(value) if type(value) == set else value
-            for key, value in self.__dict__.items()
-        }
-
+        return OrderedDict([
+            ('cuis', list(self.cuis)),
+            ('generated', list(self.generated)),
+            ('reference', list(self.reference)),
+            ('tp', list(self.tp)),
+            ('fp', list(self.fp)),
+            ('fn', list(self.fn)),
+            ('recall', self.recall),
+            ('precision', self.precision),
+            ('error_analysis', self.error_analysis.to_data()),
+        ])
 
 class Variation:
     
@@ -521,5 +534,39 @@ class Dnf:
             for voc, codes in self._disjunction[cuis].items():
                 for cui in cuis:
                     res[cui][voc].update(codes)
-        return res
+        return Cosynonyms(res)
 
+
+class ErrorAnalysis:
+
+    def __init__(self, fp_in_dnf, fn_not_in_umls, fn_exclusions,
+                 recall_in_umls, recall_without_exclusions, precision_over_dnf):
+        self.fp_in_dnf = fp_in_dnf
+        self.fn_not_in_umls = fn_not_in_umls
+        self.fn_exclusions = fn_exclusions
+        self.recall_in_umls = recall_in_umls
+        self.recall_without_exclusions = recall_without_exclusions
+        self.precision_over_dnf = precision_over_dnf
+
+    @classmethod
+    def of_data(cls, data):
+        def for_value(key, value):
+            if type(value) == list:
+                return set(value)
+            if type(value) == float:
+                return value
+        return ErrorAnalysis(**{
+            key: for_value(key, value)
+            for key, value in data.items()
+        })
+
+    def to_data(self):
+        def for_value(key, value):
+            if type(value) == set:
+                return list(value)
+            if type(value) == float:
+                return value    
+        return {
+            key: for_value(key, value)
+            for key, value in self.__dict__.items()
+        }

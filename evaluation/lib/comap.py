@@ -156,3 +156,29 @@ def translation_read_3to2(codes):
             for code2, code3 in cursor.fetchall():
                 translation[code3].add(code2)
     return translation
+
+
+def known_codes(codes, coding_system):
+    "Returns a subset of `codes` where every code can be found in UMLS/RCD2."
+    if codes:
+        if coding_system != 'RCD2':
+            query = """
+            select distinct code
+            from MRCONSO
+            where sab = %s
+            and code in %s
+            """
+            with get_umls_db().cursor() as cursor:
+                cursor.execute(query, [coding_system, codes])
+                return { code for code, in cursor.fetchall() }
+        else:
+            query = """
+            select distinct V2_CONCEPTID
+            from RCD_V3_to_V2
+            where V2_CONCEPTID in %s
+            """
+            with get_umls_ext_db().cursor() as cursor:
+                cursor.execute(query, [codes])
+                return { code for code, in cursor.fetchall() }
+    else:
+        return set()        

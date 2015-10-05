@@ -4,8 +4,7 @@ import pandas as pd
 import numpy as np
 import json, yaml
 import redo
-import normalize
-from data import Databases, Variation, Evaluation, Evaluations, Mappings, Dnf, ErrorAnalysis
+from data import Databases, Variation, Evaluation, Evaluations, Mappings, ErrorAnalysis
 from utils import get_logger
 from comap import known_codes
 
@@ -125,8 +124,7 @@ if redo.running():
     with redo.ifchange(project_path / 'variations.yaml') as f:
         variation_ids = yaml.load(f)
     with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data(yaml.load(f), events, databases)
-        mappings = normalize.mappings(mappings, databases)
+        mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
         
     variations = {}
     for variation_id in variation_ids:

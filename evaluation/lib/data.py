@@ -1,4 +1,5 @@
 from collections import defaultdict, OrderedDict
+from normalize import get_normalizer
 
 class Concepts:
 
@@ -19,13 +20,13 @@ class Concepts:
         })
 
     @classmethod
-    def of_raw_data(cls, data, semantic_types=None):
+    def of_raw_data_and_normalize(cls, data, coding_systems, semantic_types=None):
         return Concepts({
             concept['cui']: CodesByCodingSystems.of_raw_data(concept['sourceConcepts'])
             for concept in data
             if semantic_types is None or \
                 set(concept['semanticTypes']) & set(semantic_types)
-        })
+        }).normalize(coding_systems)
 
     def filter_codes_in_dbs(self, codes_in_dbs):
         return Concepts({
@@ -49,6 +50,18 @@ class Concepts:
         for cui in self._by_cuis:
             codes.update(self._by_cuis[cui].codes(coding_system))
         return codes
+
+    def normalize(self, coding_systems):
+        result = Concepts()
+        for cui in self.cuis():
+            codes_by_coding_system = CodesByCodingSystems()
+            for coding_system in coding_systems:
+                normalizer = get_normalizer(coding_system)
+                codes = set(normalizer(self.cui(cui).codes(coding_system)))
+                codes_by_coding_system.add(coding_system, codes)
+            result.add(cui, codes_by_coding_system)
+        return result
+        
             
 
 class CodesByCodingSystems:
@@ -109,14 +122,11 @@ class Mappings:
         self._by_events = by_events or {}
 
     @classmethod
-    def of_raw_data(cls, data, events, databases):
+    def of_raw_data_and_normalize(cls, data, events, databases):
         return Mappings({
             event: Mapping.of_raw_data(data['by-event'][event], databases)
             for event in events
-        })
-
-    def events(self):
-        return list(self._by_events.keys())
+        }).normalize(databases)
 
     def add(self, event, mapping):
         assert event not in self._by_events
@@ -131,14 +141,28 @@ class Mappings:
             codes.update(self.get(event).codes(database) or [])
         return codes
 
-    # def normalize(self, normalizers):
-    #     result = Mappings()
-    #     for event in mappings.events():
-    #         mapping = mappings.get(event)
-    #         mapping = mapping.normalize(normalizers)
-    #         result.add(event, mapping)
-    #     return result
-
+    def normalize(self, databases):
+        result = Mappings()
+        for event, mapping in self._by_events.items():
+            result_mapping = Mapping()
+            for database in databases.databases():
+                coding_system = databases.coding_system(database)
+                normalizer = get_normalizer(coding_system)
+                codes = mapping.codes(database)
+                if codes is None:
+                    result_mapping.add(database, None)
+                else:
+                    codes = normalizer(codes)
+                    result_mapping.add(database, codes)
+                exclusion_codes = mapping.exclusion_codes(database)
+                if exclusion_codes is None:
+                    result_mapping.add_exclusion(database, None)
+                else:
+                    exclusion_codes = normalizer(exclusion_codes)
+                    result_mapping.add_exclusion(database, exclusion_codes)
+            result.add(event, result_mapping)
+        return result
+        
 
 class Mapping:
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import json, yaml
-import normalize
 from data import Mappings, Dnf, Databases, Cosynonyms
 from utils import get_logger
 import redo
@@ -53,8 +52,7 @@ if redo.running():
     with redo.ifchange(project_path / 'events.yaml') as f:
         events = yaml.load(f)    
     with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data(yaml.load(f), events, databases)
-        mappings = normalize.mappings(mappings, databases)
+        mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
         mapping = mappings.get(event)
     with redo.ifchange('{}.{}.cosynonyms.json'.format(project, event)) as f:
         cosynonyms = Cosynonyms.of_data(json.load(f))

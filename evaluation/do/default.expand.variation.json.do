@@ -4,7 +4,6 @@ import yaml
 import redo
 import comap
 from data import Dnf, Databases, Variation, Concepts
-import normalize
 import utils
 
 logger = utils.get_logger(__name__)
@@ -23,8 +22,7 @@ def expand_concepts(concepts, relations, dnf):
                     generated_cuis.add(related['cui'])
 
     data = client.umls_concepts(generated_cuis, databases.coding_systems())
-    varied_concepts = Concepts.of_raw_data(data)
-    varied_concepts = normalize.concepts(varied_concepts, databases.coding_systems())
+    varied_concepts = Concepts.of_raw_data_and_normalize(data, databases.coding_systems())
 
     return varied_concepts
 

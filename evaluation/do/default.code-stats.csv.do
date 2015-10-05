@@ -3,7 +3,6 @@ import pandas as pd
 import yaml, json
 import redo
 from data import Databases, Mappings, Dnf, CodesInDbs
-import normalize
 
 def make_code_stats(dnfs, mappings, databases):
     data = []
@@ -35,8 +34,7 @@ if redo.running():
     with redo.ifchange(project_path / 'events.yaml') as f:
         events = yaml.load(f)
     with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data(yaml.load(f), events, databases)
-        mappings = normalize.mappings(mappings, databases)
+        mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
     with redo.ifchange('codes-in-dbs.json') as f:
         codes_in_dbs = CodesInDbs.of_data(json.load(f))    
     with redo.ifchange({

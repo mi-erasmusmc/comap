@@ -3,7 +3,6 @@ import yaml, json
 import numpy as np
 import redo
 from data import Databases, Mappings, CodesInDbs
-import normalize
 
 all_databases = ['BIFAB', 'Medicare', 'IPCI', 'Lombardy', 'unknown', 'CPRD', 'Puglia', 'GePaRD', 'PHARMO']
 
@@ -39,8 +38,7 @@ if redo.running():
     with redo.ifchange(project_path / 'events.yaml') as f:
         events = yaml.load(f)
     with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data(yaml.load(f), events, databases)
-        mappings = normalize.mappings(mappings, databases)
+        mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
     with redo.ifchange('codes-in-dbs.json') as f:
         codes_in_dbs = CodesInDbs.of_data(json.load(f))
 

@@ -2,7 +2,7 @@
 import pandas as pd
 import json
 import redo
-import normalize
+from normalize import get_normalizer
 
 codes_in_dbs = {}
 
@@ -14,14 +14,14 @@ freq_names = {
 for db in freq_names:
     with redo.ifchange("frequencies/{}.csv".format(freq_names[db])) as f:
         df = pd.read_csv(f)
-        normalizer = normalize.get_normalizer(db)
+        normalizer = get_normalizer(db)
         codes = df.astype(str).Code
         codes_in_dbs[db] = sorted(set(normalizer(codes)))
 
 with redo.ifchange("frequencies/ICD9-ARS-ratios.csv") as f:
     df = pd.read_csv(f, sep='\t')
     codes = df.PAT.tolist()
-    normalizer = normalize.get_normalizer('ICD9')
+    normalizer = get_normalizer('ICD9')
     codes_in_dbs['ICD9'] = sorted(set(normalizer(codes)))
 
 try:

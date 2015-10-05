@@ -3,7 +3,6 @@ from collections import defaultdict
 import redo
 import yaml, json
 from comap import get_umls_db, translation_read_2to3, translation_read_3to2
-import normalize
 from data import Databases, Mappings, Cosynonyms
 from utils import get_logger
 
@@ -135,8 +134,7 @@ if redo.running():
     with redo.ifchange(project_path / 'events.yaml') as f:
         events = yaml.load(f)    
     with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data(yaml.load(f), events, databases)
-        mappings = normalize.mappings(mappings, databases)
+        mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
         mapping = mappings.get(event)
 
     cosynonyms = all_cosynonyms(mapping, databases)

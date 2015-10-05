@@ -1,6 +1,5 @@
 import logging
 import re
-from data import Mapping, Mappings, Concepts, CodesByCodingSystems
 
 logger = logging.getLogger(__name__)
 
@@ -73,40 +72,3 @@ def get_normalizer(coding_system):
         if coding_system.startswith(coding_system0):
             return chain(_normalizers[coding_system0])
     logger.error("No normalizer for coding system %s", coding_system)
-
-
-def mappings(mappings, databases):
-    result = Mappings()
-    for event in mappings.events():
-        mapping = mappings.get(event)
-        result_mapping = Mapping()
-        for database in databases.databases():
-            coding_system = databases.coding_system(database)
-            normalizer = get_normalizer(coding_system)
-            codes = mapping.codes(database)
-            if codes is None:
-                result_mapping.add(database, None)
-            else:
-                codes = normalizer(codes)
-                result_mapping.add(database, codes)
-            exclusion_codes = mapping.exclusion_codes(database)
-            if exclusion_codes is None:
-                result_mapping.add_exclusion(database, None)
-            else:
-                exclusion_codes = normalizer(exclusion_codes)
-                result_mapping.add_exclusion(database, exclusion_codes)
-
-        result.add(event, result_mapping)
-    return result
-
-def concepts(concepts, coding_systems):
-    result = Concepts()
-    for cui in concepts.cuis():
-        codes_by_coding_system = CodesByCodingSystems()
-        for coding_system in coding_systems:
-            normalizer = get_normalizer(coding_system)
-            codes = set(normalizer(concepts.cui(cui).codes(coding_system)))
-            codes_by_coding_system.add(coding_system, codes)
-        result.add(cui, codes_by_coding_system)
-    return result
-

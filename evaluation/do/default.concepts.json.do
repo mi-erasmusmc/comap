@@ -4,7 +4,6 @@ from pathlib import Path
 import comap
 import redo
 from data import Concepts, Databases
-import normalize
 import utils
 
 logger = utils.get_logger(__name__)
@@ -13,8 +12,7 @@ def get_concepts(index, databases, semantic_types):
     cuis = [s['cui'] for s in index['spans']]
     client = comap.ComapClient()
     data = client.umls_concepts(cuis, databases.coding_systems())
-    concepts = Concepts.of_raw_data(data, semantic_types)
-    concepts = normalize.concepts(concepts, databases.coding_systems())
+    concepts = Concepts.of_raw_data_and_normalize(data, databases.coding_systems(), semantic_types)
     return concepts
 
 if redo.running():

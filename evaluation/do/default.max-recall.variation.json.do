@@ -6,7 +6,6 @@ import yaml
 import redo
 import comap
 from data import Databases, Variation, Mappings, Concepts, Dnf
-import normalize
 import utils
 
 logger = utils.get_logger(__name__)
@@ -99,8 +98,7 @@ if redo.running():
     with redo.ifchange(project_path / 'events.yaml') as f:
         events = yaml.load(f)    
     with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data(yaml.load(f), events, databases)
-        mappings = normalize.mappings(mappings, databases)
+        mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
         mapping = mappings.get(event)
     with redo.ifchange('{}.{}.dnf.json'.format(project, event)) as f:
         dnf = Dnf.of_data(json.load(f))
@@ -112,8 +110,7 @@ if redo.running():
     }
     cuis = max_recall_cuis(cosynonyms.to_data(), mapping.to_data(), coding_systems)
     concepts_raw_data = comap.get_client().umls_concepts(cuis, databases.coding_systems())
-    concepts = Concepts.of_raw_data(concepts_raw_data)
-    concepts = normalize.concepts(concepts, databases.coding_systems())
+    concepts = Concepts.of_raw_data_and_normalize(concepts_raw_data, databases.coding_systems())
 
     variation = Variation(concepts, mapping)
 

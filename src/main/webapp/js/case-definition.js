@@ -19,7 +19,7 @@ function CaseDefinitionCtrl($scope, $timeout, $http, $compile, urls, dataService
     $scope.resetIndexing = function() {
         $scope.text = angular.copy($scope.state.indexing.caseDefinition);
         $scope.state.indexing = null;
-    }
+    };
     
     $scope.$watch('state.indexing', function(indexing) {
         $timeout(function() {
@@ -50,7 +50,7 @@ function indexText($http, peregrineResource, stopwords, umlsConceptsResource, te
     return $http.post(peregrineResource + "/index", data, FORM_ENCODED_POST)
         .error(function(err, status) {
             if (status == 401) {
-                alert("Your session has timed out :( You have to re-login!")
+                alert("Your session has timed out :( You have to re-login!");
             } else {
                 var msg = "ERROR: Couldn't search concepts in case definition at " + peregrineResource;
                 console.log(msg, err);
@@ -81,7 +81,7 @@ function indexText($http, peregrineResource, stopwords, umlsConceptsResource, te
                                     cui: concept.cui,
                                     preferredName: concept.preferredName,
                                     semanticTypes: concept.semanticTypes
-                                }
+                                };
                             })
                     };
                 });
@@ -113,7 +113,7 @@ function ConceptInCaseDefDirective() {
             $scope.isIncluded = function(cuis, types) {
                 var scope = $scope.$parent;
                 if (angular.isArray(scope.selected.semanticTypes) && angular.isArray(types)) {
-                    return 0 < intersection(types, scope.selected.semanticTypes.map(getType)).length
+                    return 0 < intersection(types, scope.selected.semanticTypes.map(getType)).length;
                 } else {
                     return true;
                 }
@@ -137,7 +137,7 @@ function ConceptInCaseDefDirective() {
                 $scope.title = title($scope.cuis);
             }, 0);
         }
-    }
+    };
 }
 
 function highlight(dataService, text, spans, concepts) {
@@ -191,13 +191,13 @@ function highlight(dataService, text, spans, concepts) {
         }
         ends.sort();
         while (ends.length > 0 && ends[0] == here) {
-            result += "</concept-in-case-def>"
+            result += "</concept-in-case-def>";
             ends.shift();
         }
         here += 1;
     });
     while (ends.length > 0) {  
-        result += "</concept-in-case-def>"
+        result += "</concept-in-case-def>";
         ends.shift();
     }
     return "<div class='highlight'>" + result + "</div>";

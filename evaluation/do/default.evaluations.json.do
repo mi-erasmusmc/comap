@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import pandas as pd
 import numpy as np
 import json, yaml
 import redo
@@ -90,43 +89,6 @@ def error_analysis(tp, fp, fn, coding_system, max_recall_codes, exclusion_codes)
                          recall_in_umls, recall_without_exclusions, recall_without_exclusions_in_umls,
                          precision_over_dnf)
 
-def evaluations_to_df(evaluations):
-    data = []
-    def f(s):
-        return json.dumps(sorted(s))
-    for (variation_id, event, database), evaluation in evaluations.all():
-        row = [
-            variation_id,
-            event,
-            database,
-        ]
-        if evaluation is None:
-            row += [None] * 8
-        else:
-            row += [
-                f(v) for v in [
-                    evaluation.cuis,
-                    evaluation.generated,
-                    evaluation.reference,
-                    evaluation.tp,
-                    evaluation.fp,
-                    evaluation.fn,
-                ]
-            ] + [
-                evaluation.recall,
-                evaluation.precision,
-                evaluation.error_analysis.recall_in_umls,
-                evaluation.error_analysis.recall_without_exclusions,
-                evaluation.error_analysis.precision_over_dnf,
-            ]
-        data.append(row)
-    columns = [ 'variation', 'event', 'database', 'cuis',
-                'generated', 'reference', 'tp', 'fp', 'fn',
-                'recall', 'precision',
-                'recall_in_umls', 'recall_without_exclusions',
-                'precision_over_dnf' ]
-    return pd.DataFrame(data=data, columns=columns)
-
 if redo.running():
     
     (project, ) = redo.snippets
@@ -156,7 +118,3 @@ if redo.running():
     with redo.output() as f:
         json.dump(evaluations.to_data(), f)
 
-    df = evaluations_to_df(evaluations)
-    csv_path = Path(redo.temp).parent / '{}.evaluations.csv'.format(project)
-    df.to_csv(str(csv_path), index=False)
-    

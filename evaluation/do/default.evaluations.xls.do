@@ -8,6 +8,8 @@ from data import Databases
 
 logger = logging.getLogger(__name__)
 
+measures = 'recall,recall_in_umls,recall_without_exclusions,recall_without_exclusions_in_umlsprecision,precision_over_dnf'.split(',')
+
 def average_and_format(df, variation_ids, events, databases):
     databases_with_coding_systems = {
         database: '{} ({})'.format(database, databases.coding_system(database))
@@ -16,8 +18,8 @@ def average_and_format(df, variation_ids, events, databases):
     columns = pd.MultiIndex.from_tuples([('', 'variation'), ('', 'event'), ('Generated', 'cuis')] + [
         (databases_with_coding_systems[database], column)
         for database in databases.databases()
-        for column in ['generated', 'reference', 'TP', 'FP', 'FN', 'recall', 'precision']
-    ] + [('Average', 'recall'), ('Average', 'precision')])
+        for column in ['generated', 'reference', 'TP', 'FP', 'FN'] + measures
+    ] + [('Average', m) for m in measures])
     
     def format_list(v):
         if v != v: # is nan
@@ -33,27 +35,24 @@ def average_and_format(df, variation_ids, events, databases):
         for event in events:
             cuis = df[(df['variation'] == variation) & (df['event'] == event)].iloc[0].cuis
             row = [variation, event, format_list(cuis)]
-            recalls, precisions = [], []
+            measures_values = { m: [] for m in measures }
             for database in databases.databases():
                 s = df[(df['variation'] == variation) & (df['event'] == event) & (df['database'] == database)].iloc[0]
-                recalls.append(s['recall'])
-                precisions.append(s['precision'])
+                for m in measures:
+                    measures_values[m].append(s[m])
                 for col in ['generated', 'reference', 'tp', 'fp', 'fn']:
                     row.append(format_list(s[col]))
-                row += [s['recall'], s['precision']]
-            recall = pd.Series(recalls).mean()
-            precision = pd.Series(precisions).mean()
-            row += [recall, precision]
+                row += [s[m] for m in measures]
+            row += [pd.Series(measures_values[m]).mean() for m in measures]
             variation_data.append(row)
         for_variation = pd.DataFrame(data=variation_data, columns=columns)
         average_row = [variation, 'Average', '']
         for database in databases.databases():
-            recall = for_variation[(databases_with_coding_systems[database], 'recall')].mean()
-            precision = for_variation[(databases_with_coding_systems[database], 'precision')].mean()
-            average_row += ['', '', '', '', '', recall, precision]
+            means = [for_variation[(databases_with_coding_systems[database], m)].mean() for m in measures]
+            average_row += ['', '', '', '', ''] + means
         average_row += [
-            for_variation[('Average', 'recall')].mean(),
-            for_variation[('Average', 'precision')].mean(),
+            for_variation[('Average', m)].mean()
+            for m in measures
         ]
         for_variation.ix[len(for_variation)] = average_row
         # header_row = pd.DataFrame([[variation] + ([''] * (len(columns)-1))], columns=columns)
@@ -77,5 +76,5 @@ if redo.running():
         df = pd.read_csv(f)
 
     df = average_and_format(df, variation_ids, events, databases)
-
+    
     df.to_excel(redo.temp) #float_format='%.2f'

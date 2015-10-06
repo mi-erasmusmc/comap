@@ -563,13 +563,20 @@ class Dnf:
 
 class ErrorAnalysis:
 
-    def __init__(self, fp_in_dnf, fn_not_in_umls, fn_exclusions,
-                 recall_in_umls, recall_without_exclusions, precision_over_dnf):
+    keys = 'fp_in_dnf,fn_not_in_umls,fn_exclusions,fn_inclusion_in_umls,'\
+           'recall_in_umls,recall_without_exclusions,recall_without_exclusions_in_umls,'\
+           'precision_over_dnf'.split(',')
+
+    def __init__(self, fp_in_dnf, fn_not_in_umls, fn_exclusions, fn_inclusion_in_umls,
+                 recall_in_umls, recall_without_exclusions, recall_without_exclusions_in_umls,
+                 precision_over_dnf):
         self.fp_in_dnf = fp_in_dnf
         self.fn_not_in_umls = fn_not_in_umls
         self.fn_exclusions = fn_exclusions
+        self.fn_inclusion_in_umls = fn_inclusion_in_umls
         self.recall_in_umls = recall_in_umls
         self.recall_without_exclusions = recall_without_exclusions
+        self.recall_without_exclusions_in_umls = recall_without_exclusions_in_umls
         self.precision_over_dnf = precision_over_dnf
 
     @classmethod
@@ -590,7 +597,7 @@ class ErrorAnalysis:
                 return list(value)
             if type(value) == float:
                 return value    
-        return {
-            key: for_value(key, value)
-            for key, value in self.__dict__.items()
-        }
+        return OrderedDict([
+            (key, for_value(key, self.__dict__[key]))
+            for key in ErrorAnalysis.keys
+        ])

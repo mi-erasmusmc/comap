@@ -36,42 +36,58 @@ def evaluate(variations, databases, mappings):
                     else:
                         recall = np.nan
                     exclusion_codes = mapping.exclusion_codes(database)
-                    dnf_codes = variations['max-recall'][event].concepts.codes(coding_system)
-                    analysis = error_analysis(tp, fp, fn, coding_system, dnf_codes, exclusion_codes)
+                    max_recall_codes = variations['max-recall'][event].concepts.codes(coding_system)
+                    analysis = error_analysis(tp, fp, fn, coding_system, max_recall_codes, exclusion_codes)
                     evaluation = Evaluation(cuis, generated, reference, tp, fp, fn, recall, precision, analysis)
                 evaluations.add(variation_id, event, database, evaluation)
     return evaluations
 
 
-def error_analysis(tp, fp, fn, coding_system, dnf_codes, exclusion_codes):
-    
-    fn_not_in_umls = fn - known_codes(fn, coding_system)
-    fn_exclusions = fn & exclusion_codes
-    fp_in_dnf = fp & dnf_codes
+def error_analysis(tp, fp, fn, coding_system, max_recall_codes, exclusion_codes):
 
-    # The recall over codes that *are* in UMLS/RCD2
-    reference_in_umls = tp | fn - fn_not_in_umls
+    generated = tp | fp
+    reference = tp | fn
+
+    # False negative codes that are not in UMLS
+    fn_not_in_umls = fn - known_codes(fn, coding_system)
+
+    # False negative codes that are exclusion codes
+    fn_exclusions = fn & exclusion_codes
+
+    # False negative codes that are in UMLS and inclusion codes
+    fn_inclusion_in_umls = fn - exclusion_codes - fn_not_in_umls
+    
+    # False positive codes that in the maximum recall
+    fp_in_dnf = fp & max_recall_codes
+
+    # The recall over codes that are in UMLS/RCD2
+    reference_in_umls = reference - fn_not_in_umls
     if reference_in_umls:
         recall_in_umls = len(tp) / len(reference_in_umls)
     else:
         recall_in_umls = float('nan')
 
     # Recall over disregarding exclusion codes
-    reference_without_exclusions = tp | fn - fn_exclusions
+    reference_without_exclusions = reference - fn_exclusions
     if reference_without_exclusions:
-        recall_without_exclusions = len(tp - fn_exclusions) / len(reference_without_exclusions)
+        recall_without_exclusions = len(tp - exclusion_codes) / len(reference_without_exclusions)
     else:
         recall_without_exclusions = float('nan')
 
+    reference_without_exclusions_in_umls = reference - fn_not_in_umls - fn_exclusions
+    if reference_without_exclusions_in_umls:
+        recall_without_exclusions_in_umls = len(tp - exclusion_codes) / len(reference_without_exclusions_in_umls)
+    else:
+        recall_without_exclusions_in_umls = float('nan')
+
     # Precision over DNF
-    generated = tp | fp
     if generated:
-        precision_over_dnf = len(tp | fp_in_dnf) / len(generated)
+        precision_over_dnf = len(generated & max_recall_codes) / len(generated)
     else:
         precision_over_dnf = float('nan')
     
-    return ErrorAnalysis(fp_in_dnf, fn_not_in_umls, fn_exclusions,
-                         recall_in_umls, recall_without_exclusions,
+    return ErrorAnalysis(fp_in_dnf, fn_not_in_umls, fn_exclusions, fn_inclusion_in_umls,
+                         recall_in_umls, recall_without_exclusions, recall_without_exclusions_in_umls,
                          precision_over_dnf)
 
 def evaluations_to_df(evaluations):

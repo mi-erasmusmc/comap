@@ -1,0 +1,1 @@
+rm -f *.dnf.json *.variation.json *.csv

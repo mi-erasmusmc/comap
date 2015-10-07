@@ -563,17 +563,18 @@ class Dnf:
 
 class ErrorAnalysis:
 
-    keys = 'fp_in_dnf,fn_not_in_umls,fn_exclusions,fn_inclusion_in_umls,'\
+    keys = 'fp_in_dnf,fn_not_in_umls,fn_exclusions,fn_inclusions_in_umls,reference_inclusions_in_umls,'\
            'recall_in_umls,recall_without_exclusions,recall_without_exclusions_in_umls,'\
            'precision_over_dnf'.split(',')
 
-    def __init__(self, fp_in_dnf, fn_not_in_umls, fn_exclusions, fn_inclusion_in_umls,
+    def __init__(self, fp_in_dnf, fn_not_in_umls, fn_exclusions, fn_inclusions_in_umls, reference_inclusions_in_umls,
                  recall_in_umls, recall_without_exclusions, recall_without_exclusions_in_umls,
                  precision_over_dnf):
         self.fp_in_dnf = fp_in_dnf
         self.fn_not_in_umls = fn_not_in_umls
         self.fn_exclusions = fn_exclusions
-        self.fn_inclusion_in_umls = fn_inclusion_in_umls
+        self.fn_inclusions_in_umls = fn_inclusions_in_umls
+        self.reference_inclusions_in_umls = reference_inclusions_in_umls
         self.recall_in_umls = recall_in_umls
         self.recall_without_exclusions = recall_without_exclusions
         self.recall_without_exclusions_in_umls = recall_without_exclusions_in_umls

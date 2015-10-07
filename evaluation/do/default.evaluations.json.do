@@ -54,7 +54,7 @@ def error_analysis(tp, fp, fn, coding_system, max_recall_codes, exclusion_codes)
     fn_exclusions = fn & exclusion_codes
 
     # False negative codes that are in UMLS and inclusion codes
-    fn_inclusion_in_umls = fn - exclusion_codes - fn_not_in_umls
+    fn_inclusions_in_umls = fn - exclusion_codes - fn_not_in_umls
     
     # False positive codes that in the maximum recall
     fp_in_dnf = fp & max_recall_codes
@@ -73,9 +73,10 @@ def error_analysis(tp, fp, fn, coding_system, max_recall_codes, exclusion_codes)
     else:
         recall_without_exclusions = float('nan')
 
-    reference_without_exclusions_in_umls = reference - fn_not_in_umls - fn_exclusions
-    if reference_without_exclusions_in_umls:
-        recall_without_exclusions_in_umls = len(tp - exclusion_codes) / len(reference_without_exclusions_in_umls)
+    # Recall disregarding exclusion codes and only UMLS/RCD2
+    reference_inclusions_in_umls = reference - fn_not_in_umls - fn_exclusions
+    if reference_inclusions_in_umls:
+        recall_without_exclusions_in_umls = len(tp - exclusion_codes) / len(reference_inclusions_in_umls)
     else:
         recall_without_exclusions_in_umls = float('nan')
 
@@ -85,7 +86,7 @@ def error_analysis(tp, fp, fn, coding_system, max_recall_codes, exclusion_codes)
     else:
         precision_over_dnf = float('nan')
     
-    return ErrorAnalysis(fp_in_dnf, fn_not_in_umls, fn_exclusions, fn_inclusion_in_umls,
+    return ErrorAnalysis(fp_in_dnf, fn_not_in_umls, fn_exclusions, fn_inclusions_in_umls, reference_inclusions_in_umls,
                          recall_in_umls, recall_without_exclusions, recall_without_exclusions_in_umls,
                          precision_over_dnf)
 

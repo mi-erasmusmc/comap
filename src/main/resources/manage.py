@@ -53,8 +53,10 @@ def add_user_to_project(db, username, project, role):
     user_id = get_user(db, username)
     project_id = get_project(db, project)
     with db.cursor() as cur:
-        cur.execute("INSERT INTO users_projects (user_id, project_id, role) VALUES (%s, %s, %s)",
-                    [user_id, project_id, role])
+        cur.execute('INSERT INTO users_projects (user_id, project_id, role) '
+                    'VALUES (%s, %s, %s) '
+                    'ON DUPLICATE KEY UPDATE role = %s',
+                    [user_id, project_id, role, role])
         print("Added user %d to project %d with ID %d" %
               (user_id, project_id, db.insert_id()))
     db.commit()
@@ -139,7 +141,7 @@ def main():
     parser_add_user_to_project = subparsers.add_parser('add-user-to-project')
     parser_add_user_to_project.add_argument('--username', required=True)
     parser_add_user_to_project.add_argument('--project', required=True)
-    parser_add_user_to_project.add_argument('--role', required=True)
+    parser_add_user_to_project.add_argument('--role', choices='CE', required=True)
     parser_add_user_to_project.set_defaults(func=add_user_to_project)
 
     parser_show = subparsers.add_parser('show')

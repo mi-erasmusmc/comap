@@ -123,9 +123,10 @@ def show(db, users, projects, comments):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--db-host', required=True)
     parser.add_argument('--db-name', required=True)
     parser.add_argument('--db-user', required=True)
+    parser.add_argument('--db-host', required=True)
+    parser.add_argument('--db-port', type=int)
     parser.add_argument('--db-password', required=True)
     subparsers = parser.add_subparsers()
 
@@ -152,9 +153,11 @@ def main():
 
     args = parser.parse_args()
 
-    db = pymysql.connect(args.db_host, args.db_user,
-                         args.db_password, args.db_name,
-                         cursorclass=pymysql.cursors.DictCursor)
+    db_args = [args.db_host, args.db_user,
+               args.db_password, args.db_name]
+    if args.db_port:
+        db_args += [args.db_port]
+    db = pymysql.connect(*db_args, cursorclass=pymysql.cursors.DictCursor)
     try:
         kwargs = {
             key: value

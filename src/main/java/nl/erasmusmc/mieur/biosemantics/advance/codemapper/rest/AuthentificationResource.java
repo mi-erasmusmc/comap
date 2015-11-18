@@ -12,6 +12,7 @@ import javax.ws.rs.core.MediaType;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.AuthentificationApi;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.AuthentificationApi.ChangePasswordResult;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.AuthentificationApi.LoginResult;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
 
@@ -49,5 +50,18 @@ public class AuthentificationResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public void logout(@Context HttpServletRequest request) {
 		api.logout(request);
+	}
+	
+	@POST
+	@Path("change-password")
+	@Produces(MediaType.APPLICATION_JSON)
+	public ChangePasswordResult changePassword(@Context HttpServletRequest request, @FormParam("oldPassword") String oldPassword,
+			@FormParam("newPassword") String newPassword) {
+		try {
+			return api.changePassword(getUser(request), oldPassword, newPassword);
+		} catch (CodeMapperException e) {
+			e.printStackTrace();
+			throw new InternalServerErrorException(e);
+		}
 	}
 }

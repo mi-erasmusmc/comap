@@ -114,8 +114,6 @@ public class AuthentificationApi {
 				return LoginResult.createError("No such user");
 			}
 		} catch (SQLException e) {
-			System.err.println("SQL error while authentificating");
-			e.printStackTrace();
 			throw CodeMapperException.server("Cannot execute query to login", e);
 		}
 	}
@@ -128,4 +126,51 @@ public class AuthentificationApi {
 		request.getSession().invalidate();
 	}
 
+	@XmlRootElement
+	public static class ChangePasswordResult {
+		private boolean ok;
+		private String message;
+		public ChangePasswordResult() {
+		}
+		public ChangePasswordResult(boolean ok, String message) {
+			this.ok = ok;
+			this.message = message;
+		}
+		public boolean isOk() {
+			return ok;
+		}
+		public void setOk(boolean ok) {
+			this.ok = ok;
+		}
+		public String getMessage() {
+			return message;
+		}
+		public void setMessage(String message) {
+			this.message = message;
+		}
+	}
+	
+	public ChangePasswordResult changePassword(User user, String password, String newPassword) throws CodeMapperException {
+		logger.debug("Change password " + user.getUsername());
+
+		String query = "UPDATE users SET password = ? WHERE username = ? AND password = ?";
+        try (Connection connection = connectionPool.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+			statement.setString(1, hash(newPassword));
+			statement.setString(2, user.getUsername());
+			statement.setString(3, hash(password));
+			int result = statement.executeUpdate();
+			switch (result) {
+			case 0:
+				return new ChangePasswordResult(false, "Wrong current password");
+			case 1:
+				return new ChangePasswordResult(true, null);
+			default:
+				throw CodeMapperException.server(String.format("Too many rows (%d) updated for password change", result)); 
+			}
+		} catch (SQLException e) {
+			throw CodeMapperException.server("Cannot change password", e);
+		}
+	}
+	
 }

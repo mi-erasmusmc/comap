@@ -32,6 +32,10 @@ public class CodeMapperException extends Exception {
 		return new CodeMapperException(Family.SERVER_ERROR, msg, e);
 	}
 
+	public static CodeMapperException server(String msg) {
+		return new CodeMapperException(Family.SERVER_ERROR, msg);
+	}
+
 	public WebApplicationException asWebApplicationException() {
 		switch (errorFamily) {
 			case CLIENT_ERROR:

@@ -1058,28 +1058,7 @@ var originColumnDef = {
     displayName: 'Origin',
     cellClass: 'scroll-y',
     field: 'origin',
-    cellTemplate:
-      "<div ng-if='row.entity.origin.type == \"spans\"' class='spans' title='Found in case definition'>" +
-        "<span class='span' ng-bind='row.entity.origin.data.text'></span>" +
-      "</div>" +
-      "<div ng-if='row.entity.origin.type == \"hypernym\"'>" +
-        "<span title='More general than {{row.entity.origin.data.preferredName}}'>" +
-          "<i class='glyphicon glyphicon-chevron-up'></i> " +
-          "<span ng-bind='row.entity.origin.data.preferredName'></span>" +
-        "</span>" +
-      "</div>" +
-      "<div ng-if='row.entity.origin.type == \"hyponym\"'>" +
-        "<span title='More specific than {{row.entity.origin.data.preferredName}}'>" +
-          "<i class='glyphicon glyphicon-chevron-down'></i> " +
-          "<span ng-bind='row.entity.origin.data.preferredName'></span>" +
-        "</span>" +
-      "</div>" +
-      "<div ng-if='row.entity.origin.type == \"search\" || row.entity.origin.type == \"add\"'>" +
-        "<span class='query' title='Search result of \"{{row.entity.origin.data}}\"'>" +
-          "<i class='glyphicon glyphicon-search'></i> " +
-          "<span>\"{{row.entity.origin.data}}\"</span>" +
-        "</span>" +
-      "</div>",
+    cellTemplate: "partials/originColumn.html",
     sortFn: function(ss1, ss2) {
         ss1 = ss1.map(function(s) { return s.text; });
         ss2 = ss2.map(function(s) { return s.text; });
@@ -1096,22 +1075,9 @@ var originColumnDef = {
 
 /** Generate column definitions */
 function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
-    
-    var nameTooltip = 
-	    '{{row.entity.preferredName}} ({{row.entity.cui}})<br/><br/>' +
-	    'Semantic types: {{row.entity.semantic.types.join(", ")}}<br/><br/>' +
-	    '{{row.entity.definition || "(no definition available)"}}';
-    
-    var nameCellTemplate = 
-            "<span " +
-	    "class='concept-name'" +
-	    "tooltip-html-unsafe='" + nameTooltip.replace("'", "\\'") + "' " +
-	    "tooltip-placement='right' " +
-	    "ng-bind='row.entity.preferredName'" +
-            "></span>";
-    
+
     var name = 
-            { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip', cellTemplate: nameCellTemplate };
+            { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip', cellTemplate: "partials/nameCell.html"};
     
     var cuiCellTemplate =
     	"<span " +
@@ -1143,14 +1109,9 @@ function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
             });
     
     var comments = {
-	displayName: "Comments",
-	field: "comments",
-	cellTemplate:
-	"<button title='Show and create comments' ng-click='showComments(row.entity)' ng-disabled='row.entity.comments | isUndefined'>" +
-	    "<i class='glyphicon glyphicon-comment'></i>" +
-        "</button>" +
-	"<i class='glyphicon glyphicon-option-horizontal' ng-if='row.entity.comments | isUndefined'></i>" +
-	"<span class='comments-count' ng-bind='row.entity.comments.length' ng-if='row.entity.comments | isArray'></span>"
+		displayName: "Comments",
+		field: "comments",
+		cellTemplate: "partials/commentsCell.html"
     };
     
     return [].concat(

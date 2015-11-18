@@ -31,7 +31,7 @@ function LoginCtrl($scope, $rootScope, $location, $http, urls) {
     };
 }
 
-function LoggedInCtrl($scope, $rootScope, $location, $http, urls) {
+function LoggedInCtrl($scope, $modal, $rootScope, $location, $http, urls) {
     
     $scope.logout = function() {
         return $http.post(urls.logout, {}, FORM_ENCODED_POST)
@@ -39,6 +39,10 @@ function LoggedInCtrl($scope, $rootScope, $location, $http, urls) {
                 $rootScope.user = null;
                 $location.path('/login');
             });
+    };
+    
+    $scope.changePassword = function() {
+    	changePassword($modal);
     };
 }
 

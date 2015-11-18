@@ -953,6 +953,45 @@ function editCodes($modal, concepts, codingSystems) {
     return dialog.result;
 }
 
+function ChangePasswordCtrl($scope, $modalInstance, $http, urls) {
+	
+	$scope.change = function(oldPassword, newPassword) {
+		console.log(oldPassword, newPassword);
+		var data = {
+		    oldPassword: oldPassword,
+		    newPassword: newPassword
+		};
+		$http.post(urls.changePassword, data, FORM_ENCODED_POST)
+		    .error(function(err, code) {
+		    	alert("Unknow error", err, code);
+		    })
+		    .success(function(result) {
+		    	console.log("ChangePasswordCtrl.success", result);
+		    	if (result.ok) {
+		    		$modalInstance.close();
+		    	} else {
+		    		$scope.message = result.message || "Couldn't change password (password OK?)";
+		    	}
+		    });
+	};
+
+    $scope.cancel = function () {
+        $modalInstance.dismiss();
+    };
+}
+
+function changePassword($modal) {
+
+    var dialog = $modal.open({
+        templateUrl: 'partials/ChangePassword.html',
+        controller: 'ChangePasswordCtrl',
+        size: 'sm',
+        resolve: {
+        }
+    });
+    return dialog.result;
+}
+
 function AskChangesSummaryCtrl($scope, $http, $modalInstance, $timeout, caseDefinitionName, changes) {
     
     $scope.summary = "";

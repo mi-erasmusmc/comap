@@ -39,7 +39,7 @@
       <div class="col-md-4 text-left">
         <div ng-controller="LoggedInCtrl" ng-if="user">
           Hello, <span ng-bind="user.username" class="username"></span>
-          (<a href="#/projects">projects</a>)
+          (<a href="#/projects">projects</a>, <a ng-click="changePassword()">change password</a>)
           <button ng-click="logout()" class="btn btn-primary btn-xs">Logout</button>
         </div>
         <h2 class="subtitle" ng-bind="subtitle"></h2>

@@ -52,6 +52,7 @@ function UrlsService() {
     this.login = authentificationApi + '/login';
     this.logout = authentificationApi + '/logout';
     this.user = authentificationApi + '/user';
+    this.changePassword = authentificationApi + '/change-password';
 
     var downloadApi = 'rest/services/download';
     this.downloadExcel = downloadApi + '/case-definition-xls';

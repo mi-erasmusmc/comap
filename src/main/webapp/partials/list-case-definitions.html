@@ -1,10 +1,11 @@
 <div>
+  <button ng-click="changePassword()" class="btn btn-default btn-sm">Change my password</button>
   <div ng-repeat="project in projects">
-    <h3>Project {{project}}</h3>
+    <h3>Project <em>{{project}}</em></h3>
     <p>
       <h4>Members</h4>
-      <ul class="comma-separated">
-        <li ng-repeat="(user, roles) in usersInProjects[project]">{{user}} ({{roles.join(', ')}})</li>
+      <ul class="bullet-separated">
+        <li ng-repeat="(user, roles) in usersInProjects[project]" class="project-members">{{user}} ({{roles.join(', ')}})</li>
       </ul>
     </p>
     <p>
@@ -16,9 +17,9 @@
         <li ng-if="canCreateCaseDefinition(project)">
           <form>
             <input type="text" ng-model="newNames[project]"></input>
-            <button class="btn btn-primary btn-sm"
+            <button class="btn btn-primary btn-xs"
             	ng-click="create(project, newNames[project])"
-            	ng-disabled="!validNewName(project, newNames[project])">Create new</button>
+            	ng-disabled="!validNewName(project, newNames[project])"><i class="glyphicon glyphicon-plus"></i> Create</button>
           </form>
         </li>
       </ul>

@@ -19,7 +19,7 @@ function LoginCtrl($scope, $rootScope, $location, $http, urls) {
                         $location.path($rootScope.requestedLocationPath);
                         $rootScope.requestedLocationPath = null;
                     } else {
-                        $location.path('/projects');
+                        $location.path('/overview');
                     }
                 } else {
                     $scope.error = result.data.error;
@@ -41,7 +41,7 @@ function LoggedInCtrl($scope, $modal, $rootScope, $location, $http, urls) {
             });
     };
     
-    $scope.changePassword = function() {
+    $scope.$root.changePassword = function() {
     	changePassword($modal);
     };
 }

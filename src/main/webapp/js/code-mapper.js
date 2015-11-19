@@ -96,10 +96,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     	return roles.indexOf('Editor') != -1;
     };
     
-    $timeout(function() {
-        document.title = "CoMap - " + $rootScope.subtitle;
-    }, 0);
-    
     /* KEYBOARD */
     
     var ctrlKeydownCallbacks = {
@@ -299,13 +295,15 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     commentsByCui[comment.cui].push(comment);
                 });
                 $timeout(function() {
-                    $scope.state.mapping.concepts.forEach(function(concept) {
-                        var comments = [];
-                        if (commentsByCui.hasOwnProperty(concept.cui)) {
-                            comments = commentsByCui[concept.cui];
-                        }
-                        concept.comments = comments;
-                    });
+                    if ($scope.state.mapping != null) {
+                        $scope.state.mapping.concepts.forEach(function(concept) {
+                            var comments = [];
+                            if (commentsByCui.hasOwnProperty(concept.cui)) {
+                                comments = commentsByCui[concept.cui];
+                            }
+                            concept.comments = comments;
+                        });
+                    }
                 }, 0);
             });
         } else {
@@ -314,24 +312,24 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     };
 
     var updateCommentsPromise = null;
-    
+
     $scope.intervalUpdateComments = function(startNotStop) {
-    	if (startNotStop) {
-    	    $scope.updateComments();
-    	    if (updateCommentsPromise == null) {
-    		updateCommentsPromise = $interval($scope.updateComments, config.commentsReloadInterval);
-    	    }
-    	} else {
-	    if (updateCommentsPromise != null) {
-	    	$interval.cancel(updateCommentsPromise);
-	    	updateCommentsPromise = null;	    		
-	    }
-	}
+        if (startNotStop) {
+            $scope.updateComments();
+            if (updateCommentsPromise == null) {
+                updateCommentsPromise = $interval($scope.updateComments, config.commentsReloadInterval);
+            }
+        } else {
+            if (updateCommentsPromise != null) {
+                $interval.cancel(updateCommentsPromise);
+                updateCommentsPromise = null;	    		
+            }
+        }
     };
-    
+
     $scope.$on('$routeChangeStart', function(scope, next, current) {
-    	// Stop interval update comments when leaving
-	$scope.intervalUpdateComments(false);
+        // Stop interval update comments when leaving
+        $scope.intervalUpdateComments(false);
     });
     
     /* FUNCTIONS */
@@ -343,7 +341,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 switch (code) {
                 case 401:
                     alert("You are not member for project " + $scope.project + ":(");
-                    $location.path('/projects');
+                    $location.path('/overview');
                     break;
                 case 404:
                     $scope.state.mapping = null;
@@ -566,8 +564,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $scope.discardMapping = function() {
         console.log("DISCARD");
         $scope.$apply(function() {
-            $scope.state.mapping = null;
             $scope.intervalUpdateComments(false);
+            $scope.state.mapping = null;
             $scope.conceptsColumnDefs = createConceptsColumnDefs(true, [], false);
         });
     };

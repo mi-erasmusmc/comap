@@ -7,7 +7,7 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
     $scope.rolesInProjects = {};
     $scope.usersInProjects = {};
     $scope.newNames = {};
-    $rootScope.subtitle = "";
+    $rootScope.subtitle = "Overview";
     
     $http.get(urls.projectPermissions)
         .error(function(err) {

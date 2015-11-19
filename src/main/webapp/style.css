@@ -144,16 +144,22 @@ label {
 div[block-ui=inputBlockUi] .block-ui-container {
 	cursor: not-allowed;
 }
-ul.comma-separated {
+ul {
+	padding-left: 20px;
+}
+ul.comma-separated, ul.bullet-separated {
 	padding-left: 0;
 }
-ul.comma-separated li {
+ul.comma-separated li, ul.bullet-separated li {
 	display: inline;
 }
 ul.comma-separated li:before {
 	content: ", ";
 }
-ul.comma-separated li:first-child:before {
+ul.bullet-separated li:before {
+    content: " • ";
+}
+ul.comma-separated li:first-child:before, ul.bullet-separated li:first-child:before {
   content: "";
 }
 
@@ -231,4 +237,6 @@ hr {
 }
 .ngAggregate {
 	background-color: #BFBFBF;
+.project-members {
+	font-size: smaller;
 }

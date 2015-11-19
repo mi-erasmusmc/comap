@@ -22,7 +22,7 @@ var codeMapperApp =
         })
         .config(function($routeProvider) {
           $routeProvider
-            .when('/projects', {
+            .when('/overview', {
                 templateUrl: 'partials/list-case-definitions.html',
                 controller: 'ListCaseDefinitionsCtrl',
                 resolve: {
@@ -41,7 +41,7 @@ var codeMapperApp =
                 controller: 'LoginCtrl'
             })
             .otherwise({
-                redirectTo: '/projects'
+                redirectTo: '/overview'
             });
         })
         .service("urls", UrlsService)

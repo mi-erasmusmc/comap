@@ -141,7 +141,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     
     /** Create a history step for $scope.state.history */
     $scope.historyStep = function(operation, argument, result, descr) {
-        $scope.setMessage(descr);
         $scope.numberUnsafedChanges += 1;
         $scope.state.mapping.history.push({
             date: new Date().toJSON(),
@@ -270,7 +269,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 					}
 				    })
 				    .success(function() {
-				        $scope.setMessage("Comment posted");
 				        $scope.updateComments();
 				    });
 			    }
@@ -352,7 +350,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     $scope.state.indexing = null;
                     $scope.caseDefinition = "" + INITIAL.caseDefinition;
                     $scope.$broadcast("setSelectedCodingSystems", INITIAL.codingSystems);
-                    $scope.setMessage("Initialized.");
                     break;
                 } 
             })
@@ -363,12 +360,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 $scope.$broadcast("setSelectedCodingSystems", state.mapping.codingSystems);
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems, true);
                 $scope.activateTab("concepts-tab");
-                var msg = "Loaded mapping.";
                 if (angular.isArray(roles) && roles.indexOf('Commentator') != -1) {
-                    msg += " Use the buttons with the speech baloon on the left to view or add comments on a concept.";
+                    $scope.setMessage("Use the buttons with the speech baloon on the left to view or add comments on a concept.");
                 }
-		$scope.setMessage(msg);
-		$scope.intervalUpdateComments(true);
+                $scope.intervalUpdateComments(true);
             })
         ['finally'](function() {
             $scope.numberUnsafedChanges = 0;
@@ -402,7 +397,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         }
                     })
                     .success(function() {
-                        $scope.setMessage("Saved with summary: " + summary);
                         $scope.intervalUpdateComments(true);
                         $scope.numberUnsafedChanges = 0;
                     });
@@ -575,7 +569,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             $scope.state.mapping = null;
             $scope.intervalUpdateComments(false);
             $scope.conceptsColumnDefs = createConceptsColumnDefs(true, [], false);
-            $scope.setMessage("Current mapping has been discarded.");
         });
     };
     
@@ -729,7 +722,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     });
                 });
                 if (added.length == 0 && removed.length == 0) {
-                    $scope.setMessage("No codes changed");                    
+//                    $scope.setMessage("No codes changed");                    
                 } else {
                     var descr, result;
                     var resultCodes = function(codes, preposition) {

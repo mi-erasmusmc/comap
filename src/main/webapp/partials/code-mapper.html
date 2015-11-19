@@ -8,14 +8,14 @@
 
     <tab id="case-definition-tab" heading="1. Case definition" ng-controller="CaseDefinitionCtrl">
       <div ng-if="state.mapping != null" class="info"><i class="glyphicon glyphicon-info-sign"></i> Discard the mapping to edit the case definition.</div>
-      <label>Free text case definition</label>
       <div ng-if="state.indexing == null">
-        <button ng-click="createIndexing(text)" class="btn btn-primary block">Search concepts</button>
+        <button ng-click="createIndexing(text)" class="btn btn-primary btn-xs block">Search concepts</button>
         <hr/>
         <textarea rows=35 cols=200 ng-model="text" class="case-definition"></textarea>
       </div>
       <div ng-if="state.indexing != null">
-        <button ng-if="state.mapping == null" ng-click="resetIndexing()" class="btn btn-primary block">Reset and edit</button>
+        <button ng-if="state.mapping == null" ng-click="resetIndexing()" class="btn btn-primary btn-xs block">Edit case definition</button>
+        <div ng-if="state.mapping == null" class="info"><i class="glyphicon glyphicon-info-sign"></i> Only concepts with yellow background are included; click concepts to include or exclude.</div>
         <hr/>
         <div id="highlightedCaseDefinition"></div>
       </div>
@@ -125,7 +125,7 @@
               Download
             </button>
           </div>
-          <button title="Discard the mapping - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to reset the current mapping? All manual changes are lost." class="btn btn-sm btn-default" id="reset-concepts">
+          <button title="Discard the mapping - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to reset the current mapping? All manual refinements are lost." class="btn btn-sm btn-default" id="reset-concepts">
             <i class="glyphicon glyphicon-fire"></i>
             Discard
           </button>

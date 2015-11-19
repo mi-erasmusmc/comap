@@ -57,13 +57,20 @@ function upgradeState(state) {
         state.codingSystems = state.mapping.codingSystems;
         delete state.mapping.codingSystems;
     }
-    angular.forEach(state.mapping.concepts, function(concept) {
-        angular.forEach(concept.sourceConcepts, function(sourceConcept) {
-            if (sourceConcept.hasOwnProperty('vocabulary')) {
-                sourceConcept['codingSystem'] = sourceConcept['vocabulary'];
-            }
+    if (state.mapping.concepts.some(function(concept) {
+            return concept.sourceConcepts.some(function(sourceConcept) {
+                return !sourceConcept.hasOwnProperty('codingSystem');
+            });
+    })) {
+        console.log("Upgrade vocabulary field");
+        angular.forEach(state.mapping.concepts, function(concept) {
+            angular.forEach(concept.sourceConcepts, function(sourceConcept) {
+                if (!sourceConcept.hasOwnProperty('codingSystem')) {
+                    sourceConcept['codingSystem'] = sourceConcept['vocabulary'];
+                }
+            });
         });
-    });
+    }
     return state;
 }
 

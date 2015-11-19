@@ -9,11 +9,7 @@ var INITIAL = {
     caseDefinition: "",
     history: [],
     concepts: [],
-    codingSystems: [ "ICD9CM", "ICD10CM", "ICPC2P", "ICPC2PEENG", "RCD", "RCD2", "LNC", "MSH", "MDR" ],
-    semanticTypes:
-    // Group "DISO" ("Findings": T033)
-    [ "T020", "T190", "T049", "T019", "T047", "T050", "T037", "T048", "T191", "T046", "T184", "T033" ]
-        + [ "T005", "T004", "T204", "T007" ] // Some from group "LIVB",
+    codingSystems: [ "ICD9CM", "ICD10CM", "ICPC2P", "ICPC2PEENG", "RCD", "RCD2", "LNC", "MSH", "MDR" ]
 };
 
 var SHOW_UMLS_COLUMN = false;
@@ -45,6 +41,21 @@ function handleError(err, status) {
     }
 }
 
+function upgradeState(state) {
+    if (state.hasOwnProperty("cuiAssignment")) {
+        return state;
+    } else {
+        console.log("Upgrade state: create cuiAssignment");
+        var state = angular.copy(state);
+        state.cuiAssignment = {};
+        angular.forEach(state.indexing.concepts, function(concept) {
+            state.cuiAssignment[concept.cui] = conceptHasRelevantSemanticType(concept) ?
+                    ASSIGNMENT_INCLUDE : ASSIGNMENT_EXCLUDE;
+        });
+        return state;
+    }
+}
+
 function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $interval, $q, $log, $routeParams, $location, config, urls, dataService, user) {
     
     $scope.user = user;
@@ -58,8 +69,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $scope.state = State.empty();
     $scope.numberUnsafedChanges = 0;
     $scope.selected = {
-        codingSystems: null,
-        semanticTypes: null
+        codingSystems: null
     };
     
     dataService.completed
@@ -227,14 +237,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         return concept;
     }
     
-    $scope.conceptHasSelectedSemanticType = function(concept) {
-        return concept.semanticTypes
-            .filter(function(type) {
-                return $scope.state.mapping.semanticTypes.indexOf(type) != -1;
-            })
-            .length > 0;
-    };
-    
     /* COMMENTS */
     
     $scope.showComments = function(concept) {
@@ -345,7 +347,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     $scope.state.mapping = null;
                     $scope.state.indexing = null;
                     $scope.caseDefinition = "" + INITIAL.caseDefinition;
-                    $scope.$broadcast("setSelectedSemanticTypes", INITIAL.semanticTypes);
                     $scope.$broadcast("setSelectedCodingSystems", INITIAL.codingSystems);
                     $scope.setMessage("Initialized.");
                     break;
@@ -353,10 +354,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             })
             .success(function(state) {
                 console.log("Loaded", state);
-                $scope.state.indexing = state.indexing;
-                $scope.state.mapping = state.mapping;
+                $scope.state = upgradeState(state);
                 $scope.$broadcast("indexingUpdated", state.indexing);
-                $scope.$broadcast("setSelectedSemanticTypes", state.mapping.semanticTypes);
                 $scope.$broadcast("setSelectedCodingSystems", state.mapping.codingSystems);
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems, true);
                 $scope.activateTab("concepts-tab");
@@ -415,11 +414,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         $scope.state.mapping = {
             concepts: null,
             codingSystems: angular.copy($scope.selected.codingSystems).map(getAbbreviation),
-            semanticTypes: angular.copy($scope.selected.semanticTypes).map(getType),
             history: []
         };
         $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.mapping.codingSystems, true);
-        var concepts = $scope.state.indexing.concepts.filter($scope.conceptHasSelectedSemanticType);
+        var concepts = $scope.state.indexing.concepts
+            .filter(function(concept) {
+                return $scope.state.cuiAssignment[concept.cui] != ASSIGNMENT_EXCLUDE; 
+            });
         var data = {
             cuis: concepts.map(getCui),
             codingSystems: $scope.selected.codingSystems.map(getAbbreviation)
@@ -450,7 +451,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         var params = {
             str: str
             // codingSystems: $scope.state.mapping.codingSystems,
-            // semanticTypes: $scope.state.mapping.semanticTypes
         };
         return $http.get(urls.autocomplete, { params: params })
             .then(function(completions) {
@@ -490,11 +490,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             filteredByCurrentConcepts.push(c);
                         }
                         return newInMapping;
-                        // var hasSelectedSemanticType = $scope.conceptHasSelectedSemanticType(c);
-                        // if (!hasSelectedSemanticType) {
-                        //     filteredBySemanticType.push(c);
-                        // }
-                        // return newInMapping && hasSelectedSemanticType;
                     })
                     .map(getCui);
             })

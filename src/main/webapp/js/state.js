@@ -5,6 +5,7 @@ var State =
         return {
             empty: function() {
                 return {
+                    cuiAssignment: null,
                     indexing: null, /* {
                         caseDefinition: string,
                         spans: { id: CUI, start: number, end: number, type: [number] }

@@ -1,3 +1,30 @@
+"use strict";
+
+        var relevantSemanticTypes = [ "T020", "T190", "T049", "T019", "T047", "T050", "T037", "T048", "T191", "T046", "T184", "T033" ]
++ [ "T005", "T004", "T204", "T007" ];
+
+var ASSIGNMENT_INCLUDE = "include";
+var ASSIGNMENT_EXCLUDE = "exclude";
+
+function conceptHasRelevantSemanticType(concept) {
+	return concept.semanticTypes.some(function(type) {
+		return relevantSemanticTypes.indexOf(type) != -1;
+	});
+}
+
+function normalize(text) {
+    // Python: print "".join(r"\u%x" % ord(c) for c in u"–—")
+    return text
+        .replace(/\s/g, ' ')
+        .replace(/[\u201e\u201c\u201d]/g, '"')
+        .replace(/[\u201a\u2018\u2019\u0060]/g, "'")
+        .replace(/[\u2013\u2014]/g, "-")
+        .replace(/[\u2265]/g, '>')
+        .replace(/[\u2264]/g, '<')
+        .replace(/[\u2264]/g, '<')
+        .replace(/[\u2022]/g, '*');
+}
+
 function CaseDefinitionCtrl($scope, $timeout, $http, $compile, urls, dataService, blockUI) {
 
     $scope.text = "";
@@ -5,18 +32,26 @@ function CaseDefinitionCtrl($scope, $timeout, $http, $compile, urls, dataService
     $scope.createIndexing = function(caseDefinition) {
         indexText($http, dataService.peregrineResource, dataService.stopwords, urls.umlsConcepts, caseDefinition)
             .then(function(item) {
-                var spans = item.spans, concepts = item.concepts;
-                console.log(item);
+                console.log("createIndexing");
                 $scope.state.indexing = {
                     caseDefinition: caseDefinition,
-                    spans: spans,
-                    concepts: concepts,
-                    conceptsByCui: byKey(concepts, getCui)
+                    spans: item.spans,
+                    concepts: item.concepts,
+                    conceptsByCui: byKey(item.concepts, getCui)
                 };
+                if ($scope.state.cuiAssignment == null) {
+                    $scope.state.cuiAssignment = {};
+                }
+                angular.forEach(item.concepts, function(concept) {
+                    if (!$scope.state.cuiAssignment.hasOwnProperty(concept.cui)) {
+                        $scope.state.cuiAssignment[concept.cui] = conceptHasRelevantSemanticType(concept) ? ASSIGNMENT_INCLUDE : ASSIGNMENT_EXCLUDE;
+                    }
+                });
             });
     };
     
     $scope.resetIndexing = function() {
+        console.log("resetIndexing", $scope.$id);
         $scope.text = angular.copy($scope.state.indexing.caseDefinition);
         $scope.state.indexing = null;
     };
@@ -31,17 +66,6 @@ function CaseDefinitionCtrl($scope, $timeout, $http, $compile, urls, dataService
             }
         }, 0);
     });
-}
-
-function normalize(text) {
-    // Python: print "".join(r"\u%x" % ord(c) for c in u"–—")
-    return text
-        .replace(/\s/g, ' ')
-        .replace(/[\u201e\u201c\u201d]/g, '"')
-        .replace(/[\u201a\u2018\u2019\u0060]/g, "'")
-        .replace(/[\u2013\u2014]/g, "-")
-        .replace(/[\u2265]/g, '>')
-        .replace(/[\u2264]/g, '<');
 }
 
 function indexText($http, peregrineResource, stopwords, umlsConceptsResource, text) {
@@ -111,12 +135,22 @@ function ConceptInCaseDefDirective() {
             });
         },
         controller: function($scope, $timeout, dataService) {
-            $scope.isIncluded = function(cuis, types) {
-                var scope = $scope.$parent;
-                if (angular.isArray(scope.selected.semanticTypes) && angular.isArray(types)) {
-                    return 0 < intersection(types, scope.selected.semanticTypes.map(getType)).length;
+            $scope.someIncluded = function(cuis) {
+                return cuis.some(function(cui) {
+                    return $scope.$parent.state.cuiAssignment && $scope.$parent.state.cuiAssignment[cui] != ASSIGNMENT_EXCLUDE;
+                });
+            };
+            $scope.toggle = function(cuis) {
+                if ($scope.someIncluded(cuis)) {
+                    console.log("Removing", cuis);
+                    angular.forEach(cuis, function(cui) {
+                        $scope.$parent.state.cuiAssignment[cui] = ASSIGNMENT_EXCLUDE;
+                    });
                 } else {
-                    return true;
+                    console.log("Adding", cuis);
+                    angular.forEach(cuis, function(cui) {
+                        $scope.$parent.state.cuiAssignment[cui] = ASSIGNMENT_INCLUDE;
+                    });
                 }
             };
             $timeout(function() {
@@ -150,7 +184,7 @@ function highlight(dataService, text, spans, concepts) {
     var here = 0;
     angular.forEach(text, function(c) {
         var hereStartSpans = spansByStart[here] || [];
-        hereStartSpansByEnd = group(hereStartSpans, function(span) { return span.end; });
+        var hereStartSpansByEnd = group(hereStartSpans, function(span) { return span.end; });
         angular.forEach(hereStartSpansByEnd, function(spans, end) {
             var cuis = spans
                 .map(function(span) {
@@ -181,7 +215,7 @@ function highlight(dataService, text, spans, concepts) {
                 })
                 .join(", ");
             var cuisStr = JSON.stringify(cuis);
-            var typesStr = JSON.stringify(types); 
+            var typesStr = JSON.stringify(types);
             result += "<concept-in-case-def cuis='" + cuisStr + "' types='" + typesStr + "'>";
             ends.push(end);
         });

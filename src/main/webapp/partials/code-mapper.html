@@ -21,37 +21,7 @@
       </div>
     </tab>
     
-    <tab id="semantics-tab" heading="2. Semantic types" ng-controller="SemanticTypesCtrl" disabled="state.indexing == null" 
-      title="{{state.indexing == null ? 'Index case definition first!' : ''}}">
-      <div ng-if="state.mapping != null" class="info"><i class="glyphicon glyphicon-info-sign"></i> Discard the mapping to edit the semantic types.</div>
-      <div>
-        <div class="row">
-          <div class="col-md-2" ng-show="state.mapping == null">
-            <div>
-              <label for='samanticTypesFilter'>Filter {{semanticTypes.length}} semantic types</label>
-              <i class="glyphicon glyphicon-filter"></i>
-              <input id='samanticTypesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
-            </div>
-          </div>
-          
-          <div class="col-md-10">
-            <label for='selectedsemanticTypesList'>Selected ({{selected.semanticTypes.length}})</label>
-            <span ng-repeat="type in selected.semanticTypes"
-              ng-disabled="state.mapping"
-              class="semantic-type noselect" id='selectedsemanticTypesList'>
-              {{type.description}} 
-              <i ng-if="state.mapping == null" class="glyphicon glyphicon-remove"
-                ng-click="state.mapping == null && unselect(type)"
-                title="Unselect"></i>
-            </span>
-          </div>
-        </div>
-        
-        <div ng-show="state.mapping == null" ng-grid="gridOptions" class="grid semantic-types-grid"></div>
-      </div>
-    </tab>
-    
-    <tab id="coding-systems-tab" heading="3. Coding systems" ng-controller="CodingSystemsCtrl">
+    <tab id="coding-systems-tab" heading="2. Coding systems" ng-controller="CodingSystemsCtrl">
       <div ng-if="state.mapping != null" class="info"><i class="glyphicon glyphicon-info-sign"></i> Discard the mapping to edit the coding systems.</div>
       <div>
         <div class="row">
@@ -78,7 +48,7 @@
       </div>
     </tab>
     
-    <tab id="concepts-tab" heading="4. Mapping" disabled="state.indexing == null"
+    <tab id="concepts-tab" heading="3. Mapping" disabled="state.indexing == null"
       ng-click="state.mapping != null || createInitalTranslations(caseDefinition)"
       title="{{state.indexing == null ? 'Index case definition first!' : ''}}">
 
@@ -165,7 +135,7 @@
       <div ng-grid="conceptsGridOptions" class="grid concepts-grid" ng-if="state.mapping"></div>
     </tab>
     
-    <tab id="history-tab" heading="5. History" disabled="state.mapping == null" select="updateHistoryGridStyle()" title="{{state.mapping == null ? 'Create mapping first!' : ''}}">
+    <tab id="history-tab" heading="4. History" disabled="state.mapping == null" select="updateHistoryGridStyle()" title="{{state.mapping == null ? 'Create mapping first!' : ''}}">
       <div ng-grid="historyGridOptions" class="grid history-grid"></div>
     </tab>
   </tabset>

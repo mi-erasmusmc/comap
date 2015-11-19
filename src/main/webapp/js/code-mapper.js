@@ -366,7 +366,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems, true);
                 $scope.activateTab("concepts-tab");
                 if (angular.isArray(roles) && roles.indexOf('Commentator') != -1) {
-                    $scope.setMessage("Use the buttons with the speech baloon on the left to view or add comments on a concept.");
+                    $scope.setMessage("Click the speech baloon in the column on the right to view or add comments for a concept.");
                 }
                 $scope.intervalUpdateComments(true);
             })

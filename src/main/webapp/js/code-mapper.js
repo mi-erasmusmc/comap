@@ -64,7 +64,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     
     var roles = user.projectPermissions[$scope.project];
     
-    $rootScope.subtitle = $scope.caseDefinitionName + " (" + $scope.project + ")";
+    $rootScope.subtitle = $scope.project + ": " + $scope.caseDefinitionName;
     
     $scope.state = State.empty();
     $scope.numberUnsafedChanges = 0;
@@ -95,6 +95,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $scope.userCanEdit = function() {
     	return roles.indexOf('Editor') != -1;
     };
+    
+    $timeout(function() {
+        document.title = "CoMap - " + $rootScope.subtitle;
+    }, 0);
     
     /* KEYBOARD */
     

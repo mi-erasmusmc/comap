@@ -1,7 +1,7 @@
-<button title='Show and create comments'
+<button title='Show and create comments' class='btn btn-default btn-xs'
 	ng-click='showComments(row.entity)'
 	ng-disabled='row.entity.comments | isUndefined'>
 	<i class='glyphicon glyphicon-comment'></i>
+	<span class='comments-count' ng-bind='row.entity.comments.length' ng-if='row.entity.comments'></span>
 </button>
 <i class='glyphicon glyphicon-option-horizontal' ng-if='row.entity.comments | isUndefined'></i>
-<span class='comments-count' ng-bind='row.entity.comments.length' ng-if='row.entity.comments | isArray'></span>

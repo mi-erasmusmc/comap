@@ -82,8 +82,7 @@ var codeMapperApp =
         	};
         })
         .controller("ShowConceptsCtrl", ShowConceptsCtrl)
-        .controller("CodingSystemsCtrl", CodingSystemsCtrl)
-        .controller("SemanticTypesCtrl", SemanticTypesCtrl)
+        .controller("SelectCodingSystemsCtrl", SelectCodingSystemsCtrl)
         .controller("CodeMapperCtrl", CodeMapperCtrl)
         .controller("ListCaseDefinitionsCtrl", ListCaseDefinitionsCtrl)
         .controller("LoginCtrl", LoginCtrl)

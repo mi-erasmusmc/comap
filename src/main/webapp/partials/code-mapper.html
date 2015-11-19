@@ -6,7 +6,7 @@
   
   <tabset>
 
-    <tab id="case-definition-tab" heading="1. Case definition" ng-controller="CaseDefinitionCtrl">
+    <tab id="case-definition-tab" heading="Case definition" ng-controller="CaseDefinitionCtrl">
       <div ng-if="state.mapping != null" class="info"><i class="glyphicon glyphicon-info-sign"></i> Discard the mapping to edit the case definition.</div>
       <div ng-if="state.indexing == null">
         <button ng-click="createIndexing(text)" class="btn btn-primary btn-xs block">Search concepts</button>
@@ -21,34 +21,7 @@
       </div>
     </tab>
     
-    <tab id="coding-systems-tab" heading="2. Coding systems" ng-controller="CodingSystemsCtrl">
-      <div ng-if="state.mapping != null" class="info"><i class="glyphicon glyphicon-info-sign"></i> Discard the mapping to edit the coding systems.</div>
-      <div>
-        <div class="row">
-          <div class="col-md-2" ng-show="state.mapping == null">
-            <label for='vocabulariesFilter'>Filter {{codingSystems.count}} coding systems</label>
-            <i class="glyphicon glyphicon-filter"></i>
-            <input id='vocabulariesFilter' type="text" ng-model="gridOptions.filterOptions.filterText" />
-          </div>
-          
-          <div class="col-md-10">
-            <label for='selectedVocabulariesList'>Selected ({{selected.codingSystems.length}})</label>
-            <div id='selectedVocabulariesList'>
-              <span ng-repeat="voc in selected.codingSystems" class="vocabulary noselect" title="{{voc.name}}">
-                {{voc.abbreviation}}
-                <i ng-if="state.mapping == null" class="glyphicon glyphicon-remove"
-                  ng-click="state.mapping == null && unselect(voc.abbreviation)"
-                  title="Unselect"></i>
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        <div ng-show="state.mapping == null" ng-grid="gridOptions" class="grid coding-systems-grid"></div>
-      </div>
-    </tab>
-    
-    <tab id="concepts-tab" heading="3. Mapping" disabled="state.indexing == null"
+    <tab id="concepts-tab" heading="Mapping" disabled="state.indexing == null"
       ng-click="state.mapping != null || createInitalTranslations(caseDefinition)"
       title="{{state.indexing == null ? 'Index case definition first!' : ''}}">
 
@@ -112,6 +85,10 @@
         
         <div class="on-case-definition col-md-3" ng-if="userCanEdit()">
           <label>Mapping</label>
+          <button title="Add or remove coding systems" ng-click="addRemoveCodingSystems()" class="btn btn-xs btn-default">
+              <i class="glyphicon glyphicon-asterisk"></i>
+              Coding systems
+          </button>
           <div class="btn-group">
             <button title="Save the mapping online" ng-click="saveMapping()" ng-disabled="numberUnsafedChanges == 0" class="btn btn-sm btn-default">
               <i class="glyphicon glyphicon-cloud-upload"></i>
@@ -135,7 +112,7 @@
       <div ng-grid="conceptsGridOptions" class="grid concepts-grid" ng-if="state.mapping"></div>
     </tab>
     
-    <tab id="history-tab" heading="4. History" disabled="state.mapping == null" select="updateHistoryGridStyle()" title="{{state.mapping == null ? 'Create mapping first!' : ''}}">
+    <tab id="history-tab" heading="History" disabled="state.mapping == null" select="updateHistoryGridStyle()" title="{{state.mapping == null ? 'Create mapping first!' : ''}}">
       <div ng-grid="historyGridOptions" class="grid history-grid"></div>
     </tab>
   </tabset>

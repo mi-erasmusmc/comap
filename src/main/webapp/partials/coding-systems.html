@@ -1,0 +1,33 @@
+
+<div class="modal-header">
+	<h3 class="modal-title">Add or remove coding systems</h3>
+</div>
+<div class="modal-body add-or-remove-coding-systems">
+
+	<div class="row">
+		<div class="col-md-2">
+			<label for='vocabulariesFilter'>Filter
+				{{codingSystems.count}} coding systems</label> <i
+				class="glyphicon glyphicon-filter"></i> <input
+				id='vocabulariesFilter' type="text"
+				ng-model="gridOptions.filterOptions.filterText" />
+		</div>
+
+		<div class="col-md-10">
+			<label for='selectedVocabulariesList'>Selected
+				({{selected.length}})</label>
+			<div id='selectedVocabulariesList'>
+				<span ng-repeat="voc in gridOptions.$gridScope.selectedItems" class="vocabulary noselect" title="{{voc.name}}">
+					{{voc.abbreviation}} <i class="glyphicon glyphicon-remove" ng-click="unselect(voc.abbreviation)"></i>
+				</span>
+			</div>
+		</div>
+	</div>
+
+	<div ng-grid="gridOptions" class="grid coding-systems-grid"></div>
+</div>
+
+<div class="modal-footer">
+  <button class="btn btn-primary" ng-click="ok(gridOptions.$gridScope.selectedItems)">OK</button>
+  <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+</div>

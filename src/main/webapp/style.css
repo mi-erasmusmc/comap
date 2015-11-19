@@ -23,7 +23,9 @@ textarea.case-definition {
 	width: 72em;
 }
 #highlightedCaseDefinition {
+  height: 600px;
   width: 72em;
+  border: 1px solid #aaa;
 }
 #search-concepts {
 	margin-top: 1em;
@@ -64,11 +66,12 @@ label {
 .concepts-grid .code {
 	display: block;
 }
-.comment-timestamp::before, .comments-count::before {
+.comment-timestamp::before {
 	content: "(";
 }
-.comments-count::after {
-	content: ")";
+.comments-count {
+	vertical-align: sub;
+	font-size: x-small;
 }
 .comment-timestamp::after {
 	content: ")";

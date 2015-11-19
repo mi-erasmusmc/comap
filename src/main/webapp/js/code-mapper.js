@@ -1084,9 +1084,7 @@ function changePassword($modal) {
     var dialog = $modal.open({
         templateUrl: 'partials/ChangePassword.html',
         controller: 'ChangePasswordCtrl',
-        size: 'sm',
-        resolve: {
-        }
+        size: 'sm'
     });
     return dialog.result;
 }

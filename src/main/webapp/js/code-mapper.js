@@ -278,37 +278,37 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     };
     
     $scope.updateComments = function() {
-    	if ($scope.state.mapping !== null) {
-	    return $http.get(urls.comments($scope.project, $scope.caseDefinitionName))
-	    	.error(function(err, code) {
-	    	    switch (code) {
-	    	    case 401:
-	    		alert("Not authorized. Please reload.", err);
-	    		break;
-	    	    default:
-	    		alert("Cannot load comments", err, code);
-	    	    }
-	    	})
-	    	.success(function(comments) {
-	    	    var commentsByCui = {};
-	    	    angular.forEach(comments, function(comment) {
-	    		comment.timestamp = new Date(comment.timestamp);
-	    		if (!commentsByCui.hasOwnProperty(comment.cui)) {
-	    		    commentsByCui[comment.cui] = [];
-	    		}
-	    		commentsByCui[comment.cui].push(comment);
-	    	    });
-                    $timeout(function() {
-	    		$scope.state.mapping.concepts.forEach(function(concept) {
-	    		    var comments = [];
-	    		    if (commentsByCui.hasOwnProperty(concept.cui)) {
-	    			comments = commentsByCui[concept.cui];
-	    		    }
-	    		    concept.comments = comments;
-	    		});
-                    }, 0);
-	    	});
-    	} else {
+        if ($scope.state.mapping !== null) {
+            return $http.get(urls.comments($scope.project, $scope.caseDefinitionName))
+            .error(function(err, code) {
+                switch (code) {
+                    case 401:
+                        alert("Not authorized. Please reload.", err);
+                        break;
+                    default:
+                        alert("Cannot load comments", err, code);
+                }
+            })
+            .success(function(comments) {
+                var commentsByCui = {};
+                angular.forEach(comments, function(comment) {
+                    comment.timestamp = new Date(comment.timestamp);
+                    if (!commentsByCui.hasOwnProperty(comment.cui)) {
+                        commentsByCui[comment.cui] = [];
+                    }
+                    commentsByCui[comment.cui].push(comment);
+                });
+                $timeout(function() {
+                    $scope.state.mapping.concepts.forEach(function(concept) {
+                        var comments = [];
+                        if (commentsByCui.hasOwnProperty(concept.cui)) {
+                            comments = commentsByCui[concept.cui];
+                        }
+                        concept.comments = comments;
+                    });
+                }, 0);
+            });
+        } else {
             return null;
         }
     };
@@ -1071,12 +1071,7 @@ function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
     var name = 
             { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip', cellTemplate: "partials/nameCell.html"};
     
-    var cuiCellTemplate =
-    	"<span " +
-	    	"class='cui' " +
-	    	"ng-bind='row.entity.cui' " +
-	    	"title='{{row.entity.preferredName}}'" +
-    	"></span>";
+    var cuiCellTemplate = "<span class='cui' ng-bind='row.entity.cui' title='{{row.entity.preferredName}}'></span>";
     var cui = { displayName: "UMLS", field: 'cui', cellTemplate: cuiCellTemplate };
     
     var codingSystemsColumnDefs = codingSystems

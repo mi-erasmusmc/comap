@@ -45,23 +45,23 @@
           <label>
             Modify {{selectedConcepts.length}} selected concept<span ng-if="selectedConcepts.length != 1">s</span>
           </label>
-          <button class='btn btn-sm btn-default' ng-click='operationDeleteConcepts(selectedConcepts)' confirm-click="Delete selected concepts?" ng-disabled="selectedConcepts.length == 0" title='Delete concepts'> 
+          <button class='btn btn-xs btn-default' ng-click='operationDeleteConcepts(selectedConcepts)' confirm-click="Delete selected concepts?" ng-disabled="selectedConcepts.length == 0" title='Delete concepts'> 
             <i class='glyphicon glyphicon-remove-circle'></i>
             Delete 
           </button>
           
           <div class='btn-group'> 
-              <button class='btn btn-sm btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more general concepts'> 
+              <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more general concepts'> 
                 <i class='glyphicon glyphicon-chevron-up'></i>
                 More general
               </button> 
-              <button class='btn btn-sm btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more specific concepts'> 
+              <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more specific concepts'> 
                 <i class='glyphicon glyphicon-chevron-down'></i>
                 More specific
               </button> 
           </div>
           
-          <button class="btn btn-sm btn-default" ng-click="operationEditCodes(selectedConcepts)" ng-disabled="selectedConcepts.length == 0" title="Enable/disable source codes of selected concepts">
+          <button class="btn btn-xs btn-default" ng-click="operationEditCodes(selectedConcepts)" ng-disabled="selectedConcepts.length == 0" title="Enable/disable source codes of selected concepts">
             <i class='glyphicon glyphicon-edit'></i>
             Codes
           </button>
@@ -78,7 +78,7 @@
             typeahead-focus-first=false
             ></input>
           <button title="Search and add concepts" ng-click="searchAndAddConcepts(searchQuery)"
-            ng-disabled="!searchQuery" class="btn btn-sm btn-default">
+            ng-disabled="!searchQuery" class="btn btn-xs btn-default">
             <i class="glyphicon glyphicon-search"></i>Search
           </button>
         </div>
@@ -90,19 +90,19 @@
               Coding systems
           </button>
           <div class="btn-group">
-            <button title="Save the mapping online" ng-click="saveMapping()" ng-disabled="numberUnsafedChanges == 0" class="btn btn-sm btn-default">
-              <i class="glyphicon glyphicon-cloud-upload"></i>
+            <button title="Save the mapping online" ng-click="saveMapping()" ng-disabled="numberUnsafedChanges == 0" class="btn btn-xs btn-default">
+              <i class="glyphicon glyphicon-floppy-disk"></i>
               Save
             </button>
             <button title="Download the mapping as CSV for Excel"
                 ng-disabled="numberUnsafedChanges > 0"
                 ng-click="downloadConceptsAsExcel()"
-                class="btn btn-sm btn-default">
-              <i class="glyphicon glyphicon-download"></i>
+                class="btn btn-xs btn-default">
+              <i class="glyphicon glyphicon-cloud-download"></i>
               Download
             </button>
           </div>
-          <button title="Discard the mapping - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to reset the current mapping? All manual refinements are lost." class="btn btn-sm btn-default" id="reset-concepts">
+          <button title="Discard the mapping - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to reset the current mapping? All manual refinements are lost." class="btn btn-xs btn-default" id="reset-concepts">
             <i class="glyphicon glyphicon-fire"></i>
             Discard
           </button>

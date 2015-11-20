@@ -5,6 +5,8 @@ import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -88,7 +90,7 @@ public class DownloadApi {
 			JSONObject concept = concepts.getJSONObject(conceptIx);
 			conceptNames.put(concept.getString("cui"), concept.getString("preferredName"));
 		}
-
+		
 		for (Comment comment : comments) {
 			String dateString = comment.getTimestamp();
 			Date date = null;
@@ -98,13 +100,15 @@ public class DownloadApi {
 				logger.error("Couldn't parse date", e);
 			}
 			String concept = conceptNames.get(comment.getCui());
-			List<HSSFCell> row = setRow(sheet.createRow(rowIx++), dateString, comment.getAuthor(), concept, comment.getCui(), comment.getContent());
-			if (date != null) {
-				row.get(0).setCellValue(date);
-				HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
-				short format = sheet.getWorkbook().getCreationHelper().createDataFormat().getFormat("m/d/yy hh:mm");
-				style.setDataFormat(format);
-				row.get(0).setCellStyle(style);		
+			if (concept != null) {
+    			List<HSSFCell> row = setRow(sheet.createRow(rowIx++), dateString, comment.getAuthor(), concept, comment.getCui(), comment.getContent());
+    			if (date != null) {
+    				row.get(0).setCellValue(date);
+    				HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
+    				short format = sheet.getWorkbook().getCreationHelper().createDataFormat().getFormat("m/d/yy hh:mm");
+    				style.setDataFormat(format);
+    				row.get(0).setCellStyle(style);		
+    			}
 			}
 		}
 		
@@ -215,7 +219,7 @@ public class DownloadApi {
 		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Coding system", "Code", "Code name", "Concept", "Concept name");//, "Origin", "Root concept");
 		bold(header, sheet);
 		
-		JSONArray codingSystems = state.getJSONObject("mapping").getJSONArray("codingSystems");
+		JSONArray codingSystems = state.getJSONArray("codingSystems");
 		for (int codingSystemIx = 0; codingSystemIx < codingSystems.length(); codingSystemIx++) {
 			String codingSystem = codingSystems.getString(codingSystemIx);
 		

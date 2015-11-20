@@ -5,8 +5,6 @@ import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -121,7 +119,7 @@ public class DownloadApi {
 		
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		
-		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Date", "Operation", "Argument", "Result");
+		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Date", "User", "Operation", "Argument", "Result");
 		bold(header, sheet);
 		
 		JSONArray steps = state.getJSONObject("mapping").optJSONArray("history");
@@ -134,10 +132,11 @@ public class DownloadApi {
 			} catch (ParseException e) {
 				logger.error("Couldn't parse date", e);
 			}
+			String user = step.getString("user");
 			String operation = step.getString("operation");
 			String argument = historyDatumToString(step.get("argument"));
 			String result = historyDatumToString(step.get("result"));
-			List<HSSFCell> row = setRow(sheet.createRow(rowIx++), dateString, operation, argument, result);
+			List<HSSFCell> row = setRow(sheet.createRow(rowIx++), dateString, user, operation, argument, result);
 			if (date != null) {
 				row.get(0).setCellValue(date);
 				HSSFCellStyle style = sheet.getWorkbook().createCellStyle();

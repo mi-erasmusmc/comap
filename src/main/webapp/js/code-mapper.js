@@ -293,10 +293,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             .error(function(err, code) {
                 switch (code) {
                     case 401:
-                        alert("Not authorized. Please reload.", err);
+                        $scope.setMessage("Not logged in anymore :( Please reload.");
+                        console.log("Not authorized.", err);
                         break;
                     default:
-                        alert("Cannot load comments", err, code);
+                        $scope.setMessage("Cannot load comments :( Please reload the page.");
+                        console.log("Cannot load comments.", err, code);
                 }
             })
             .success(function(comments) {

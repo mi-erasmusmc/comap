@@ -415,8 +415,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             });
     };
     
-    $scope.addRemoveCodingSystems = function() {
-        console.log("addRemoveCodingSystems", dataService);
+    $scope.changeCodingSystems = function() {
+        console.log("changeCodingSystems", dataService);
         selectCodingSystemsDialog($modal, dataService.codingSystems, $scope.state.codingSystems)
             .then(function(newCodingSystems) {
 
@@ -454,8 +454,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             return patchConcept(concept, newCodingSystems);
                         });
                         $scope.conceptsColumnDefs = createConceptsColumnDefs(true, newCodingSystems, true);
-                        var arg = addCodingSystems.map(function(voc) { return "ADD "+voc; }).join(", ") +
-                                  removeCodingSystems.map(function(voc) { return "REMOVE "+voc; }).join(", ");
+                        var argAdded = addCodingSystems.map(function(voc) { return "+"+voc; }).join(", ");
+                        var argRemoved = removeCodingSystems.map(function(voc) { return "-"+voc; }).join(", "); 
+                        var arg =  argAdded + (argAdded && argRemoved ? ", " : "") + argRemoved;
                         var res = $scope.state.codingSystems.join(", ");
                         $scope.historyStep("Change coding systems", arg, res, null);
                     });

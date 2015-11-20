@@ -45,7 +45,6 @@ function upgradeState(state) {
     state = angular.copy(state);
     if (!state.hasOwnProperty("cuiAssignment")) {
         console.log("Upgrade state: create cuiAssignment");
-        var state = angular.copy(state);
         state.cuiAssignment = {};
         angular.forEach(state.indexing.concepts, function(concept) {
             state.cuiAssignment[concept.cui] = conceptHasRelevantSemanticType(concept) ?
@@ -405,7 +404,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             alert("Your session has timed out :( You have to re-login!");
                         } else {
                             var msg = "ERROR: An error occurred while saving";
-                            alert(msg, err);
+                            alert(msg);
                         }
                     })
                     .success(function() {

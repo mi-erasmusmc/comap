@@ -23,7 +23,7 @@
   </properties>
 
   <build>
-    <finalName>CoMap</finalName>
+    <finalName>CoMap-beta</finalName>
     <plugins>
       <plugin>
         <!-- For testing with `mvn jetty:run` -->

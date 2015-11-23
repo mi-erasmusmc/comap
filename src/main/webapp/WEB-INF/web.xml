@@ -28,7 +28,7 @@
     <url-pattern>/partials/*</url-pattern>
   </filter-mapping>
 
-  <security-constraint>
+  <!--security-constraint>
     <web-resource-collection>
       <web-resource-name>CoMap</web-resource-name>
       <url-pattern>/*</url-pattern>
@@ -36,7 +36,7 @@
     <user-data-constraint>
       <transport-guarantee>CONFIDENTIAL</transport-guarantee>
     </user-data-constraint>
-  </security-constraint>
+  </security-constraint-->
 
   <filter>
     <filter-name>cors</filter-name>

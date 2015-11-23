@@ -184,6 +184,9 @@ hr {
 	margin-top: 10px;
 	margin-bottom: 10px;
 }
+.overview hr {
+    border-top: 1px solid rgba(100,100,100,100);
+}
 .active a {
 	font-style: italic;
 }

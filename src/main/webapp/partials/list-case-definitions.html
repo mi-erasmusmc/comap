@@ -1,6 +1,8 @@
-<div>
-  <button ng-click="changePassword()" class="btn btn-default btn-sm">Change my password</button>
+<div class="overview">
+  <h3>My password</h3>
+  <button ng-click="changePassword()" class="btn btn-default btn-sm">Change password</button>
   <div ng-repeat="project in projects">
+    <hr/>
     <h3>Project <em>{{project}}</em></h3>
     <p>
       <h4>Members</h4>

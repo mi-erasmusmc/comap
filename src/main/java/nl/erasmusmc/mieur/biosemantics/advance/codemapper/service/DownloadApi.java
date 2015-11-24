@@ -149,29 +149,29 @@ public class DownloadApi {
 	}
 	
 	
-	private static String historyDatumToString(Object data) {
-		if (data.equals(JSONObject.NULL))
-			return "";
-		if (data instanceof JSONObject) {
-			JSONObject concept = (JSONObject) data;
-			return concept.getString("preferredName");
-		}
-		if (data instanceof String)
-			return (String) data;
-		if (data instanceof JSONArray) {
-			StringBuffer sb = new StringBuffer();
-			JSONArray array = (JSONArray) data;
-			for (int ix = 0; ix < array.length(); ix++) {
-				JSONObject concept = array.getJSONObject(ix);
-				if (ix != 0)
-					sb.append(", ");
-				sb.append(concept.getString("preferredName"));
-			}
-			return sb.toString();
-		}
-		logger.error(String.format("Cannot convert history datum %s of class %s", data, data.getClass()));
-		return null;
-	}
+    private static String historyDatumToString(Object data) {
+        if (data.equals(JSONObject.NULL))
+            return "";
+        if (data instanceof JSONObject) {
+            JSONObject concept = (JSONObject) data;
+            return concept.getString("preferredName");
+        }
+        if (data instanceof String)
+            return (String) data;
+        if (data instanceof JSONArray) {
+            StringBuffer sb = new StringBuffer();
+            JSONArray array = (JSONArray) data;
+            for (int ix = 0; ix < array.length(); ix++) {
+                JSONObject concept = array.getJSONObject(ix);
+                if (ix != 0)
+                    sb.append(", ");
+                sb.append(concept.isNull("preferredName") ? "?" : concept.getString("preferredName"));
+            }
+            return sb.toString();
+        }
+        logger.error(String.format("Cannot convert history datum %s of class %s", data, data.getClass()));
+        return null;
+    }
 
 
 	private List<HSSFCell> setRow(HSSFRow row, String... cells) {

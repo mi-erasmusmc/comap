@@ -94,7 +94,7 @@
               <i class="glyphicon glyphicon-floppy-disk"></i>
               Save
             </button>
-            <button title="Download the mapping as CSV for Excel"
+            <button title="Download the mapping as a Excel document"
                 ng-disabled="numberUnsafedChanges > 0"
                 ng-click="downloadConceptsAsExcel()"
                 class="btn btn-xs btn-default">
@@ -102,7 +102,7 @@
               Download
             </button>
           </div>
-          <button title="Discard the mapping - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to discard the current mapping? All manual refinements will be lost." class="btn btn-xs btn-default" id="reset-concepts">
+          <button title="Discard the mapping - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to discard the current mapping? All manual changes to the mapping will be lost." class="btn btn-xs btn-default" id="reset-concepts">
             <i class="glyphicon glyphicon-fire"></i>
             Discard
           </button>

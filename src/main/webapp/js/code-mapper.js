@@ -171,7 +171,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     
     /* CONCEPTS */
     
-    $scope.conceptsColumnDefs = createConceptsColumnDefs(true, [], true);
+    $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], true);
     $scope.conceptsGridOptions = {
         data: "state.mapping.concepts",
         rowHeight: 70,
@@ -374,7 +374,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 console.log("Loaded", state);
                 $scope.state = upgradeState(state);
                 $scope.$broadcast("indexingUpdated", state.indexing);
-                $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems, true);
+                $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true);
                 $scope.activateTab("concepts-tab");
                 if (angular.isArray(roles) && roles.indexOf('Commentator') != -1) {
                     $scope.setMessage("Click the speech baloon in the column on the right to view or add comments for a concept.");
@@ -383,7 +383,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             })
         ['finally'](function() {
             $scope.numberUnsafedChanges = 0;
-            $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems, true);
+            $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true);
         });
     };
     
@@ -457,7 +457,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             }
                             return patchConcept(concept, newCodingSystems);
                         });
-                        $scope.conceptsColumnDefs = createConceptsColumnDefs(true, newCodingSystems, true);
+                        $scope.conceptsColumnDefs = createConceptsColumnDefs(false, newCodingSystems, true);
                         var argAdded = addCodingSystems.map(function(voc) { return "+"+voc; }).join(", ");
                         var argRemoved = removeCodingSystems.map(function(voc) { return "-"+voc; }).join(", "); 
                         var arg =  argAdded + (argAdded && argRemoved ? ", " : "") + argRemoved;
@@ -477,7 +477,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             concepts: null,
             history: []
         };
-        $scope.conceptsColumnDefs = createConceptsColumnDefs(true, $scope.state.codingSystems, true);
+        $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true);
         var concepts = $scope.state.indexing.concepts
             .filter(function(concept) {
                 return $scope.state.cuiAssignment[concept.cui] != ASSIGNMENT_EXCLUDE; 
@@ -630,7 +630,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         $scope.$apply(function() {
             $scope.intervalUpdateComments(false);
             $scope.state.mapping = null;
-            $scope.conceptsColumnDefs = createConceptsColumnDefs(true, [], false);
+            $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], false);
         });
     };
     

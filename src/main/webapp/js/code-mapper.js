@@ -1179,7 +1179,7 @@ var originColumnDef = {
 function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
 
     var name = 
-            { displayName: "Name", field: 'preferredName', cellClass: 'cellToolTip', cellTemplate: "partials/nameCell.html"};
+            { displayName: "Concept", field: 'preferredName', cellClass: 'cellToolTip', cellTemplate: "partials/nameCell.html"};
     
     var cuiCellTemplate = "<span class='cui' ng-bind='row.entity.cui' title='{{row.entity.preferredName}}'></span>";
     var cui = { displayName: "UMLS", field: 'cui', cellTemplate: cuiCellTemplate };

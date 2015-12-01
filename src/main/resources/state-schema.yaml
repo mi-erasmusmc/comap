@@ -1,0 +1,196 @@
+# A JSON schema for mapping states in CodeMapper
+# CodeMapper: https://euadr.erasmusmc.nl/CoMap
+# JSON schema: http://json-schema.org/
+# (C) Erasmus MC, Benedikt Becker, 2015
+id: http://euadr.erasmusmc.nl/CoMap/state.json
+$schema: http://json-schema.org/schema#
+$ref: '#/definitions/state'
+definitions:
+  state:
+    type: object
+    properties:
+      indexing: {$ref: '#/definitions/indexing'}
+      cuiAssignment: {$ref: '#/definitions/cui_assignment'}
+      codingSystems:
+        type: array
+        items: {$ref: '#/definitions/coding_system'}
+      mapping: {$ref: '#/definitions/mapping'}
+    additionalProperties: false
+    required: [indexing, cuiAssignment, codingSystems, mapping]
+  coding_system:
+    type: string
+    pattern: '^[A-Z0-9_]+$'
+  indexing_concept:
+    type: object
+    properties:
+      cui: {$ref: '#/definitions/cui'}
+      preferredName: {$ref: '#/definitions/optional_string'}
+      semanticTypes:
+        type: array
+        items: { $ref: '#/definitions/semantic_type' }
+    additionalProperties: false
+    required: [cui, preferredName, semanticTypes]
+  cui:
+    type: string
+    pattern: '^C[0-9]{7}$'
+  comment:
+    type: object
+    properties:
+      author: {type: string}
+      content: {type: string}
+      cui: {$ref: '#/definitions/cui'}
+      timestamp:
+        type: string
+        format: date-time
+    additionalProperties: false
+    required: [cui, timestamp, author, content]
+  history_entry:
+    type: object
+    properties:
+      user: {type: string}
+      date:
+        type: string
+        format: date-time
+      operation: {type: string}
+      argument: {} # {oneOf: [{type: object}, {type: "null"}]}
+      result: {} # {type: array, items: {type: object}
+    additionalProperties: false
+    required: [date, user, operation, argument, result]
+  indexing:
+    type: object
+    properties:
+      caseDefinition: {type: string}
+      concepts:
+        type: array
+        items: {$ref: '#/definitions/indexing_concept'}
+      conceptsByCui:
+        object: object
+        patternProperties:
+          '^C[0-9]{7}$': {$ref: '#/definitions/indexing_concept'}
+        additionalProperties: false
+      spans:
+        type: array
+        items: {$ref: '#/definitions/span'}
+    additionalProperties: false
+    required: [caseDefinition, spans, concepts]
+  mapping:
+    type: object
+    properties:
+      concepts:
+        type: array
+        items: {$ref: '#/definitions/mapping_concept'}
+      history:
+        type: array
+        items: {$ref: '#/definitions/history_entry'}
+    additionalProperties: false
+    required: [concepts, history]
+  mapping_concept:
+    type: object
+    properties:
+      codes:
+        patternProperties:
+          '^[A-Z0-9_]+$':
+            type: array
+            items: {$ref: '#/definitions/source_concept'}
+        additionalProperties: false
+        type: object
+      cui: {$ref: '#/definitions/cui'}
+      definition: {$ref: '#/definitions/optional_string'}
+      comments:
+        items: {ref: '#/definitions/comment'}
+        type: array
+      origin:
+        oneOf:
+        - type: object 
+          properties:
+            data: {$ref: '#/definitions/span'}
+            root: {$ref: '#/definitions/optional_cui'}
+            type:
+              type: string
+              enum: [spans]
+          additionalProperties: false
+          required: [root, type, data]
+        - type: object
+          properties:
+            data: {$ref: '#/definitions/reduced_concept'}
+            root: {$ref: '#/definitions/reduced_concept'}
+            type:
+              type: string
+              enum: [hyponym, hypernym]
+          additionalProperties: false
+          required: [root, type, data]
+        - type: object
+          properties:
+            data: {type: string}
+            root: {$ref: '#/definitions/optional_cui'}
+            type:
+              enum: [search, add]
+              type: string
+          additionalProperties: false
+          required: [root, type, data]
+      preferredName: {$ref: '#/definitions/optional_string'}
+      semantic:
+        type: object
+        properties:
+          groups:
+            items: {$ref: '#/definitions/semantic_group'}
+            type: array
+          types:
+            items: {type: string}
+            type: array
+        additionalProperties: false
+        required: [groups, types]
+      semanticTypes:
+        type: array
+        items: {$ref: '#/definitions/semantic_type'}
+      sourceConcepts:
+        type: array
+        items: {$ref: '#/definitions/source_concept'}
+      sourceConceptsCount: {type: number}
+    additionalProperties: false
+    required: [cui, preferredName, semanticTypes, sourceConcepts, definition, comments,
+      codes, origin]
+  optional_cui:
+    oneOf:
+    - {$ref: '#/definitions/cui'}
+    - {type: 'null'}
+  optional_string:
+    oneOf:
+    - {type: string}
+    - {type: 'null'}
+  reduced_concept:
+    type: object
+    properties:
+      cui: {$ref: '#/definitions/cui'}
+      preferredName: {$ref: '#/definitions/optional_string'}
+    additionalProperties: false
+    required: [cui, preferredName]
+  semantic_group: {type: string, pattern: '^[A-Z]+$'}
+  semantic_type: {type: string, pattern: '^T[0-9]{3}$'}
+  source_concept:
+    type: object
+    properties:
+      cui: {$ref: '#/definitions/cui'}
+      codingSystem: {$ref: '#/definitions/coding_system'}
+      id: {type: string}
+      preferredTerm: {$ref: '#/definitions/optional_string'}
+      selected: {type: boolean}
+    additionalProperties: false
+    required: [cui, id, preferredTerm, codingSystem]
+  span:
+    type: object
+    properties:
+      id: {type: string}
+      start: {type: number}
+      end: {type: number}
+      label: {type: string}
+      text: {type: string}
+    additionalProperties: false
+    required: [id, start, end, label, text]
+  cui_assignment:
+    type: object
+    patternProperties:
+      '^C[0-9]{7}$':
+        type: string
+        enum: [include, exclude]
+    additionalProperties: false

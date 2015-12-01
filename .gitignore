@@ -1,2 +1,9 @@
 target
 /src/main/resources/__pycache__/
+build
+evaluation-ng
+**/#*#
+*.pyc
+*.bak
+WebContent
+.ipynb_checkpoints

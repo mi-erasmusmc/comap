@@ -45,17 +45,95 @@ definitions:
     additionalProperties: false
     required: [cui, timestamp, author, content]
   history_entry:
-    type: object
-    properties:
-      user: {type: string}
-      date:
-        type: string
-        format: date-time
-      operation: {type: string}
-      argument: {} # {oneOf: [{type: object}, {type: "null"}]}
-      result: {} # {type: array, items: {type: object}
-    additionalProperties: false
-    required: [date, user, operation, argument, result]
+    oneOf:
+      - type: object
+        properties:
+          user: {type: string}
+          date:
+            type: string
+            format: date-time
+          operation: {type: string, enum: ['Automatic coding']}
+          argument: {type: 'null'}
+          result: {$ref: '#/definitions/reduced_concept_array'}
+        additionalProperties: false
+        required: [date, user, operation, argument, result]
+      - type: object
+        properties:
+          user: {type: string}
+          date:
+            type: string
+            format: date-time
+          operation: {type: string, enum: ['Expand to more specific', 'Expand to more general']}
+          argument: {$ref: '#/definitions/reduced_concept_array'}
+          result: {$ref: '#/definitions/reduced_concept_array'}
+        additionalProperties: false
+        required: [date, user, operation, argument, result]
+      - type: object
+        properties:
+          user: {type: string}
+          date:
+            type: string
+            format: date-time
+          operation: {type: string, enum: ['Summarize']}
+          argument: {type: 'string'}
+          result: {type: 'null'}
+        additionalProperties: false
+        required: [date, user, operation, argument, result]
+      - type: object
+        properties:
+          user: {type: string}
+          date:
+            type: string
+            format: date-time
+          operation: {type: string, enum: ['Search']}
+          argument: {type: 'string'}
+          result: {$ref: '#/definitions/reduced_concept_array' }
+        additionalProperties: false
+        required: [date, user, operation, argument, result]
+      - type: object
+        properties:
+          user: {type: string}
+          date:
+            type: string
+            format: date-time
+          operation: {type: string, enum: ['Add']}
+          argument: {type: 'null'}
+          result: {$ref: '#/definitions/reduced_concept' }
+        additionalProperties: false
+        required: [date, user, operation, argument, result]
+      - type: object
+        properties:
+          user: {type: string}
+          date:
+            type: string
+            format: date-time
+          operation: {type: string, enum: ['Delete']}
+          argument: {$ref: '#/definitions/reduced_concept_array' }
+          result: {type: 'null' }
+        additionalProperties: false
+        required: [date, user, operation, argument, result]
+      - type: object
+        properties:
+          user: {type: string}
+          date:
+            type: string
+            format: date-time
+          operation: {type: string, enum: ['Edit codes']}
+          argument: {$ref: '#/definitions/reduced_concept_array' }
+          result: {type: 'string' }
+        additionalProperties: false
+        required: [date, user, operation, argument, result]
+      - type: object
+        properties:
+          user: {type: string}
+          date:
+            type: string
+            format: date-time
+          operation: {type: string, enum: ['Change coding systems']}
+          argument: {type: 'string'}
+          result: {type: 'string'}
+        additionalProperties: false
+        required: [date, user, operation, argument, result]
   indexing:
     type: object
     properties:
@@ -100,6 +178,7 @@ definitions:
         items: {ref: '#/definitions/comment'}
         type: array
       origin:
+        # TODO simplify
         oneOf:
         - type: object 
           properties:
@@ -165,6 +244,9 @@ definitions:
       preferredName: {$ref: '#/definitions/optional_string'}
     additionalProperties: false
     required: [cui, preferredName]
+  reduced_concept_array:
+    type: array
+    items: {$ref: '#/definitions/reduced_concept'}
   semantic_group: {type: string, pattern: '^[A-Z]+$'}
   semantic_type: {type: string, pattern: '^T[0-9]{3}$'}
   source_concept:

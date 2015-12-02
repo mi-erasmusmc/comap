@@ -25,6 +25,7 @@ textarea.case-definition {
 #highlightedCaseDefinition {
   height: 600px;
   width: 72em;
+  overflow: scroll;
   border: 1px solid #aaa;
 }
 #search-concepts {

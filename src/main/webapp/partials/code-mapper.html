@@ -36,14 +36,14 @@
       <div ng-if="state.mapping" class="concepts-controls row">
        
        <div class="filters col-md-2">
-         <label>Filter {{state.mapping.concepts.length}} available concept<span ng-if="state.mapping.concepts.length != 1">s</span></label>
+         <label>{{state.mapping.concepts.length}} concept<span ng-if="state.mapping.concepts.length != 1">s</span></label>
          <i class="glyphicon glyphicon-filter"></i>
-         <input title="Filter concepts" placeholder="Query" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
+         <input title="Filter displayed concepts" placeholder="Filter" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
        </div>
         
         <div class="modify-concepts col-md-4" ng-if="userCanEdit()">
           <label>
-            Modify {{selectedConcepts.length}} selected concept<span ng-if="selectedConcepts.length != 1">s</span>
+            Modify selected<!--{{selectedConcepts.length}} selected concept<span ng-if="selectedConcepts.length != 1">s</span>-->
           </label>
           <button class='btn btn-xs btn-default' ng-click='operationDeleteConcepts(selectedConcepts)' confirm-click="Delete selected concepts?" ng-disabled="selectedConcepts.length == 0" title='Delete concepts'> 
             <i class='glyphicon glyphicon-remove-circle'></i>
@@ -68,9 +68,9 @@
         </div>
         
         <div class="add-concepts col-md-3" ng-if="userCanEdit()">
-          <label>Search and add new concept</label>
+          <label>Search and add</label>
           <input type="text" ng-model="searchQuery" 
-            placeholder="Query" title="Search and add concepts"
+            placeholder="Query" title="Search and add new concepts"
             typeahead="c.preferredName for c in autocompleteConcepts($viewValue)"
             typeahead-on-select="searchAndAddConceptDirect($item)"
             typeahead-wait-ms=250
@@ -102,7 +102,7 @@
               Download
             </button>
           </div>
-          <button title="Discard the mapping - all changes are lost" ng-click="discardMapping()" confirm-click="Do you really want to discard the current mapping? All manual changes to the mapping will be lost." class="btn btn-xs btn-default" id="reset-concepts">
+          <button title="Discard the mapping - all changes will be lost" ng-click="discardMapping()" confirm-click="Do you really want to discard the current mapping? All manual changes to the mapping will be lost." class="btn btn-xs btn-default" id="reset-concepts">
             <i class="glyphicon glyphicon-fire"></i>
             Discard
           </button>

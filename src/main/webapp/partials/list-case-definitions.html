@@ -1,9 +1,9 @@
 <div class="overview">
   <h3>My password</h3>
   <button ng-click="changePassword()" class="btn btn-default btn-sm">Change password</button>
-  <div ng-repeat="project in projects">
+  <div ng-repeat="project in projects | orderBy">
     <hr/>
-    <h3>Project <em>{{project}}</em></h3>
+    <h3>Project <em>{{project}}</em> ({{usersInProjects[project][user.username].join(", ")}})</h3>
     <p>
       <h4>Members</h4>
       <ul class="bullet-separated">

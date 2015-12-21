@@ -6,3 +6,4 @@ do/.comap-cookies
 *.evaluations.csv
 *.evaluations.xls
 *.code-stats.csv
+.comap-cookies

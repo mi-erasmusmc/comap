@@ -13,7 +13,7 @@ logger = utils.get_logger(__name__)
 PEREGRINE_API_URL = 'http://euadr.erasmusmc.nl:8080/UMLS2014AB_ADVANCE/rest'
 COMAP_API_URL = 'http://localhost:8080/CoMap/rest'
 COMAP_COOKIES_FILE = '.comap-cookies'
-DB_ACCESS = dict(host='127.0.0.1', user='root', password='root')
+DB_ACCESS = dict(host='127.0.0.1', user='root', password='root', port=3306)
 
 def get_cookies():
     try:
@@ -128,16 +128,17 @@ def get_umls_ext_db():
 def translation_read_2to3(codes):
     """ { read2_code: { read3_code } } """
     translation = defaultdict(set)
-    if codes:
-        with get_umls_ext_db().cursor() as cursor:
-            query = """
-                select distinct V2_CONCEPTID, CTV3_CONCEPTID
-                from RCD_V3_to_V2
-                where V2_CONCEPTID in %s
-            """
-            cursor.execute(query, [codes])
-            for code2, code3 in cursor.fetchall():
-                translation[code2].add(code3)
+    if not codes:
+        return translation
+    with get_umls_ext_db().cursor() as cursor:
+        query = """
+            select distinct V2_CONCEPTID, CTV3_CONCEPTID
+            from RCD_V3_to_V2
+            where V2_CONCEPTID in %s
+        """
+        cursor.execute(query, [codes])
+        for code2, code3 in cursor.fetchall():
+            translation[code2].add(code3)
     return translation
 
 
@@ -182,3 +183,10 @@ def known_codes(codes, coding_system):
                 return { code for code, in cursor.fetchall() }
     else:
         return set()        
+    
+def codes_of_raw_concept(concept, coding_system):
+    return {
+        sourceConcept['id']
+        for sourceConcept in concept['sourceConcepts']
+        if sourceConcept['codingSystem'] == coding_system
+    }

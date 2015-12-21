@@ -238,51 +238,6 @@ class Mapping:
 
     def keys(self):
         return list(self._mapping.keys())
-
-    # def normalize(self, databases, normalizers):
-    #     result = Mapping()
-    #     for database in mapping.keys():
-    #         coding_system = databases.coding_system(database)
-    #         normalizer = normalizers.get(coding_system)
-    #             codes = mapping.codes(database)
-    #             if codes is not None:
-    #                 codes = normalizer(codes)
-    #                 result_mapping.add(database, codes)
-    #         result.add(event, result_mapping)
-
-            
-# def Normalizers:
-
-#     def __init__(self, normalizers):
-#         self._normalizers = normalizers
-
-#     def get(self, coding_system):
-#         for coding_system0 in self._normalizers:
-#             if coding_system.startswith(coding_system0):
-#                 return _normalizers[coding_system0]
-#         logger.error("No normalizer for coding system %s", coding_system)
-
-
-# def Normalizer:
-
-#     def __init__(self, f):
-#         self._f = f
-
-#     @classmethod
-#     def chain(fs):
-#         def f(code):
-#             for f in fs:
-#                 res = f(code)
-#                 if res is not None:
-#                     code = res
-#             return code
-#         return Normalizer(f)
-
-#     def code(self, code):
-#         return self._f(code)
-
-#     def codes(self, codes):
-#         return { self._f(code) for code in codes }
         
 
 class Evaluations:
@@ -329,10 +284,19 @@ class Evaluations:
     def get(self, variation_id, event, database):
         return self._evaluations[variation_id][event][database]
 
+    def for_variation(self, variation_id, events, databases):
+        return {
+            event: {
+                database: self.get(variation_id, event, database)
+                for database in databases
+            }
+            for event in events
+        }
+
     
 class Evaluation:
 
-    def __init__(self, cuis, generated, reference, tp, fp, fn, recall, precision, error_analysis=None):
+    def __init__(self, cuis, generated, reference, tp, fp, fn, recall, precision):
         for v in [cuis, generated, reference, tp, fp, fn]:
             assert type(v) == set, (type(v), v)
         self.cuis = cuis
@@ -343,13 +307,10 @@ class Evaluation:
         self.fn = fn
         self.recall = recall
         self.precision = precision
-        self.error_analysis = error_analysis
 
     @classmethod
     def of_data(cls, data):
         def for_value(key, value):
-            if key == 'error_analysis':
-                return ErrorAnalysis.of_data(value)
             if type(value) == list:
                 return set(value)
             return value
@@ -368,7 +329,6 @@ class Evaluation:
             ('fn', list(self.fn)),
             ('recall', self.recall),
             ('precision', self.precision),
-            ('error_analysis', self.error_analysis.to_data()),
         ])
 
 class Variation:
@@ -560,45 +520,60 @@ class Dnf:
                     res[cui][voc].update(codes)
         return Cosynonyms(res)
 
+    def cuis(self, code, coding_system):
+        res = set()
+        for cuis, codes in self._disjunction.items():
+            if code in codes.get(coding_system, set()):
+                res.update(cuis)
+        return res
+
+    def cui_sets_for_code(self, code, coding_system):
+        return {
+            cuis for cuis in self._disjunction
+            if code in self._disjunction[cuis].get(coding_system, [])
+        }
+
 
 class ErrorAnalysis:
 
-    keys = 'fp_in_dnf,fn_not_in_umls,fn_exclusions,fn_inclusions_in_umls,reference_inclusions_in_umls,'\
-           'recall_in_umls,recall_without_exclusions,recall_without_exclusions_in_umls,'\
-           'precision_over_dnf'.split(',')
+    def __init__(self, error_analyses_fn):
+        self.error_analyses_fn = error_analyses_fn
 
-    def __init__(self, fp_in_dnf, fn_not_in_umls, fn_exclusions, fn_inclusions_in_umls, reference_inclusions_in_umls,
-                 recall_in_umls, recall_without_exclusions, recall_without_exclusions_in_umls,
-                 precision_over_dnf):
-        self.fp_in_dnf = fp_in_dnf
-        self.fn_not_in_umls = fn_not_in_umls
-        self.fn_exclusions = fn_exclusions
-        self.fn_inclusions_in_umls = fn_inclusions_in_umls
-        self.reference_inclusions_in_umls = reference_inclusions_in_umls
-        self.recall_in_umls = recall_in_umls
-        self.recall_without_exclusions = recall_without_exclusions
-        self.recall_without_exclusions_in_umls = recall_without_exclusions_in_umls
-        self.precision_over_dnf = precision_over_dnf
+    def to_data(self):
+        return {
+            database: {
+                event: None if error_analysis_fn is None else error_analysis_fn.to_data()
+                for event, error_analysis_fn in for_database.items()
+            }
+            for database, for_database in self.error_analyses_fn.items()
+        }
+
+    @classmethod
+    def of_data(self, data):
+        return ErrorAnalysis({
+            database: {
+                event: None if error_analysis_fn is None else ErrorAnalysisFN.of_data(error_analysis_fn)
+                for event, error_analysis_fn in for_database.items()
+            }
+            for database, for_database in data.items()
+        })
+
+
+class ErrorAnalysisFN:
+
+    def __init__(self, code_categories, unassigned):
+        self.code_categories = code_categories
+        self.unassigned = unassigned
+
+    def to_data(self):
+        res = OrderedDict([
+            ('code-categories', self.code_categories),
+        ])
+        if self.unassigned:
+            res['unassigned'] = self.unassigned
+        return res
 
     @classmethod
     def of_data(cls, data):
-        def for_value(key, value):
-            if type(value) == list:
-                return set(value)
-            if type(value) == float:
-                return value
-        return ErrorAnalysis(**{
-            key: for_value(key, value)
-            for key, value in data.items()
-        })
-
-    def to_data(self):
-        def for_value(key, value):
-            if type(value) == set:
-                return list(value)
-            if type(value) == float:
-                return value    
-        return OrderedDict([
-            (key, for_value(key, self.__dict__[key]))
-            for key in ErrorAnalysis.keys
-        ])
+        return ErrorAnalysisFN(data['code-categories'],
+                               data.get('unassigned', {}))

@@ -25,24 +25,16 @@ def evaluations_to_df(evaluations):
                     evaluation.tp,
                     evaluation.fp,
                     evaluation.fn,
-                    evaluation.error_analysis.fn_inclusions_in_umls,
-                    evaluation.error_analysis.reference_inclusions_in_umls
                 ]
             ] + [
                 evaluation.recall,
                 evaluation.precision,
-                evaluation.error_analysis.recall_in_umls,
-                evaluation.error_analysis.recall_without_exclusions,
-                evaluation.error_analysis.recall_without_exclusions_in_umls,
-                evaluation.error_analysis.precision_over_dnf,
             ]
         data.append(row)
     columns = [ 'variation', 'event', 'database', 'cuis',
                 'generated', 'reference', 'tp', 'fp', 'fn',
-                'fn_inclusions_in_umls', 'reference_inclusions_in_umls',
                 'recall', 'precision',
-                'recall_in_umls', 'recall_without_exclusions', 'recall_without_exclusions_in_umls',
-                'precision_over_dnf' ]
+    ]
     return pd.DataFrame(data=data, columns=columns)
 
 

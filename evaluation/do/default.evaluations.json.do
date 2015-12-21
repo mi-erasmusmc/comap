@@ -36,8 +36,7 @@ def evaluate(variations, databases, mappings):
                         recall = np.nan
                     exclusion_codes = mapping.exclusion_codes(database)
                     max_recall_codes = variations['max-recall'][event].concepts.codes(coding_system)
-                    analysis = error_analysis(tp, fp, fn, coding_system, max_recall_codes, exclusion_codes)
-                    evaluation = Evaluation(cuis, generated, reference, tp, fp, fn, recall, precision, analysis)
+                    evaluation = Evaluation(cuis, generated, reference, tp, fp, fn, recall, precision)
                 evaluations.add(variation_id, event, database, evaluation)
     return evaluations
 

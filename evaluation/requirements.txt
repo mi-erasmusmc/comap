@@ -1,0 +1,7 @@
+pandas
+requests
+pyyaml
+xlwt
+pymysql
+pymysql
+json

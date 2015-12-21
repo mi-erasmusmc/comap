@@ -161,29 +161,36 @@ def translation_read_3to2(codes):
 
 def known_codes(codes, coding_system):
     "Returns a subset of `codes` where every code can be found in UMLS/RCD2."
-    if codes:
-        if coding_system != 'RCD2':
-            query = """
-            select distinct code
-            from MRCONSO
-            where sab = %s
-            and code in %s
-            """
-            with get_umls_db().cursor() as cursor:
-                cursor.execute(query, [coding_system, codes])
-                return { code for code, in cursor.fetchall() }
-        else:
-            query = """
-            select distinct V2_CONCEPTID
-            from RCD_V3_to_V2
-            where V2_CONCEPTID in %s
-            """
-            with get_umls_ext_db().cursor() as cursor:
-                cursor.execute(query, [codes])
-                return { code for code, in cursor.fetchall() }
-    else:
-        return set()        
     
+    if not codes:
+        return set()
+
+    original_coding_system = coding_system
+    if coding_system == 'RCD2':
+        original_codes = codes
+        t = translation_read_2to3(codes)
+        codes = { code3 for codes3 in t.values() for code3 in codes3 }
+        coding_system = 'RCD'
+
+    query = """
+    select distinct code
+    from MRCONSO
+    where sab = %s
+    and BINARY code in %s
+    """ # BINARY for case-sensitive in-clause
+    with get_umls_db().cursor() as cursor:
+        cursor.execute(query, [coding_system, codes])
+        res = { code for code, in cursor.fetchall() }
+
+    if original_coding_system == 'RCD2':
+        res = {
+            code2 for code2 in original_codes
+            if any(code3 in res for code3 in t[code2]
+                   for _ in [print(code2, code3, code2 in original_codes, code3 in res, res)])
+        }
+        
+    return res
+
 def codes_of_raw_concept(concept, coding_system):
     return {
         sourceConcept['id']

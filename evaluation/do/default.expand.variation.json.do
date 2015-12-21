@@ -18,7 +18,7 @@ def expand_concepts_by_codes(concepts, relations, databases, mapping):
         for rel in relateds[cui]:
             for related in relateds[cui][rel]:
                 for database in databases.databases():
-                    codes = utils.codes_of_raw_concept(related)
+                    codes = comap.codes_of_raw_concept(related, databases.coding_system(database))
                     reference = mapping.codes(database)
                     if reference is not None and codes & reference:
                         cuis.add(related['cui'])

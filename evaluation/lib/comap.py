@@ -31,7 +31,7 @@ def get_cookies():
 def login():
     logger.debug("Login")
     url = COMAP_API_URL + '/authentification/login'
-    data = dict(username='b.becker', password='Codemapper2015')
+    data = dict(username='b.becker', password='cm')
     r = requests.post(url, data=data)
     with open(COMAP_COOKIES_FILE, 'wb') as f:
         pickle.dump(r.cookies, f)
@@ -191,6 +191,51 @@ def known_codes(codes, coding_system):
         
     return res
 
+def code_names(codes, coding_system):
+    if not codes:
+        return {}
+    
+    original_coding_system = coding_system
+    if coding_system == 'RCD2':
+        coding_system = 'RCD'
+        original_codes = codes
+        t = translation_read_2to3(codes)
+        codes = { code3 for code in codes for code3 in t[code] }
+        
+    query = """
+    select distinct code, str from MRCONSO
+    where ts = 'P' and stt = 'PF' and ispref = 'Y' and lat = 'ENG'
+    and code in %s and sab = %s
+    """
+    with get_umls_db().cursor() as cursor:
+        cursor.execute(query, [codes, coding_system])
+        res = dict(cursor.fetchall())
+
+    if original_coding_system == 'RCD2':
+        def aux(code2):
+            try:
+                return next(filter(None, [res.get(code3) for code3 in t[code2]]))
+            except StopIteration:
+                return '?'
+        res = {
+            code2: aux(code2)
+            for code2 in original_codes
+        }
+
+    return res
+
+def cui_names(cuis):
+    if not cuis:
+        return {}
+    query = """
+    select distinct cui, str from MRCONSO
+    where ts = 'P' and stt = 'PF' and ispref = 'Y' and lat = 'ENG'
+    and cui in %s
+    """
+    with get_umls_db().cursor() as cursor:
+        cursor.execute(query, [cuis])
+        return dict(cursor.fetchall())
+    
 def codes_of_raw_concept(concept, coding_system):
     return {
         sourceConcept['id']

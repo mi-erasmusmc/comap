@@ -24,6 +24,7 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.PersistencyApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.service.DownloadApi;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.service.DownloadResource;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext.Icd10AnyCodingSystem;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext.Rcd2CodingSystem;
 
 @ApplicationPath("rest")
@@ -83,6 +84,7 @@ public class CodeMapperApplication extends ResourceConfig {
 
             DataSource umlsExtConnectionPool = getConnectionPool("umls-ext-db-", properties);
             umlsApi.registerCodingSystemsExtension(new Rcd2CodingSystem(umlsExtConnectionPool));
+            umlsApi.registerCodingSystemsExtension(new Icd10AnyCodingSystem(umlsConnectionPool));
 
             DataSource codeMapperConnectionPool = getConnectionPool("code-mapper-db-", properties);
             persistencyApi = new PersistencyApi(codeMapperConnectionPool);

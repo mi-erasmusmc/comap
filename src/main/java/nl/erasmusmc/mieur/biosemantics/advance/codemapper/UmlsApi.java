@@ -153,13 +153,7 @@ public class UmlsApi  {
 					codingSystems.add(extCodingSystems.get(abbr).getCodingSystem().getAbbreviation());
 				else
 					codingSystems.add(abbr);
-
-                        String semanticTypesPlaceholdersMaybe = "";
-                        if (semanticTypes != null)
-                            semanticTypesPlaceholdersMaybe = String.format("AND sty.tui IN (%s)", // that have the selected semantic types
-                                                                      Utils.sqlPlaceholders(semanticTypes.size()));
-
-			String query =
+                        String query =
                             "SELECT DISTINCT m1.cui, m1.str " // Get the distinct MRCONSO.str
                             + "FROM MRCONSO AS m1 "
                             + "INNER JOIN MRCONSO AS m2 "
@@ -212,7 +206,7 @@ public class UmlsApi  {
 			String queryFmt =
 					"SELECT DISTINCT cui, tui "
 					+ "FROM MRSTY "
-					+ "WHERE cui in (%s) "
+					+ "WHERE cui IN (%s) "
 					+ "ORDER BY cui, tui";
 			String query = String.format(queryFmt, Utils.sqlPlaceholders(cuis.size()));
 
@@ -241,8 +235,39 @@ public class UmlsApi  {
 			}
 		}
 	}
+	
+	public List<String> getCuisByCodes(List<String> codes, String codingSystem) throws CodeMapperException {
+        if (codes == null || codes.isEmpty())
+            return new LinkedList<>();
+	    if (extCodingSystems.containsKey(codingSystem)) {
+	        ExtCodingSystem extCodingSystem = extCodingSystems.get(codingSystem);
+	        return extCodingSystem.getCuisForCodes(codes);
+	    } else {
+	        String queryFmt = "SELECT DISTINCT `cui` FROM `MRCONSO` WHERE `code` IN (%s) and SAB = ?";
+	        String query = String.format(queryFmt, Utils.sqlPlaceholders(codes.size()));
+	        System.out.println(query);
+	        try (Connection connection = connectionPool.getConnection();
+                    PreparedStatement statement = connection.prepareStatement(query)) {
+	            System.out.println(statement);
+	            int offset = 1;
+	            for (Iterator<String> iter = codes.iterator(); iter.hasNext(); offset++)
+	                statement.setString(offset, iter.next());
+	            statement.setString(offset++, codingSystem);
+	            System.out.println(statement);
+	            ResultSet result = statement.executeQuery();
+	            List<String> cuis = new LinkedList<>();
+	            while (result.next()) {
+	                String cui = result.getString(1);
+	                cuis.add(cui);
+	            }
+	            return cuis;
+            } catch (SQLException e) {
+                throw CodeMapperException.server("Cannot execute query for CUIs by codes", e);
+            }
+	    }
+    }
 
-	public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> codingSystems0)
+    public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> codingSystems0)
 			throws CodeMapperException {
 
 		if (cuis.isEmpty() || codingSystems0.isEmpty())
@@ -255,7 +280,7 @@ public class UmlsApi  {
 			for (String abbr: codingSystems0)
 				if (extCodingSystems.containsKey(abbr)) {
 					extAbbrs.add(abbr);
-					codingSystems.add(extCodingSystems.get(abbr).getReferenceCodingSystem());
+					codingSystems.addAll(extCodingSystems.get(abbr).getReferenceCodingSystems());
 				}
 				else
 					codingSystems.add(abbr);
@@ -316,10 +341,13 @@ public class UmlsApi  {
 					Map<String, List<SourceConcept>> referenceSourceConcepts = new HashMap<>();
 					for (String cui: sourceConcepts.keySet()) {
 						referenceSourceConcepts.put(cui, new LinkedList<SourceConcept>());
-						for (SourceConcept sourceConcept: sourceConcepts.get(cui))
-							if (extCodingSystem.getReferenceCodingSystem()
-									.equals(sourceConcept.getCodingSystem()))
+						List<SourceConcept> sourceConceptsForCui = sourceConcepts.get(cui);
+                        for (SourceConcept sourceConcept: new LinkedList<>(sourceConceptsForCui))
+							if (extCodingSystem.getReferenceCodingSystems().contains(sourceConcept.getCodingSystem())) {
+							    sourceConceptsForCui.remove(sourceConcept);
 								referenceSourceConcepts.get(cui).add(sourceConcept);
+							}
+                        sourceConcepts.put(cui, sourceConceptsForCui);
 					}
 
 					Map<String, Map<String, List<SourceConcept>>> extSourceConcepts =

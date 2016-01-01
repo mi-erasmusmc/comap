@@ -1,5 +1,6 @@
 package nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +14,7 @@ public interface ExtCodingSystem {
 	public CodingSystem getCodingSystem();
 
 	/** Abbreviation of the reference coding system in UMLS. */
-	public String getReferenceCodingSystem();
+	public Collection<String> getReferenceCodingSystems();
 
 	/**
 	 * Map codes in reference coding system to codes in extended coding
@@ -29,4 +30,7 @@ public interface ExtCodingSystem {
 	 */
 	public Map<String, Map<String, List<SourceConcept>>> mapCodes(Map<String, List<SourceConcept>> codes) throws CodeMapperException;
 
+	/** Create a mapping from codes in the extended mapping to CUIs that correspond to the codes 
+	 * @throws CodeMapperException */
+    public List<String> getCuisForCodes(List<String> codes) throws CodeMapperException;
 }

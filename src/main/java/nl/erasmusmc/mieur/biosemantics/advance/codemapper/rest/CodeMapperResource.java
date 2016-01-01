@@ -62,6 +62,18 @@ public class CodeMapperResource {
 			throw e.asWebApplicationException();
 		}
 	}
+	
+	@POST
+	@Path("cuis-for-codes")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<String> getCuisForCodes(@FormParam("codes") List<String> codes, @FormParam("codingSystem") String codingSystem, @Context User user) {
+        AuthentificationResource.assertAuthentificated(user);
+        try {
+            return api.getCuisByCodes(codes, codingSystem);
+        } catch (CodeMapperException e) {
+            throw e.asWebApplicationException();
+        }
+	}
 
 	@POST
 	@Path("umls-concepts")

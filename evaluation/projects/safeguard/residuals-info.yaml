@@ -1,0 +1,244 @@
+# Only the field `category` of each code is taken into account,
+# other fields are informative (generated and taken in previous
+# version of default.error-analysis.yaml.
+#
+# Proxies are procedures and not mentioned in the case definition
+
+CPRD:
+  va:
+    '3283.':
+      category: proxy
+      cuis:
+        C0344435:
+          name: 'ECG: ventricular fibrillation'
+          relateds: C0577785 C0577810 C1320355 C0522055
+      RCD:
+      - '3283.'
+      - '.3283'
+    853..:
+      category: proxy
+      cuis:
+        C0009039:
+          name: Manual external cardiac massage with closed chest
+          relateds: C0018807 C0007203 C0947647 C0190061
+      RCD:
+      - .853.
+      - 853..
+    7L1H4:
+      category: proxy
+      cuis:
+        C0419057:
+          name: Electrical operative cardiac stimulation
+          relateds: C0554805
+      RCD:
+      - 7L1H4
+      - '.8654'
+    853Z.:
+      category: proxy
+      cuis:
+        C0009039:
+          name: Manual external cardiac massage with closed chest
+          relateds: C0018807 C0007203 C0947647 C0190061
+      RCD:
+      - 853Z.
+      - .853Z
+    7L1H.:
+      category: proxy
+      cuis:
+        C1542549:
+          name: External resuscitation
+          relateds: C0419047 C0009039 C0455251
+        C0397419:
+          name: Direct current defibrillation
+          relateds: C2586216 C1997298 C1960577 C0472588 C0472587 C2585547 C1997033
+        C0419045:
+          name: Other resuscitation methods
+          relateds: C0035273
+        C0013778:
+          name: Electric Countershock
+          relateds: C0554805
+        C0472588:
+          name: Unsynchronised direct current defibrillation
+          relateds: C0013778
+        C0472587:
+          name: Synchronised direct current defibrillation
+          relateds: C0013778
+        C0565534:
+          name: Circulation maintenance
+          relateds: C1292784 C0007203 C0189573
+        C0565864:
+          name: Nonmechanical method of resuscitation
+          relateds: C0419043 C0204806
+        C0554805:
+          name: Direct current cardiac shock
+          relateds: C0419058 C0397419 C0013778 C0419057 C0542380
+        C0007203:
+          name: Cardiopulmonary Resuscitation
+          relateds: C0086208 C0035273 C0175624
+      RCD:
+      - 7L1H.
+      - Xa8S8
+      - .865Z
+      - XaBdb
+      - XaBiZ
+      - Xa3zw
+      - Xa3zq
+      - Xa3ru
+      - XE0jv
+      - X011o
+      - XE0Ji
+      - Xa1nl
+      - X011n
+      - .865.
+      - '.8826'
+    7L1Hy:
+      category: proxy
+      cuis:
+        C0419047:
+          name: Other specified external resuscitation
+          relateds: C1542549
+      RCD:
+      - 7L1Hy
+    7L1Hz:
+      category: proxy
+      cuis:
+        C1542549:
+          name: External resuscitation
+          relateds: C0419047 C0009039 C0455251
+      RCD:
+      - 7L1Hz
+    '8531.':
+      category: proxy
+      cuis:
+        C0397475:
+          name: Closed cardiac massage alone
+          relateds: C0009039
+      RCD:
+      - '.8531'
+      - '8531.'
+  hs:
+    '70043':
+      category: proxy
+      cuis:
+        C0472401:
+          name: Evacuation of intracerebral haematoma NEC
+          relateds: C1282573 C0521277
+      RCD:
+      - '70043'
+    '70042':
+      category: proxy
+      cuis:
+        C0472402:
+          name: Evacuation of hematoma from cerebellum
+          relateds: C1293713 C0542369 C1261965 C1293023 C1292895
+      RCD:
+      - '70042'
+    '70082':
+      category: proxy
+      cuis:
+        C0472404:
+          name: Aspiration of brain hematoma
+          relateds: C0521277
+      RCD:
+      - '70082'
+    '70041':
+      category: proxy
+      cuis:
+        C0472403:
+          name: Evacuation of hematoma from temporal lobe of brain
+          relateds: C1261965 C1292895 C1293713 C0542369 C0521277 C1293023
+      RCD:
+      - '70041'
+  pc:
+    B8086:
+      category: '?'
+      cuis:
+        C0345918:
+          name: Carcinoma in situ of ampulla of Vater
+          relateds: C0347132
+      RCD:
+      - B8086
+    BB5C.:
+      category: '?'
+      cuis:
+        C0476103:
+          name: Gastrinoma and carcinomas
+          relateds: C0476104
+      RCD:
+      - BB5C.
+    BB5Cz:
+      category: '?'
+      cuis:
+        C0476104:
+          name: Gastrinoma or carcinoma NOS
+          relateds: C0476103
+      RCD:
+      - BB5Cz
+    BB44.:
+      category: '?'
+      cuis:
+        C0334268:
+          name: Schneiderian papilloma
+          relateds: C0334265 C0947938 C0086692 C0852128 C0950124 C0334266
+      RCD:
+      - BB44.
+GePaRD:
+  mi:
+    I21.1:
+      category: '?'
+      cuis:
+        C2882099:
+          name: ST elevation (STEMI) myocardial infarction of inferior wall
+          relateds: C2882105 C2882101
+    I21.2:
+      category: '?'
+      cuis:
+        C2882106:
+          name: ST elevation (STEMI) myocardial infarction of other sites
+          relateds: C2882118 C2882108
+    I21.0:
+      category: '?'
+      cuis:
+        C2882090:
+          name: ST elevation (STEMI) myocardial infarction of anterior wall
+          relateds: C2882098 C2882091 C2882093
+Medicare:
+  is:
+    '433.01':
+      category: disconnected
+      cuis:
+        C0375274:
+          name: Occlusion and stenosis of basilar artery with cerebral infarction
+          relateds: C0265098
+    '433.31':
+      category: disconnected
+      cuis:
+        C0375280:
+          name: Occlusion and stenosis of multiple and bilateral precerebral arteries
+            with cerebral infarction
+          relateds: C0155725
+    '433.21':
+      category: disconnected
+      cuis:
+        C0375278:
+          name: Occlusion and stenosis of vertebral artery with cerebral infarction
+          relateds: C0155724
+    '433.11':
+      category: disconnected
+      cuis:
+        C0375276:
+          name: Occlusion and stenosis of carotid artery with cerebral infarction
+          relateds: C0600126
+    '433.81':
+      category: disconnected
+      cuis:
+        C0375282:
+          name: Occlusion and stenosis of other specified precerebral artery with
+            cerebral infarction
+          relateds: C0155726
+    '434.01':
+      category: disconnected
+      cuis:
+        C0375286:
+          name: Cerebral thrombosis with cerebral infarction
+          relateds: C0079102

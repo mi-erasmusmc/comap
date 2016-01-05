@@ -63,6 +63,33 @@ public class Icd10AnyCodingSystem implements ExtCodingSystem {
         }
         return res;
     }
+    
+    @Override
+    public List<String> getKnownCodes(List<String> codes) throws CodeMapperException {
+        String queryFmt = "SELECT DISTINCT `code` FROM `MRCONSO` WHERE `code` IN (%s) and SAB in (%s)";
+        Collection<String> sabs = getReferenceCodingSystems();
+        String query = String.format(queryFmt, Utils.sqlPlaceholders(codes.size()), Utils.sqlPlaceholders(sabs.size()));
+        System.out.println(query);
+        try (Connection connection = connectionPool.getConnection();
+                PreparedStatement statement = connection.prepareStatement(query)) {
+            System.out.println(statement);
+            int offset = 1;
+            for (Iterator<String> iter = codes.iterator(); iter.hasNext(); offset++)
+                statement.setString(offset, iter.next());
+            for (Iterator<String> iter = sabs.iterator(); iter.hasNext(); offset++)
+                statement.setString(offset, iter.next());
+            System.out.println(statement);
+            ResultSet result = statement.executeQuery();
+            List<String> knownCodes = new LinkedList<>();
+            while (result.next()) {
+                String code= result.getString(1);
+                knownCodes.add(code);
+            }
+            return knownCodes;
+        } catch (SQLException e) {
+            throw CodeMapperException.server("Cannot execute query for CUIs by codes", e);
+        }
+    }
 
     @Override
     public List<String> getCuisForCodes(List<String> codes) throws CodeMapperException {

@@ -74,6 +74,18 @@ public class CodeMapperResource {
             throw e.asWebApplicationException();
         }
 	}
+    
+    @POST
+    @Path("known-codes")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getKnownCodes(@FormParam("codes") List<String> codes, @FormParam("codingSystem") String codingSystem, @Context User user) {
+        AuthentificationResource.assertAuthentificated(user);
+        try {
+            return api.getKnownCodes(codes, codingSystem);
+        } catch (CodeMapperException e) {
+            throw e.asWebApplicationException();
+        }
+    }
 
 	@POST
 	@Path("umls-concepts")

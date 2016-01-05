@@ -56,6 +56,28 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 	public Collection<String> getReferenceCodingSystems() {
 		return Collections.singleton(REFERENCE_CODING_SYSTEM);
 	}
+	
+	@Override
+    public List<String> getKnownCodes(List<String> codes) throws CodeMapperException {
+	    String queryFormat = "SELECT DISTINCT `V2_CONCEPTID` FROM `RCD_V3_to_V2` "
+	            + "WHERE CAST(V2_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%s)";
+        String query = String.format(queryFormat, Utils.sqlPlaceholders(codes.size()));
+        try (Connection connection = umlsExtConnectionPool.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            int offset = 1;
+            for (Iterator<String> iter = codes.iterator(); iter.hasNext(); offset++)
+                statement.setString(offset, iter.next());
+            ResultSet result = statement.executeQuery();
+            List<String> knownCodes = new LinkedList<>();
+            while (result.next()) {
+                String code = result.getString(1);
+                knownCodes.add(code);
+            }
+            return knownCodes;
+        } catch (SQLException e) {
+            throw CodeMapperException.server("Cannot retrieve known codes", e);
+        }
+    }
 
 	@Override
 	public Map<String, Map<String, List<SourceConcept>>> mapCodes(Map<String, List<SourceConcept>> referenceCodes) throws CodeMapperException {

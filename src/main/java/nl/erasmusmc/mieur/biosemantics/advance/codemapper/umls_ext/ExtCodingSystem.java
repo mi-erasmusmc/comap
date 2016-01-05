@@ -33,4 +33,7 @@ public interface ExtCodingSystem {
 	/** Create a mapping from codes in the extended mapping to CUIs that correspond to the codes 
 	 * @throws CodeMapperException */
     public List<String> getCuisForCodes(List<String> codes) throws CodeMapperException;
+
+    /** Filter the given codes to codes known in the extended coding system. */
+    public List<String> getKnownCodes(List<String> codes) throws CodeMapperException;
 }

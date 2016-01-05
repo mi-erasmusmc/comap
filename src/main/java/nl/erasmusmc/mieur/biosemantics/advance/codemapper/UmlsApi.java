@@ -253,7 +253,7 @@ public class UmlsApi  {
 	            for (Iterator<String> iter = codes.iterator(); iter.hasNext(); offset++)
 	                statement.setString(offset, iter.next());
 	            statement.setString(offset++, codingSystem);
-	            System.out.println(statement);
+//	            System.out.println(statement);
 	            ResultSet result = statement.executeQuery();
 	            List<String> cuis = new LinkedList<>();
 	            while (result.next()) {
@@ -266,6 +266,37 @@ public class UmlsApi  {
             }
 	    }
     }
+	
+	public List<String> getKnownCodes(List<String> codes, String codingSystem) throws CodeMapperException {
+        if (codes == null || codes.isEmpty())
+            return new LinkedList<>();
+        if (extCodingSystems.containsKey(codingSystem)) {
+            ExtCodingSystem extCodingSystem = extCodingSystems.get(codingSystem);
+            return extCodingSystem.getKnownCodes(codes);
+        } else {
+            String queryFmt = "SELECT DISTINCT `code` FROM `MRCONSO` "
+                    + "WHERE `code` IN (%s) and SAB = ? /* here */";
+            String query = String.format(queryFmt, Utils.sqlPlaceholders(codes.size()));
+            try (Connection connection = connectionPool.getConnection();
+                    PreparedStatement statement = connection.prepareStatement(query)) {
+                System.out.println(statement);
+                int offset = 1;
+                for (Iterator<String> iter = codes.iterator(); iter.hasNext(); offset++)
+                    statement.setString(offset, iter.next());
+                statement.setString(offset++, codingSystem);
+                System.out.println(statement);
+                ResultSet result = statement.executeQuery();
+                List<String> knownCodes = new LinkedList<>();
+                while (result.next()) {
+                    String code= result.getString(1);
+                    knownCodes.add(code);
+                }
+                return knownCodes;
+            } catch (SQLException e) {
+                throw CodeMapperException.server("Cannot execute query for CUIs by codes", e);
+            }
+        }
+	}
 
     public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> codingSystems0)
 			throws CodeMapperException {

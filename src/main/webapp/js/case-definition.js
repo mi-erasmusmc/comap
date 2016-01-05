@@ -23,7 +23,9 @@ function normalize(text) {
         .replace(/[\u2265]/g, '>')
         .replace(/[\u2264]/g, '<')
         .replace(/[\u2264]/g, '<')
-        .replace(/[\u2022]/g, '*');
+        .replace(/[\u2022]/g, '*')
+        .replace(/[\u00e8\u00e9]/g, 'e')
+        .replace(/[\u00e0\u00e1]/g, 'e');
 }
 
 function CaseDefinitionCtrl($scope, $timeout, $http, $compile, urls, dataService, blockUI) {

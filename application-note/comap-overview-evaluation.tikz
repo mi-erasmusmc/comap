@@ -1,0 +1,67 @@
+% -*- mode: LaTeX -*-
+\usetikzlibrary{arrows,calc,shapes.geometric,shapes.arrows,positioning,fit,backgrounds}
+
+
+\begin{tikzpicture}[%
+    every node/.style={%
+      font=\sffamily,
+      align=center
+    },
+    every path/.style={%
+      font=\sffamily
+    },
+    insidearrow/.style={%
+      -latex,
+      very thick,
+      shorten <= 3pt,
+      shorten >= 3pt
+    },
+    insidenode/.style={%
+      draw=black!50,
+      fill=black!10,
+      rounded corners=0.1em,
+      text depth=0em
+    },%
+    outsidenode/.style={%
+      text=black!70,%
+      fill=none,draw=none
+    },
+    outsidearrow/.style={%
+      dashed,
+      color=black!70,thick,
+      -latex, very thick,
+      shorten <= 3pt,
+      shorten >= 3pt
+    },
+  ]
+
+  \node[insidenode] (concepts) {Concepts {\color{red}$m$}\\[-0.4em]\footnotesize (automatic!)};
+  \node[insidenode] (casedef) [left=5em of concepts] {Case definition \\[-0.4em] \footnotesize (free-text)};
+  \node[insidenode] (codes) [right=5em of concepts] {Codes\\[-0.4em] \footnotesize (per coding systems)}; % {\color{red}$_m$}
+
+  \path (casedef)
+    edge[insidearrow]
+    node[below] (indexing) {\small Indexing \\[-0.4em] \footnotesize (automatic)}
+    (concepts);
+  \path (concepts)
+    edge[insidearrow]
+    node[below] (mapping) {\small Projection \\[-0.4em] \footnotesize (automatic)}
+    (codes);
+  \draw[insidearrow] ($ (concepts.south) + (0.4,0) $)
+    .. controls +(-.05,-.6) and +(0.15,-.6) ..
+    node[below] (revision) {\small Revision}
+     ($ (concepts.south) + (-.4,0) $);
+
+
+  \begin{scope}
+  \node[insidenode] (refcodes) [below=6em of codes] {Codes\\[-0.4em] \footnotesize (per database)};
+  \draw[insidearrow] (casedef)
+	edge[out=270, in=180]
+        node[above] {\small Reference mapping \\[-0.4em] \footnotesize (manual)}
+        (refcodes.west);
+  \path (codes)
+    edge[insidearrow, double]
+    node[right] {\small Evaluation{\color{red}$_m$} \\[-0.4em] \footnotesize (Sensitivity, PPV)}
+    (refcodes);
+  \end{scope}
+\end{tikzpicture}

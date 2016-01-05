@@ -1,0 +1,29 @@
+\usetikzlibrary{positioning,fit,calc}
+
+\begin{tikzpicture}[
+    every node/.style={%
+      font=\sffamily,
+      align=center
+    },
+    every path/.style={%
+      font=\sffamily
+    }
+    ]
+
+  \colorlet{circle edge}{blue!50}
+  \colorlet{circle area}{blue!20}
+
+  \tikzset{
+    filled/.style={fill=circle area, thick,inner sep=0pt},
+    outline/.style={draw=circle edge, thick,inner sep=0pt}
+  }
+
+  \node (firstcircle) [circle, outline, text width=2cm] {};
+  \node (secondcircle) [circle, outline, text width=2cm, right=-0.9cm of firstcircle] {};
+
+  \node at (firstcircle.north west) [anchor=east] {Generated codes};
+  \node at (secondcircle.north east) [anchor=west] {Reference codes};
+  \node at ($(firstcircle)!0.5!(secondcircle)$) {TP};
+  \node at ([xshift=-0.3cm]firstcircle) {FP};
+  \node at ([xshift=0.3cm]secondcircle) {FP};
+\end{tikzpicture}

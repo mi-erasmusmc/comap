@@ -1,0 +1,59 @@
+% -*- mode: LaTeX -*-
+\usetikzlibrary{arrows,calc,shapes.geometric,shapes.arrows,positioning,fit,backgrounds}
+
+
+\begin{tikzpicture}[%
+    every node/.style={%
+      font=\sffamily,
+      align=center
+    },
+    every path/.style={%
+      font=\sffamily
+    },
+    insidearrow/.style={%
+      -latex,
+      very thick,
+      shorten <= 3pt,
+      shorten >= 3pt
+    },
+    insidenode/.style={%
+      draw=black!50,
+      fill=black!10,
+      rounded corners=0.1em,
+      text depth=0em
+    },%
+    outsidenode/.style={%
+      text=black!70,%
+      fill=none,draw=none
+    },
+    outsidelabel/.style={%
+      font=\scriptsize\sffamily,
+      text=black!70
+    },
+    outsidearrow/.style={%
+      dashed,
+      color=black!70,thick,
+      -latex, very thick,
+      shorten <= 3pt,
+      shorten >= 3pt
+    },
+  ]
+
+  \node[insidenode] (concepts) {Concepts};
+  \node[insidenode] (casedef) [left=5em of concepts] {Case definition \\[-0.4em] \scriptsize (free-text)};
+  \node[insidenode] (codes) [right=5em of concepts] {Codes\\[-0.4em] \scriptsize (per coding systems)};
+
+  \path (casedef)
+    edge[insidearrow]
+    node[below] (indexing) {\small 1. Indexing \\[-0.4em] \scriptsize (automatic)}
+    (concepts);
+  \path (concepts)
+    edge[insidearrow]
+    node[below] (mapping) {\small 3. Mapping \\[-0.4em] \scriptsize (automatic)}
+    (codes);
+  \draw[insidearrow] ($ (concepts.south) + (0.4,0) $)
+    .. controls +(-.05,-.6) and +(0.15,-.6) ..
+    node[below] (revision) {\small 2. Revision\\[-0.4em] \scriptsize (manual) \& \\[-0.2em] \small Logging}
+     ($ (concepts.south) + (-.4,0) $);
+
+\end{tikzpicture}

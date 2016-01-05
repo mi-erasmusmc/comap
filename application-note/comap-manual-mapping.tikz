@@ -1,0 +1,50 @@
+% -*- mode: LaTeX -*-
+\usetikzlibrary{arrows,calc,shapes.geometric,shapes.arrows,positioning,fit,backgrounds}
+
+
+\begin{tikzpicture}[%
+    every node/.style={%
+      font=\sffamily,
+      align=center
+    },
+    every path/.style={%
+      font=\sffamily
+    },
+    insidearrow/.style={%
+      -latex,
+      very thick,
+      shorten <= 3pt,
+      shorten >= 3pt
+    },
+    insidenode/.style={%
+      draw=black!50,
+      fill=black!10,
+      rounded corners=0.1em,
+      text depth=0em
+    },%
+    outsidenode/.style={%
+      text=black!70,%
+      fill=none,draw=none
+    },
+    outsidelabel/.style={%
+      font=\scriptsize\sffamily,
+      text=black!70
+    },
+    outsidearrow/.style={%
+      dashed,
+      color=black!70,thick,
+      -latex, very thick,
+      shorten <= 3pt,
+      shorten >= 3pt
+    },
+  ]
+
+	\node[insidenode] (casedef) {Case definition};
+	\foreach \voc in {ICD10, ICD9, READ, ICPC} {
+      \node[insidenode] (\voc) [right=3em of casedef] {\voc};
+	  \path (casedef) edge[insidearrow]
+        node[above] {\small manual}
+        (\voc);
+    }
+
+\end{tikzpicture}

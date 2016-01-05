@@ -1,5 +1,13 @@
 # -*- mode: sh -*-
 
-export PYTHONPATH=$PWD/lib
-export COMAP_PROJECT=safeguard
-redo-ifchange $COMAP_PROJECT.evaluations.xls $COMAP_PROJECT.evaluations.pdf
+export PYTHONPATH="$PWD/lib"
+export COMAP_PROJECT="safeguard"
+TARGET_VARIATION="3-RN-CHD-RB-PAR.expand"
+
+redo-ifchange \
+    codes-in-dbs.json \
+    $COMAP_PROJECT.types-distrs.json \
+    $COMAP_PROJECT.code-stats.csv \
+    $COMAP_PROJECT.$TARGET_VARIATION.error-analysis.yaml \
+    $COMAP_PROJECT.evaluations.csv \
+    $COMAP_PROJECT.evaluations.pdf

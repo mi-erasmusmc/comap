@@ -13,7 +13,9 @@ if redo.running():
     project_path = redo.path / 'projects' / project
     
     with redo.ifchange(project_path / 'config.yaml') as f:
-        databases = Databases.of_config(yaml.load(f))
+        config = yaml.load(f)
+        databases = Databases.of_config(config)
+        semantic_types = config['semantic-types']
     with redo.ifchange(project_path / 'events.yaml') as f:
         events = yaml.load(f)    
     with redo.ifchange('{}.{}.concepts.json'.format(project, event)) as f:
@@ -22,7 +24,7 @@ if redo.running():
         mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
         mapping = mappings.get(event)
         
-    variation = Variation(concepts, mapping)
+    variation = Variation(concepts.filter_by_semantic_types(semantic_types), mapping)
     
     with redo.output() as f:
         json.dump(variation.to_data(), f)

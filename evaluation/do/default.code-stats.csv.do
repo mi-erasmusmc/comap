@@ -6,9 +6,8 @@ from data import Databases, Mappings, Dnf, CodesInDbs
 
 def make_code_stats(dnfs, mappings, databases):
     data = []
-    for database in databases.databases():
-        coding_system = databases.coding_system(database)
-        mapping_codes = mappings.all_codes(database) or set()
+    for database, coding_system in databases:
+        mapping_codes = mappings.all_codes(database)
         dnf_codes = {
             code
             for dnf in dnfs.values()
@@ -21,7 +20,7 @@ def make_code_stats(dnfs, mappings, databases):
             in_db = codes_in_db.exists(code)
             row = [database, code, in_mapping, in_dnf, in_db]
             data.append(row)
-    columns = "Database Code InMapping InDnf InDatabase".split()
+    columns = ["Database", "Code", "InMapping", "InDnf", "InDatabase"]
     return pd.DataFrame(data, columns=columns)
 
 if redo.running():

@@ -8,7 +8,7 @@ from data import Databases
 
 logger = logging.getLogger(__name__)
 
-measures = 'recall,recall_in_umls,recall_without_exclusions,recall_without_exclusions_in_umlsprecision,precision_over_dnf'.split(',')
+measures = ['recall'] # recall_in_umls,recall_without_exclusions,recall_without_exclusions_in_umlsprecision,precision_over_dnf
 
 def average_and_format(df, variation_ids, events, databases):
     databases_with_coding_systems = {

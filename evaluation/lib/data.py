@@ -1,4 +1,5 @@
 from collections import defaultdict, OrderedDict
+import pandas as pd
 from normalize import get_normalizer
 
 class Concepts:
@@ -8,61 +9,84 @@ class Concepts:
 
     def to_data(self):
         return {
-            cui: self._by_cuis[cui].to_data()
+            cui: {
+                'codes': self._by_cuis[cui]['codes'].to_data(),
+                'types': list(self._by_cuis[cui]['types']),
+            }
             for cui in self._by_cuis
         }
 
     @classmethod
     def of_data(cls, data):
         return Concepts({
-            cui: CodesByCodingSystems.of_data(data[cui])
+            cui: {
+                'codes': CodesByCodingSystems.of_data(data[cui]['codes']),
+                'types': set(data[cui]['types']),
+            }
             for cui in data
         })
 
     @classmethod
-    def of_raw_data_and_normalize(cls, data, coding_systems, semantic_types=None):
+    def of_raw_data_and_normalize(cls, data, coding_systems):
         return Concepts({
-            concept['cui']: CodesByCodingSystems.of_raw_data(concept['sourceConcepts'])
+            concept['cui']: {
+                'codes': CodesByCodingSystems.of_raw_data(concept['sourceConcepts']),
+                'types': set(concept['semanticTypes']),
+            }
             for concept in data
-            if semantic_types is None or \
-                set(concept['semanticTypes']) & set(semantic_types)
         }).normalize(coding_systems)
 
     def filter_codes_in_dbs(self, codes_in_dbs):
         return Concepts({
-            cui: self._by_cuis[cui].filter_codes_in_dbs(codes_in_dbs)
-            for cui in self._by_cuis
+            cui: {
+                'codes': datum['codes'].filter_codes_in_dbs(codes_in_dbs),
+                'types': datum['types'],
+            } for cui, datum in self._by_cuis.items()
         })
 
-    def add(self, cui, for_cui):
+    def filter_by_semantic_types(self, semantic_types):
+        semantic_types = set(semantic_types)
+        return Concepts({
+            cui: datum
+            for cui, datum in self._by_cuis.items()
+            if semantic_types & datum['types']
+        })
+
+    def add(self, cui, codes, types):
         assert cui not in self._by_cuis
-        self._by_cuis[cui] = for_cui
+        self._by_cuis[cui] = {
+            'codes': codes,
+            'types': types,
+        }
 
     def cuis(self):
         return list(self._by_cuis.keys())
 
-    def cui(self, cui):
+    def codes_by_coding_systems(self, cui): # def cui (was only in_selected_sts)
         """ Returns a CodesByCodingSystems """
-        return self._by_cuis[cui]
+        return self._by_cuis[cui]['codes']
 
     def codes(self, coding_system):
         codes = set()
         for cui in self._by_cuis:
-            codes.update(self._by_cuis[cui].codes(coding_system))
+            codes.update(self._by_cuis[cui]['codes'].codes(coding_system))
         return codes
+
+    def types(self, cui):
+        return self._by_cuis[cui]['types']
 
     def normalize(self, coding_systems):
         result = Concepts()
         for cui in self.cuis():
+            datum = self._by_cuis[cui]
             codes_by_coding_system = CodesByCodingSystems()
             for coding_system in coding_systems:
                 normalizer = get_normalizer(coding_system)
-                codes = set(normalizer(self.cui(cui).codes(coding_system)))
+                codes = set(normalizer(datum['codes'].codes(coding_system)))
                 codes_by_coding_system.add(coding_system, codes)
-            result.add(cui, codes_by_coding_system)
+            result.add(cui, codes_by_coding_system, datum['types'])
         return result
-        
-            
+
 
 class CodesByCodingSystems:
 
@@ -187,7 +211,7 @@ class Mapping:
     def of_raw_data(cls, for_event, databases):
         def codes(for_database):
             if 'inclusion' in for_database:
-                return set(for_database['inclusion']) | set(for_database.get('exclusion') or [])
+                return set(for_database['inclusion'])
             else:
                 return None
         def exclusion_codes(for_database):
@@ -332,7 +356,7 @@ class Evaluation:
         ])
 
 class Variation:
-    
+
     def __init__(self, concepts, mapping):
         self.concepts = concepts
         self.mapping = mapping
@@ -362,6 +386,10 @@ class Databases:
 
     def databases(self):
         return self._databases
+
+    def __iter__(self):
+        for database in self._databases:
+            yield database, self.coding_system(database)
 
     def coding_system(self, database):
         return self._coding_systems[database]
@@ -534,32 +562,49 @@ class Dnf:
         }
 
 
-class ErrorAnalysis:
 
-    def __init__(self, error_analyses_fn):
-        self.error_analyses_fn = error_analyses_fn
+class ErrorAnalyses:
+
+    def __init__(self, error_analyses_fn, error_analyses_fp):
+        self.fn = error_analyses_fn
+        self.fp = error_analyses_fp
 
     def to_data(self):
         return {
-            database: {
-                event: None if error_analysis_fn is None else error_analysis_fn.to_data()
-                for event, error_analysis_fn in for_database.items()
-            }
-            for database, for_database in self.error_analyses_fn.items()
+            'fn': {
+                database: {
+                    event: None if ea is None else ea.to_data()
+                    for event, ea in for_database.items()
+                }
+                for database, for_database in self.fn.items()
+            },
+            'fp': {
+                database: {
+                    event: None if ea is None else ea.to_data()
+                    for event, ea in for_database.items()
+                }
+                for database, for_database in self.fp.items()
+            },
         }
 
     @classmethod
     def of_data(self, data):
         return ErrorAnalysis({
             database: {
-                event: None if error_analysis_fn is None else ErrorAnalysisFN.of_data(error_analysis_fn)
-                for event, error_analysis_fn in for_database.items()
+                event: None if ea is None else ErrorAnalysis.of_data(ea)
+                for event, ea in for_database.items()
             }
-            for database, for_database in data.items()
+            for database, for_database in data['fn'].items()
+        }, {
+            database: {
+                event: None if ea is None else ErrorAnalysis.of_data(ea)
+                for event, ea in for_database.items()
+            }
+            for database, for_database in data['fp'].items()
         })
 
 
-class ErrorAnalysisFN:
+class ErrorAnalysis:
 
     def __init__(self, code_categories, unassigned):
         self.code_categories = code_categories
@@ -575,5 +620,7 @@ class ErrorAnalysisFN:
 
     @classmethod
     def of_data(cls, data):
-        return ErrorAnalysisFN(data['code-categories'],
-                               data.get('unassigned', {}))
+        return ErrorAnalysis(data['code-categories'],
+                             data.get('unassigned', {}))
+
+

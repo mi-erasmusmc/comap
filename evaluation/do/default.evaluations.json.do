@@ -5,7 +5,7 @@ import json, yaml
 import redo
 from data import Databases, Variation, Evaluation, Evaluations, Mappings, ErrorAnalysis
 from utils import get_logger
-from comap import known_codes
+import comap
 
 logger = get_logger(__name__)
 
@@ -41,53 +41,57 @@ def evaluate(variations, databases, mappings):
     return evaluations
 
 
-def error_analysis(tp, fp, fn, coding_system, max_recall_codes, exclusion_codes):
+# def error_analysis(tp, fp, fn, coding_system, max_recall_codes, exclusion_codes):
 
-    generated = tp | fp
-    reference = tp | fn
+#     generated = tp | fp
+#     reference = tp | fn
 
-    # False negative codes that are not in UMLS
-    fn_not_in_umls = fn - known_codes(fn, coding_system)
+#     # False negative codes that are not in UMLS
+#     known_codes = comap.get_client().known_codes(fn, coding_system)
+#     fn_not_in_umls = fn - known_codes
 
-    # False negative codes that are exclusion codes
-    fn_exclusions = fn & exclusion_codes
+#     # False negative codes that are exclusion codes
+#     fn_exclusions = fn & exclusion_codes
 
-    # False negative codes that are in UMLS and inclusion codes
-    fn_inclusions_in_umls = fn - exclusion_codes - fn_not_in_umls
+#     # False negative codes that are in UMLS and inclusion codes
+#     fn_inclusions_in_umls = fn - exclusion_codes - fn_not_in_umls
     
-    # False positive codes that in the maximum recall
-    fp_in_dnf = fp & max_recall_codes
+#     # False positive codes that in the maximum recall
+#     fp_in_dnf = fp & max_recall_codes
 
-    # The recall over codes that are in UMLS/RCD2
-    reference_in_umls = reference - fn_not_in_umls
-    if reference_in_umls:
-        recall_in_umls = len(tp) / len(reference_in_umls)
-    else:
-        recall_in_umls = float('nan')
+#     # The recall over codes that are in UMLS/RCD2
+#     reference_in_umls = reference - fn_not_in_umls
+#     if reference_in_umls:
+#         recall_in_umls = len(tp) / len(reference_in_umls)
+#     else:
+#         recall_in_umls = float('nan')
 
-    # Recall over disregarding exclusion codes
-    reference_without_exclusions = reference - fn_exclusions
-    if reference_without_exclusions:
-        recall_without_exclusions = len(tp - exclusion_codes) / len(reference_without_exclusions)
-    else:
-        recall_without_exclusions = float('nan')
+#     # Recall over disregarding exclusion codes
+#     reference_without_exclusions = reference - fn_exclusions
+#     if reference_without_exclusions:
+#         recall_without_exclusions = len(tp - exclusion_codes) / len(reference_without_exclusions)
+#     else:
+#         recall_without_exclusions = float('nan')
 
-    # Recall disregarding exclusion codes and only UMLS/RCD2
-    reference_inclusions_in_umls = reference - fn_not_in_umls - fn_exclusions
-    if reference_inclusions_in_umls:
-        recall_without_exclusions_in_umls = len(tp - exclusion_codes) / len(reference_inclusions_in_umls)
-    else:
-        recall_without_exclusions_in_umls = float('nan')
+#     # Recall disregarding exclusion codes and only UMLS/RCD2
+#     reference_inclusions_in_umls = reference - fn_not_in_umls - fn_exclusions
+#     if reference_inclusions_in_umls:
+#         recall_without_exclusions_in_umls = len(tp - exclusion_codes) / len(reference_inclusions_in_umls)
+#     else:
+#         recall_without_exclusions_in_umls = float('nan')
 
-    # Precision over DNF
-    if generated:
-        precision_over_dnf = len(generated & max_recall_codes) / len(generated)
-    else:
-        precision_over_dnf = float('nan')
+#     # Precision over DNF
+#     if generated:
+#         precision_over_dnf = len(generated & max_recall_codes) / len(generated)
+#     else:
+#         precision_over_dnf = float('nan')
     
-    return ErrorAnalysis(fp_in_dnf, fn_not_in_umls, fn_exclusions, fn_inclusions_in_umls, reference_inclusions_in_umls,
-                         recall_in_umls, recall_without_exclusions, recall_without_exclusions_in_umls,
-                         precision_over_dnf)
+#     return ErrorAnalysis(fp_in_dnf, fn_not_in_umls, fn_exclusions,
+#                          fn_inclusions_in_umls,
+#                          reference_inclusions_in_umls, recall_in_umls,
+#                          recall_without_exclusions,
+#                          recall_without_exclusions_in_umls,
+#                          precision_over_dnf)
 
 if redo.running():
     

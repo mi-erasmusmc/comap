@@ -73,6 +73,32 @@ class ComapClient(object):
         else:
             raise Exception("Couldn't retrieve umls concepts")
 
+    def cuis_for_codes(self, codes, coding_system):
+        logger.info('Get CUIs for codes (%d)', len(codes))
+        url = COMAP_API_URL + '/code-mapper/cuis-for-codes'
+        data = {
+            'codes': codes,
+            'codingSystem': coding_system,
+        }
+        r = requests.post(url, data=data, cookies=self.cookies)
+        if r.ok:
+            return r.json()
+        else:
+            raise Exception("Couldn't retrieve CUIs for codes")
+
+    def known_codes(self, codes, coding_system):
+        logger.info('Get known codes (%d)', len(codes))
+        url = COMAP_API_URL + '/code-mapper/known-codes'
+        data = {
+            'codes': codes,
+            'codingSystem': coding_system,
+        }
+        r = requests.post(url, data=data, cookies=self.cookies)
+        if r.ok:
+            return r.json()
+        else:
+            raise Exception("Couldn't retrieve known codes")        
+
     def hyponyms(self, cuis, coding_systems):
         logger.info('Get UMLS hyponyms for %d CUIs', len(cuis))
         url = COMAP_API_URL + '/code-mapper/related/hyponyms'
@@ -158,38 +184,6 @@ def translation_read_3to2(codes):
                 translation[code3].add(code2)
     return translation
 
-
-def known_codes(codes, coding_system):
-    "Returns a subset of `codes` where every code can be found in UMLS/RCD2."
-    
-    if not codes:
-        return set()
-
-    original_coding_system = coding_system
-    if coding_system == 'RCD2':
-        original_codes = codes
-        t = translation_read_2to3(codes)
-        codes = { code3 for codes3 in t.values() for code3 in codes3 }
-        coding_system = 'RCD'
-
-    query = """
-    select distinct code
-    from MRCONSO
-    where sab = %s
-    and BINARY code in %s
-    """ # BINARY for case-sensitive in-clause
-    with get_umls_db().cursor() as cursor:
-        cursor.execute(query, [coding_system, codes])
-        res = { code for code, in cursor.fetchall() }
-
-    if original_coding_system == 'RCD2':
-        res = {
-            code2 for code2 in original_codes
-            if any(code3 in res for code3 in t[code2]
-                   for _ in [print(code2, code3, code2 in original_codes, code3 in res, res)])
-        }
-        
-    return res
 
 def code_names(codes, coding_system):
     if not codes:

@@ -4,10 +4,10 @@ coding-systems:
   Lombardy: ICD9CM
   IPCI: ICPC2EENG
   CPRD: RCD2
-  GePaRD: ICD10CM
+  GePaRD: ICD10/CM
   BIFAB: ICPC2EENG
   Medicare: ICD9CM
-  unknown: ICD10CM
+  unknown: ICD10/CM
   Puglia: ICD9CM
   PHARMO: ICD9CM
 semantic-types: [T020, T190, T049, T019, T047, T050, T037, T048, T191,

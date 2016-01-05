@@ -3,7 +3,5 @@
 .ipynb_checkpoints
 __pycache__
 do/.comap-cookies
-*.evaluations.csv
-*.evaluations.xls
-*.code-stats.csv
+safeguard.*
 .comap-cookies

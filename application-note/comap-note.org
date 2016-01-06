@@ -1,10 +1,23 @@
 #+TITLE: CodeMapper: Semi-automatic coding of case definitions  
 #+AUTHOR: BB, EM, MS, JO
 #+EMAIL: b.becker@erasmusmc.nl
-#+LANGUAGE:  en
+#+NAME: template
+#+BEGIN_SRC emacs-lisp :exports none
+  (setq org-latex-classes
+        (let ((template (with-temp-buffer
+                          (insert-file-contents "template.tex")
+                          (buffer-string)))
+              (sections '(("\\section{%s}" . "\\section*{%s}")
+                          ("\\subsection{%s}" . "\\subsection*{%s}")
+                          ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                          ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                          ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+          (list (append (list "herey" template) sections))))
+#+END_SRC
+#+CALL: template() :exports none
+#+LANGUAGE: en
 #+OPTIONS: toc:nil H:5
-#+LATEX_CLASS: koma-article
-#+LATEX_HEADER: \input{mystyle.tex}
+#+LATEX_CLASS: herey
 # #+LATEX_CLASS_OPTIONS: [a4paper,14pt,DIV=40]
 # #+LATEX_HEADER: \addtokomafont{section}{\clearpage}
 #+LATEX_HEADER: \doublespacing
@@ -352,7 +365,8 @@ The application was developed in the ADVANCE project.
 
 #+BIBLIOGRAPHY: references alpha
 
-\clearpage
+#+LATEX: \appendix
+#+LATEX: \clearpage
 * Appendix
 :PROPERTIES:
 :UNNUMBERED: t

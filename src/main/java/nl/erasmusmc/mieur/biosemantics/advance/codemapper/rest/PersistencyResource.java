@@ -19,18 +19,19 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.Comment;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.ProjectPermission;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.User;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.persistency.PersistencyApi;
 
-import org.apache.log4j.Logger;
-
 @Path("persistency")
 public class PersistencyResource {
-
-	private static Logger logger = Logger.getLogger("CodeMapperWebService");
+    
+    private static Logger logger = LogManager.getLogger(PersistencyResource.class);
 
 	private @Context SecurityContext sc;
 

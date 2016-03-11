@@ -15,16 +15,18 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodingSystem;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.SourceConcept;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.Utils;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.authentification.AuthentificationApi;
 
 public class Icd10AnyCodingSystem implements ExtCodingSystem {
-    
-    private static Logger logger = Logger.getLogger(Icd10AnyCodingSystem.class);
+
+    private static Logger logger = LogManager.getLogger(Icd10AnyCodingSystem.class);
 
     public final String ABBREVIATION = "ICD10/CM";
     public final String NAME = "Combination of ICD10CM and ICD10";

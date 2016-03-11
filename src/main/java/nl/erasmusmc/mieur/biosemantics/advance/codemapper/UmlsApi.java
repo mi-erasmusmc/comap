@@ -17,9 +17,10 @@ import java.util.TreeSet;
 
 import javax.sql.DataSource;
 
-import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext.ExtCodingSystem;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import org.apache.log4j.Logger;
+import nl.erasmusmc.mieur.biosemantics.advance.codemapper.umls_ext.ExtCodingSystem;
 
 /**
  * Database based implementation of the UMLS API used for the code mapper.
@@ -33,10 +34,11 @@ import org.apache.log4j.Logger;
  */
 public class UmlsApi  {
 
+    private static Logger logger = LogManager.getLogger(UmlsApi.class);
+
     private DataSource connectionPool;
 	private List<String> codingSystemsWithDefinition;
 	private List<String> availableCodingSystems;
-	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
 
 	public UmlsApi(DataSource connectionPool, List<String> availableCodingSystems, List<String> codingSystemsWithDefinition) {
 	    this.connectionPool = connectionPool;

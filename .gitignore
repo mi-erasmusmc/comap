@@ -7,3 +7,6 @@ evaluation-ng
 *.bak
 WebContent
 .ipynb_checkpoints
+/.classpath
+/.project
+/.settings

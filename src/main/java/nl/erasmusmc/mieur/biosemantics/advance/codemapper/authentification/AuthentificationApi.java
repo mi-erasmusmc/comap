@@ -14,8 +14,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.CodeMapperException;
 import nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest.CodeMapperApplication;
@@ -26,10 +26,8 @@ public class AuthentificationApi {
 
     private DataSource connectionPool;
 
-	private static Logger logger = Logger.getLogger("AuthentificationApi");
-	static {
-		logger.setLevel(Level.ALL);
-	}
+	private static Logger logger = LogManager.getLogger(AuthentificationApi.class);
+	
 
 	public AuthentificationApi(DataSource connectionPool) {
         this.connectionPool = connectionPool;

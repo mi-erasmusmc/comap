@@ -13,9 +13,10 @@ import java.util.Map;
 
 import javax.ws.rs.WebApplicationException;
 
-import org.apache.log4j.Logger;
 import org.apache.poi.ss.usermodel.Hyperlink;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFFont;
@@ -31,7 +32,7 @@ import nl.erasmusmc.mieur.biosemantics.advance.codemapper.rest.CodeMapperApplica
 
 public class DownloadApi {
 	
-	private static Logger logger = Logger.getLogger("DownloadApi");
+    private static Logger logger = LogManager.getLogger(DownloadApi.class);
 	
 	public JSONObject getCaseDefinition(String project, String caseDefinition) throws CodeMapperException {
 

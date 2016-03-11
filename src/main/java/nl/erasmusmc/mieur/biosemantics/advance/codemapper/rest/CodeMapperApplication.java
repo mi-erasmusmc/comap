@@ -12,7 +12,8 @@ import javax.sql.DataSource;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Context;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 
@@ -32,7 +33,7 @@ public class CodeMapperApplication extends ResourceConfig {
 
 	private static final String CODE_MAPPER_PROPERTIES = "/code-mapper.properties";
 	
-	private static Logger log = Logger.getLogger(CodeMapperApplication.class);
+    private static Logger logger = LogManager.getLogger(CodeMapperApplication.class);
 
 	private static String peregrineResourceUrl;
 	private static UmlsApi umlsApi;
@@ -40,13 +41,11 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static AuthentificationApi authentificationApi;
 	private static DownloadApi downloadApi;
 
-	private static Logger logger = Logger.getLogger("AdvanceCodeMapper");
-	
 	private DataSource getConnectionPool(String prefix, Properties properties) throws SQLException {
-        String uri = properties.getProperty(prefix + "uri");
-        String username = properties.getProperty(prefix + "username");
-        String password = properties.getProperty(prefix + "password");
-        log.info("Get connection pool " + prefix);
+        String uri = properties.getProperty(prefix + "-uri");
+        String username = properties.getProperty(prefix + "-username");
+        String password = properties.getProperty(prefix + "-password");
+        logger.info("Get connection pool " + prefix);
         return DataSources.unpooledDataSource(uri, username, password);
 	}
 
@@ -79,14 +78,14 @@ public class CodeMapperApplication extends ResourceConfig {
 
 			peregrineResourceUrl = properties.getProperty("peregrine-resource-url");
 
-			DataSource umlsConnectionPool = getConnectionPool("umls-db-", properties);
+			DataSource umlsConnectionPool = getConnectionPool("umls-db", properties);
 			umlsApi = new UmlsApi(umlsConnectionPool, availableCodingSystems, codingSystemsWithDefinition);
 
-            DataSource umlsExtConnectionPool = getConnectionPool("umls-ext-db-", properties);
+            DataSource umlsExtConnectionPool = getConnectionPool("umls-ext-db", properties);
             umlsApi.registerCodingSystemsExtension(new Rcd2CodingSystem(umlsExtConnectionPool));
             umlsApi.registerCodingSystemsExtension(new Icd10AnyCodingSystem(umlsConnectionPool));
 
-            DataSource codeMapperConnectionPool = getConnectionPool("code-mapper-db-", properties);
+            DataSource codeMapperConnectionPool = getConnectionPool("code-mapper-db", properties);
             persistencyApi = new PersistencyApi(codeMapperConnectionPool);
             authentificationApi = new AuthentificationApi(codeMapperConnectionPool);
             downloadApi = new DownloadApi();

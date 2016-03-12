@@ -161,7 +161,7 @@ ul.comma-separated li:before {
 	content: ", ";
 }
 ul.bullet-separated li:before {
-    content: " • ";
+    content: " \002022  ";
 }
 ul.comma-separated li:first-child:before, ul.bullet-separated li:first-child:before {
   content: "";

@@ -21,7 +21,7 @@
     <script type="text/javascript" src="lib/ng-grid-flexible-height.js"></script>
     <script type="text/javascript" src="lib/angular-block-ui.min.js"></script>
     
-    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link type="text/css" rel="stylesheet" href="style.css" />
     <script type="text/javascript" src="js/utils.js"></script>
     <script type="text/javascript" src="js/state.js"></script>
     <script type="text/javascript" src="js/services.js"></script>

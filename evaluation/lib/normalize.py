@@ -14,16 +14,18 @@ def normalize_drop_suffix_dot(code):
         return code
 
 def normalize_3letters(code):
+    "Clip code to three letters/digits maximum"
     return code[:3]
 
 # Letter Digit Digit
-CODE_LLD_RE = re.compile(r'(?P<parent>[A-Za-z]\d{2})\.(?P<detail>\d)')
+CODE_LDD_RE = re.compile(r'(?P<parent>[A-Za-z]\d{2})\.(?P<detail>\d)')
 # Digit Digit Digit
 CODE_DDD_RE = re.compile(r'(?P<parent>\d{3})\.(\d)')
 
 def normalize_xdd_code(code):
+    "Cut decimals keeping only LDD and DDD, e.g., X123.4 => X123"
     code = code.upper()
-    m1 = re.match(CODE_LLD_RE, code)
+    m1 = re.match(CODE_LDD_RE, code)
     try:
         return m1.group('parent')
     except:
@@ -34,6 +36,7 @@ def normalize_xdd_code(code):
             return code
 
 def format_icd(code):
+    "Insert dot in code at position 3 if necessary, e.g. C1234 => C123.4"
     if len(code) > 3 and code[3] != '.':
         return code[:3] + '.' + code[3:]
     else:

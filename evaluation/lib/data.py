@@ -152,6 +152,12 @@ class Mappings:
             for event in events
         }).normalize(databases)
 
+    def describe(self):
+        return pd.DataFrame({
+            event: self._by_events[event].describe()
+            for event in self._by_events.keys()
+        })
+
     def add(self, event, mapping):
         assert event not in self._by_events
         self._by_events[event] = mapping
@@ -206,6 +212,12 @@ class Mapping:
             key: list(codes) if codes else None
             for key, codes in self._mapping.items()
         }
+
+    def describe(self):
+        return pd.Series({
+            key: None if codes is None else len(codes)
+            for key, codes in self._mapping.items()
+        })
 
     @classmethod
     def of_raw_data(cls, for_event, databases):

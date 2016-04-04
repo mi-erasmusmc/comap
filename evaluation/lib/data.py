@@ -152,9 +152,9 @@ class Mappings:
             for event in events
         }).normalize(databases)
 
-    def describe(self):
+    def describe(self, exclusions=False, with_exclusions=False):
         return pd.DataFrame({
-            event: self._by_events[event].describe()
+            event: self._by_events[event].describe(exclusions, with_exclusions)
             for event in self._by_events.keys()
         })
 
@@ -213,11 +213,21 @@ class Mapping:
             for key, codes in self._mapping.items()
         }
 
-    def describe(self):
-        return pd.Series({
+    def describe(self, exclusions=False, with_exclusions=False):
+        res_m = pd.Series({
             key: None if codes is None else len(codes)
             for key, codes in self._mapping.items()
         })
+        res_e = pd.Series({
+            key: None if codes is None else len(codes)
+            for key, codes in self._exclusion_mapping.items()
+        })
+        if exclusions:
+            return res_e
+        elif with_exclusions:
+            return res_m + res_e
+        else:
+            return res_m
 
     @classmethod
     def of_raw_data(cls, for_event, databases):
@@ -573,6 +583,47 @@ class Dnf:
             if code in self._disjunction[cuis].get(coding_system, [])
         }
 
+# class ErrorAnalysis:
+
+#     keys = 'fp_in_dnf,fn_not_in_umls,fn_exclusions,fn_inclusions_in_umls,reference_inclusions_in_umls,'\
+#            'recall_in_umls,recall_without_exclusions,recall_without_exclusions_in_umls,'\
+#            'precision_over_dnf'.split(',')
+
+#     def __init__(self, fp_in_dnf, fn_not_in_umls, fn_exclusions, fn_inclusions_in_umls, reference_inclusions_in_umls,
+#                  recall_in_umls, recall_without_exclusions, recall_without_exclusions_in_umls,
+#                  precision_over_dnf):
+#         self.fp_in_dnf = fp_in_dnf
+#         self.fn_not_in_umls = fn_not_in_umls
+#         self.fn_exclusions = fn_exclusions
+#         self.fn_inclusions_in_umls = fn_inclusions_in_umls
+#         self.reference_inclusions_in_umls = reference_inclusions_in_umls
+#         self.recall_in_umls = recall_in_umls
+#         self.recall_without_exclusions = recall_without_exclusions
+#         self.recall_without_exclusions_in_umls = recall_without_exclusions_in_umls
+#         self.precision_over_dnf = precision_over_dnf
+
+#     @classmethod
+#     def of_data(cls, data):
+#         def for_value(key, value):
+#             if type(value) == list:
+#                 return set(value)
+#             if type(value) == float:
+#                 return value
+#         return ErrorAnalysis(**{
+#             key: for_value(key, value)
+#             for key, value in data.items()
+#         })
+
+#     def to_data(self):
+#         def for_value(key, value):
+#             if type(value) == set:
+#                 return list(value)
+#             if type(value) == float:
+#                 return value    
+#         return OrderedDict([
+#             (key, for_value(key, self.__dict__[key]))
+#             for key in ErrorAnalysis.keys
+#         ])
 
 
 class ErrorAnalyses:

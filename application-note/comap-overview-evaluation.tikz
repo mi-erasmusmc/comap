@@ -35,7 +35,7 @@
     },
   ]
 
-  \node[insidenode] (concepts) {Concepts {\color{red}$m$}\\[-0.4em]\footnotesize (automatic!)};
+  \node[insidenode] (concepts) {Concepts {\color{red}$v$}\\[-0.4em]\footnotesize (automatic)};
   \node[insidenode] (casedef) [left=5em of concepts] {Case definition \\[-0.4em] \footnotesize (free-text)};
   \node[insidenode] (codes) [right=5em of concepts] {Codes\\[-0.4em] \footnotesize (per coding systems)}; % {\color{red}$_m$}
 
@@ -54,14 +54,15 @@
 
 
   \begin{scope}
-  \node[insidenode] (refcodes) [below=6em of codes] {Codes\\[-0.4em] \footnotesize (per database)};
+  \node[insidenode] (refcodes) [below=4em of codes] {Codes\\[-0.4em] \footnotesize (per database)};
   \draw[insidearrow] (casedef)
-	edge[out=270, in=180]
-        node[above] {\small Reference mapping \\[-0.4em] \footnotesize (manual)}
+%   .. controls +(down:4em) .. +(down:4em)
+        edge[out=310, in=180]
+        node[pos=0.305, left=1.7em] {\small Reference mapping \\[-0.4em] \footnotesize (manual)}
         (refcodes.west);
   \path (codes)
-    edge[insidearrow, double]
-    node[right] {\small Evaluation{\color{red}$_m$} \\[-0.4em] \footnotesize (Sensitivity, PPV)}
+    edge[insidearrow, latex-latex, double]
+    node[right] {\small Evaluation {\color{red}$v$} \\[-0.4em] \footnotesize (Sensitivity, PPV)}
     (refcodes);
   \end{scope}
 \end{tikzpicture}

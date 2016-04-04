@@ -36,14 +36,14 @@
       <div ng-if="state.mapping" class="concepts-controls row">
        
        <div class="filters col-md-2">
-         <label>{{state.mapping.concepts.length}} concept<span ng-if="state.mapping.concepts.length != 1">s</span></label>
+         <label>{{state.mapping.concepts.length}} concept<span ng-if="state.mapping.concepts.length != 1">s</span> in mapping</label>
          <i class="glyphicon glyphicon-filter"></i>
          <input title="Filter displayed concepts" placeholder="Filter" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
        </div>
         
         <div class="modify-concepts col-md-4" ng-if="userCanEdit()">
           <label>
-            Modify selected<!--{{selectedConcepts.length}} selected concept<span ng-if="selectedConcepts.length != 1">s</span>-->
+            Modify selected concept<!-- <span ng-if="selectedConcepts.length != 1">s</span>{{selectedConcepts.length}}-->
           </label>
           <button class='btn btn-xs btn-default' ng-click='operationDeleteConcepts(selectedConcepts)' confirm-click="Delete selected concepts?" ng-disabled="selectedConcepts.length == 0" title='Delete concepts'> 
             <i class='glyphicon glyphicon-remove-circle'></i>
@@ -53,11 +53,11 @@
           <div class='btn-group'> 
               <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more general concepts'> 
                 <i class='glyphicon glyphicon-chevron-up'></i>
-                More general
+                Broader
               </button> 
               <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more specific concepts'> 
                 <i class='glyphicon glyphicon-chevron-down'></i>
-                More specific
+                Narrower
               </button> 
           </div>
           
@@ -84,7 +84,7 @@
         </div>
         
         <div class="on-case-definition col-md-3" ng-if="userCanEdit()">
-          <label>Mapping</label>
+          <label>Operate on mapping</label>
           <button title="Add or remove coding systems" ng-click="changeCodingSystems()" class="btn btn-xs btn-default">
               <i class="glyphicon glyphicon-asterisk"></i>
               Coding systems

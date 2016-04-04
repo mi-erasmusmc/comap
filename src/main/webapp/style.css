@@ -167,6 +167,20 @@ ul.comma-separated li:first-child:before, ul.bullet-separated li:first-child:bef
   content: "";
 }
 
+ul.tags {
+  padding: 0;
+}
+ul.tags li {
+  display: inline;
+}
+ul.tags li::before {
+  content: "";
+}
+span.tag {
+  background-color: #aae097;
+  border: 1px solid #53bf3f;
+  border-radius: 3px;
+}
 .username {
 	font-style: italic;
 }

@@ -1,7 +1,7 @@
 # A JSON schema for mapping states in CodeMapper
 # CodeMapper: https://euadr.erasmusmc.nl/CoMap
 # JSON schema: http://json-schema.org/
-# (C) Erasmus MC, Benedikt Becker, 2015
+# (C) Erasmus MC, Benedikt Becker, 2015-2016
 id: http://euadr.erasmusmc.nl/CoMap/state.json
 $schema: http://json-schema.org/schema#
 $ref: '#/definitions/state'
@@ -176,6 +176,9 @@ definitions:
       definition: {$ref: '#/definitions/optional_string'}
       comments:
         items: {ref: '#/definitions/comment'}
+        type: array
+      tags:
+        items: string
         type: array
       origin:
         # TODO simplify

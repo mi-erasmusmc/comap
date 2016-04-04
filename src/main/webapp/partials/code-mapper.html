@@ -66,10 +66,15 @@
             <i class='glyphicon glyphicon-edit'></i>
             Codes
           </button>
+          
+          <button class="btn btn-xs btn-default" ng-click="operationEditTags(selectedConcepts, state.mapping.concepts)" ng-disabled="selectedConcepts.length == 0" title="Add or remove tags for selected concepts">
+            <i class='glyphicon glyphicon-tag'></i>
+            Tags
+          </button>
         </div>
         
         <div class="add-concepts col-md-3" ng-if="userCanEdit()">
-          <label>Search and add</label>
+          <label>Search and add concept</label>
           <input type="text" ng-model="searchQuery" 
             placeholder="Query" title="Search and add new concepts"
             typeahead="c.preferredName for c in autocompleteConcepts($viewValue)"

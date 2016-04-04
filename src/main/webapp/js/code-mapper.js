@@ -73,6 +73,39 @@ function upgradeState(state) {
     return state;
 }
 
+function hasAnyTags(concepts) {
+    var res = concepts && concepts.some(function(concept) {
+        return concept.tags && concept.tags.length > 0;
+    });
+    console.log("anyTags", concepts, res);
+    return res;
+};
+
+function everyTags(concepts) {
+    var res = [];
+    if (concepts) {
+        res = concepts[0].tags;
+        concepts.forEach(function(concept) {
+            if (res) {
+                res = res.filter(function(t) {
+                    return concept.tags.indexOf(t) != -1;
+                });
+            } else {
+                res = [];
+            }
+        });
+    }
+    return res;
+}
+
+function anyTags(concepts) {
+    return [].concat.apply([], concepts.map(function(concept) {
+       return concept.tags || []; 
+    })).filter(function(v, ix, arr) {
+        return ix == arr.indexOf(v);
+    });
+}
+
 function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $interval, $q, $log, $routeParams, $location, config, urls, dataService, user) {
     
     $scope.user = user;
@@ -172,7 +205,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     
     /* CONCEPTS */
     
-    $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], true);
+    $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], true, false);
     $scope.conceptsGridOptions = {
         data: "state.mapping.concepts",
         rowHeight: 70,
@@ -376,7 +409,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 console.log("Loaded", state);
                 $scope.state = upgradeState(state);
                 $scope.$broadcast("indexingUpdated", state.indexing);
-                $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true);
+                $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, hasAnyTags($scope.state.mapping.concepts));
                 $scope.activateTab("concepts-tab");
                 if (angular.isArray(roles) && roles.indexOf('Commentator') != -1) {
                     $scope.setMessage("Click the speech baloon in the column on the right to view or add comments for a concept.");
@@ -385,7 +418,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             })
         ['finally'](function() {
             $scope.numberUnsafedChanges = 0;
-            $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true);
+            $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, hasAnyTags($scope.state.mapping.concepts));
         });
     };
     
@@ -459,7 +492,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             }
                             return patchConcept(concept, newCodingSystems);
                         });
-                        $scope.conceptsColumnDefs = createConceptsColumnDefs(false, newCodingSystems, true);
+                        $scope.conceptsColumnDefs = createConceptsColumnDefs(false, newCodingSystems, true, hasAnyTags($scope.state.mapping.concepts));
                         var argAdded = addCodingSystems.map(function(voc) { return "+"+voc; }).join(", ");
                         var argRemoved = removeCodingSystems.map(function(voc) { return "-"+voc; }).join(", "); 
                         var arg =  argAdded + (argAdded && argRemoved ? ", " : "") + argRemoved;
@@ -479,7 +512,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             concepts: null,
             history: []
         };
-        $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true);
+        $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, false);
         var concepts = $scope.state.indexing.concepts
             .filter(function(concept) {
                 return $scope.state.cuiAssignment[concept.cui] != ASSIGNMENT_EXCLUDE; 
@@ -632,7 +665,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         $scope.$apply(function() {
             $scope.intervalUpdateComments(false);
             $scope.state.mapping = null;
-            $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], false);
+            $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], false, false);
         });
     };
     
@@ -726,6 +759,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 selectConceptsInDialog($modal, relatedConcepts, title, true, null, $scope.state.codingSystems)
                     .then(function(selectedRelatedConcepts) {
                         
+                        // Inherit tags
+                        var tags = everyTags(concepts);
+                        selectedRelatedConcepts.forEach(function(concept) {
+                            concept.tags = tags;
+                        });
+                        
                         // Search position of original inital concepts
                         var conceptOffsets = {};
                         cuis.forEach(function(cui) {
@@ -752,6 +791,25 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             })
             ['finally'](function() {
                 blockUI.stop();
+            });
+    };
+    
+    $scope.operationEditTags = function(concepts, allConcepts) {
+        editTags($modal, concepts, allConcepts)
+            .then(function(newTags) {
+                console.log("Set tags", concepts, newTags);
+                concepts.forEach(function(concept) {
+                    concept.tags = newTags;
+                });
+                var tagsString = "";
+                newTags.forEach(function(t) {
+                    if (tagsString != "") {
+                        tagsString += ", ";
+                    }
+                    tagsString += t;
+                })
+                $scope.historyStep("Set tags", concepts.map(reduceConcept), tagsString);
+                $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, hasAnyTags($scope.state.mapping.concepts));
             });
     };
     
@@ -968,7 +1026,7 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
         filterOptions: { filterText: '' },
         enableRowSelection: $scope.selectable,
         showSelectionCheckbox: $scope.selectable,
-        columnDefs: createConceptsColumnDefs(false, codingSystems, false)
+        columnDefs: createConceptsColumnDefs(false, codingSystems, false, false)
     };
     
     $scope.ok = function () {
@@ -996,6 +1054,70 @@ function selectConceptsInDialog($modal, concepts, title, selectable, message, co
     });
     return dialog.result;
 };
+
+function EditTagsCtrl($scope, $modalInstance, concepts, tags, allTags) {
+    
+    $scope.concepts = concepts;
+    
+    $scope.tags = tags;
+    
+    $scope.offTags = allTags.filter(function(tag) {
+        return $scope.tags.indexOf(tag) == -1;
+    })
+    $scope.offTags.sort();
+    
+    console.log("Tags", $scope.tags, $scope.offTags);
+        
+    $scope.ok = function() {
+        $modalInstance.close($scope.tags);
+    };
+    $scope.cancel = function() {
+        $modalInstance.dismiss('cancel');
+    };
+    $scope.add = function(tag) {
+        $scope.newTag = "";
+        $scope.tags.push(tag)
+        $scope.tags.sort();
+        $scope.offTags = $scope.offTags.filter(function(tag0) {
+            return tag0 != tag;
+        });
+    };
+    $scope.remove = function(tag) {
+        $scope.tags = $scope.tags.filter(function(tag0) {
+            return tag0 != tag;
+        });
+        $scope.offTags.splice(0, 0, tag);
+        $scope.offTags.sort();
+    };
+    $scope.validNewTag = function(newTag) {
+        return newTag && newTag.length > 0 && $scope.tags.indexOf(newTag) == -1;
+    };
+}
+
+function editTags($modal, concepts, allConcepts) {
+
+    var tags = everyTags(concepts);
+    var allTags = anyTags(allConcepts);
+    
+    console.log("Modal edit tags", concepts, tags, allTags);
+    
+    return $modal.open({
+        templateUrl: 'partials/EditTags.html',
+        controller: 'EditTagsCtrl',
+        size: 'lg',
+        resolve: {
+            concepts: function() {
+                return concepts;
+            },
+            tags: function() {
+                return tags;
+            },
+            allTags: function() {
+                return allTags;
+            }
+        }
+    }).result;
+}
 
 function EditCodesCtrl($scope, $modalInstance, $timeout, concepts, codes) {
     $scope.concepts = concepts;
@@ -1031,6 +1153,7 @@ function EditCodesCtrl($scope, $modalInstance, $timeout, concepts, codes) {
         $modalInstance.dismiss('cancel');
     };
 }
+
 
 function editCodes($modal, concepts, codingSystems) {
     var dialog = $modal.open({
@@ -1147,13 +1270,13 @@ function ShowCommentsCtrl($scope, $http, $modalInstance, concept, canEnterNewCom
 
 function showComments($modal, concept, canEnterNewComment) {
     var dialog = $modal.open({
-	templateUrl: 'partials/ShowComments.html',
-	controller: 'ShowCommentsCtrl',
-	size: 'lg',
-	resolve: {
-	    concept: function() { return concept; },
-	    canEnterNewComment: function() { return canEnterNewComment; }
-	}
+        templateUrl: 'partials/ShowComments.html',
+        controller: 'ShowCommentsCtrl',
+        size: 'lg',
+        resolve: {
+            concept: function() { return concept; },
+            canEnterNewComment: function() { return canEnterNewComment; }
+        }
     });
     return dialog.result;
 }
@@ -1176,9 +1299,14 @@ var originColumnDef = {
     }
 };
 
+var tagsColumnDef = {
+    displayName: 'Tags',
+    field: 'tags',
+    cellTemplate: 'partials/tagsColumn.html'
+};
 
 /** Generate column definitions */
-function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
+function createConceptsColumnDefs(showOrigin, codingSystems, showComments, showTags) {
 
     var name = 
             { displayName: "Concept", field: 'preferredName', cellClass: 'cellToolTip', cellTemplate: "partials/nameCell.html"};
@@ -1219,6 +1347,7 @@ function createConceptsColumnDefs(showOrigin, codingSystems, showComments) {
     return [].concat(
         [name],
         showOrigin ? [originColumnDef] : [],
+        showTags ? [tagsColumnDef] : [],
         SHOW_UMLS_COLUMN ? [cui] : [],
         codingSystemsColumnDefs,
         showComments ? [comments] : []);

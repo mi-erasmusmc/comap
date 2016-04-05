@@ -34,23 +34,33 @@
   
   <body ng-keydown="onKeydown($event)" tabindex="0">
     <div class="row">
-      <div class="col-md-4 text-left">
+      <div class="col-md-4">
         <div ng-controller="LoggedInCtrl" ng-if="user">
           Hello, <span ng-bind="user.username" class="username"></span>
           (<a href="#/overview">overview</a>)
           <button ng-click="logout()" class="btn btn-default btn-xs"><i class="glyphicon glyphicon-log-out"></i> Logout</button>
         </div>
+      </div>
+      <div class="col-md-4 ">
+      </div>
+      <div class="col-md-4 text-right">
+        <span>
+          Help? Suggestions?
+          <a href="mailto:b.becker@erasmusmc.nl?subject=AdvanceCodeMapper">Drop an email</a>, or
+          <a target="_blank" href="https://docs.google.com/presentation/d/1vo94NxADoJAMTQDbzK7QRDy9IvfMHZdBiyzdsqecJA0/edit?usp=sharing">watch the walkthrough.</a>
+        </span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-4">
+        <h4 class="subsubtitle" ng-bind="subsubtitle"></h4>
         <h2 class="subtitle" ng-bind="subtitle"></h2>
       </div>
       <div class="col-md-4 text-center">
-        <span class="center-block">
-          Help? Suggestions?
-          <a href="mailto:b.becker@erasmusmc.nl?subject=AdvanceCodeMapper">Drop an email</a>, or
-          <a target="_blank" href="https://docs.google.com/presentation/d/1vo94NxADoJAMTQDbzK7QRDy9IvfMHZdBiyzdsqecJA0/edit?usp=sharing">watch the walkthrough.</a></span>
-        <img class='comap-logo' src="images/logo.png" height="60px"></img>
+        <img class='comap-logo' src="images/logo.png" height="70px"></img>
       </div>
       <div class="col-md-4 text-right">
-        <image class='advance-logo' src="images/logo-advance.png" height="50px" />
+        <image class='advance-logo' src="images/logo-advance.png" height="40px" />
       </div>
     </div>
     <hr/>

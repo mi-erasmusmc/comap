@@ -177,9 +177,12 @@ ul.comma-separated li:first-child:before, ul.bullet-separated li:first-child:bef
 	margin: 0;
 }
 .subtitle {
-	font-style: italic;
-	margin-top: 0.8em;
+	margin-top: 0;
 	margin-bottom: 0;
+}
+.subsubtitle {
+    font-style: italic;
+    margin-bottom: 0;
 }
 hr {
 	margin-top: 10px;

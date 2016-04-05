@@ -81,7 +81,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     
     var roles = user.projectPermissions[$scope.project];
     
-    $rootScope.subtitle = $scope.project + ": " + $scope.caseDefinitionName;
+    $rootScope.subsubtitle = $scope.project + ':';
+    $rootScope.subtitle = $scope.caseDefinitionName;
     
     $scope.state = State.empty();
     $scope.numberUnsafedChanges = 0;

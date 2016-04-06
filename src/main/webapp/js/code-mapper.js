@@ -77,7 +77,6 @@ function hasAnyTags(concepts) {
     var res = concepts && concepts.some(function(concept) {
         return concept.tags && concept.tags.length > 0;
     });
-    console.log("anyTags", concepts, res);
     return res;
 };
 
@@ -1089,8 +1088,11 @@ function EditTagsCtrl($scope, $modalInstance, concepts, tags, allTags) {
         $scope.offTags.splice(0, 0, tag);
         $scope.offTags.sort();
     };
+    var re = /^[A-Za-z0-9_-]*$/;
     $scope.validNewTag = function(newTag) {
-        return newTag && newTag.length > 0 && $scope.tags.indexOf(newTag) == -1;
+        return newTag && 
+            $scope.tags.indexOf(newTag) == -1 &&
+            re.test(newTag);
     };
 }
 

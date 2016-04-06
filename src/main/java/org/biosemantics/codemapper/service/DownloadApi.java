@@ -31,6 +31,7 @@ import org.json.JSONObject;
 
 public class DownloadApi {
 	
+    private static final String NO_CODE = "-";
     private static Logger logger = LogManager.getLogger(DownloadApi.class);
 	
 	public JSONObject getCaseDefinition(String project, String caseDefinition) throws CodeMapperException {
@@ -215,7 +216,7 @@ public class DownloadApi {
 	private void codes(JSONObject state, HSSFSheet sheet) {
 		int rowIx = 0;
 		
-		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Coding system", "Code", "Code name", "Concept", "Concept name");//, "Origin", "Root concept");
+		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Coding system", "Code", "Code name", "Concept", "Concept name", "Tags");//, "Origin", "Root concept");
 		bold(header, sheet);
 		
 		JSONArray codingSystems = state.getJSONArray("codingSystems");
@@ -223,13 +224,17 @@ public class DownloadApi {
 			String codingSystem = codingSystems.getString(codingSystemIx);
 		
 			JSONArray concepts = state.getJSONObject("mapping").getJSONArray("concepts");
-			for (int conceptIx = 0; conceptIx < concepts.length(); conceptIx++) {
-				JSONObject concept = concepts.getJSONObject(conceptIx);
-			
-				JSONArray codes = concept.getJSONObject("codes").getJSONArray(codingSystem);
-				for (int codeIx = 0; codeIx < codes.length(); codeIx++) {
-					JSONObject code = codes.getJSONObject(codeIx);
-					
+            for (int conceptIx = 0; conceptIx < concepts.length(); conceptIx++) {
+                JSONObject concept = concepts.getJSONObject(conceptIx);
+                String tags = formatTags(concept.getJSONArray("tags"));
+                JSONArray codes = concept.getJSONObject("codes").getJSONArray(codingSystem);
+                String cui = concept.getString("cui");
+                String conceptName = concept.getString("preferredName");
+                if (codes.length() == 0)
+                    setRow(sheet.createRow(rowIx++), codingSystem, NO_CODE, null, cui, conceptName, tags);
+                else
+                    for (int codeIx = 0; codeIx < codes.length(); codeIx++) {
+                        JSONObject code = codes.getJSONObject(codeIx);
 //					String origin;
 //					switch (concept.getJSONObject("origin").getString("type")) {
 //					case "spans":
@@ -254,11 +259,23 @@ public class DownloadApi {
 //					String root = "";
 //					if (!concept.getJSONObject("origin").isNull("root"))
 //						root = concept.getJSONObject("origin").getJSONObject("root").getString("cui");
-					setRow(sheet.createRow(rowIx++), codingSystem, code.getString("id"),code.getString("preferredTerm"),
-							concept.getString("cui"), concept.getString("preferredName"));//, origin, root);
-				}
+                        String codeId = code.getString("id");
+                        String codeName = code.getString("preferredTerm");
+                        setRow(sheet.createRow(rowIx++), codingSystem, codeId, codeName, cui, conceptName, tags);
+                    }
 			}
 		}
 		sheet.setAutoFilter(new CellRangeAddress(0, rowIx-1, 0, header.size()-1));
 	}
+
+
+    private String formatTags(JSONArray tagsArray) {
+        StringBuilder sb = new StringBuilder();
+        for (int tagIx = 0; tagIx < tagsArray.length(); tagIx++) {
+            if (sb.length() > 0)
+                sb.append(", ");
+            sb.append(tagsArray.get(tagIx));
+        }
+        return sb.toString();
+    }
 }

@@ -9,7 +9,7 @@ var INITIAL = {
     caseDefinition: "",
     history: [],
     concepts: [],
-    codingSystems: [ "ICD9CM", "ICD10CM", "ICPC2P", "ICPC2EENG", "RCD", "RCD2" ]
+    codingSystems: ["ICD9CM", "ICD10", "ICD10CM", "ICPC2EENG", "ICPC2P", "MDR", "MSH", "RCD", "RCD2",]
 };
 
 var SHOW_UMLS_COLUMN = false;

@@ -18,7 +18,7 @@ public class User {
 	}
 	@Override
 	public String toString() {
-		return "User(" + username + ")";
+		return username;
 	}
 	public String getUsername() {
 		return username;

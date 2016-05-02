@@ -15,6 +15,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.CodingSystem;
 import org.biosemantics.codemapper.UmlsApi;
@@ -24,7 +26,9 @@ import org.biosemantics.codemapper.authentification.User;
 @Path("code-mapper")
 public class CodeMapperResource {
 
-	private final static String VERSION = "$Revision$";
+    private static Logger logger = LogManager.getLogger(CodeMapperResource.class);
+
+    private final static String VERSION = "$Revision$";
 
 	private UmlsApi api = CodeMapperApplication.getUmlsApi();
 
@@ -140,6 +144,7 @@ public class CodeMapperResource {
 			@FormParam("hyponymsNotHypernyms") boolean hyponymsNotHypernyms,
 			@Context User user) {
 		AuthentificationResource.assertAuthentificated(user);
+		logger.debug(String.format("Get connected concepts %s of %s (%s)", hyponymsNotHypernyms ? "hypo" : "hyper", cuis, user));
 		if (cuis.isEmpty())
 			return new TreeMap<>();
 		else {

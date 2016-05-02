@@ -37,6 +37,7 @@ public class DownloadResource {
 	@Produces({"application/vnd.ms-excel"})
 	public Response getCaseDefinitonXls(@Context HttpServletRequest request, @Context User user, @QueryParam("project") final String project, @QueryParam("caseDefinition") final String caseDefinition, @QueryParam("url") final String url) {
 		PersistencyResource.assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
+		logger.debug(String.format("Download case definition %s/%s (%s)", project, caseDefinition, user));
 		try {
 			PersistencyApi persistencyApi = CodeMapperApplication.getPersistencyApi();
 			final String jsonState = persistencyApi.getCaseDefinition(project, caseDefinition);

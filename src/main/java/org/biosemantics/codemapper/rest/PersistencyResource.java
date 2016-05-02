@@ -91,7 +91,7 @@ public class PersistencyResource {
 	@Path("projects/{project}/case-definitions/{name}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getCaseDefinition(@PathParam("project") String project, @PathParam("name") String name, @Context User user) {
-		logger.debug(String.format("Get case definition %s", name));
+		logger.debug(String.format("Get case definition %s/%s (%s)", project, name, user));
 		assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
 		try {
 			String stateJson = api.getCaseDefinition(project, name);
@@ -110,7 +110,7 @@ public class PersistencyResource {
 	@Path("projects/{project}/case-definitions/{name}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public void setCaseDefinition(@PathParam("project") String project, @PathParam("name") String name, @FormParam("state") String stateJson, @Context User user) {
-		logger.debug(String.format("Set case definition %s", name));
+		logger.debug(String.format("Set case definition %s/%s (%s)", project, name, user));
 		assertProjectRoles(user, project, ProjectPermission.Editor);
 		try {
 			api.setCaseDefinition(project, name, stateJson);
@@ -140,6 +140,7 @@ public class PersistencyResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public void createComment(@PathParam("project") String project, @PathParam("case-definition") String caseDefinition, @Context User user,
 			@FormParam("cui") String cui, @FormParam("comment") String comment) {
+	    logger.debug(String.format("Create comment on %s%s (%s)", project, caseDefinition, user));
 		assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
 		try {
 			api.createComment(project, caseDefinition, user, cui, comment);

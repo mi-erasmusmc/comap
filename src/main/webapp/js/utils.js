@@ -114,6 +114,25 @@ function showConcepts(concepts) {
     return concepts.map(showConcept).join(", ");
 }
 
+function getOrigin(concept) {
+    if (concept.origin.type == "spans") {
+        return "In case definition (\"" + concept.origin.data.text + "\")";
+    }
+    if (concept.origin.type == "hyponym") {
+        return "Narrower than " + concept.cui + " (" + concept.origin.data.preferredName + ")";
+    }
+    if (concept.origin.type == "hypernym") {
+        return "Broader than " + concept.cui + " (" + concept.origin.data.preferredName + ")";
+    }
+    if (concept.origin.type == "search") {
+        return "By query \"" + concept.origin.data + "\"";
+    }
+    if (concept.origin.type == "add") {
+        return "Added";
+    }
+    return "?";
+}
+
 function isFirstOccurrence(v, ix, a) {
     return a.indexOf(v) == ix;
 }

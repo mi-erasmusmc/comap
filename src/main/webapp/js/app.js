@@ -81,6 +81,9 @@ var codeMapperApp =
         		return array.slice().reverse();
         	};
         })
+        .filter('origin', function() {
+            return getOrigin;
+        })
         .controller("ShowConceptsCtrl", ShowConceptsCtrl)
         .controller("SelectCodingSystemsCtrl", SelectCodingSystemsCtrl)
         .controller("CodeMapperCtrl", CodeMapperCtrl)

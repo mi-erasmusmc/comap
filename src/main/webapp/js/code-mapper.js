@@ -9,7 +9,7 @@ var INITIAL = {
     caseDefinition: "",
     history: [],
     concepts: [],
-    codingSystems: ["ICD9CM", "ICD10", "ICD10CM", "ICPC2EENG", "ICPC2P", "MDR", "MSH", "RCD", "RCD2",]
+    codingSystems: ["ICD9CM", "ICD10", "ICD10CM", "ICPC2EENG", "ICPC2P", "MDR", "MSH", "RCD", "RCD2"]
 };
 
 var SHOW_UMLS_COLUMN = false;
@@ -176,8 +176,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             }, timeout);
         }
     };
-    $scope.unsetMessage = function() {
-        $scope.message = null;
+    $scope.unsetMessage = function(msg) {
+        if (angular.isUndefined(msg) || $scope.message == msg) {
+            $scope.message = null;
+        }
     };
     
     /* HISTORY */
@@ -325,20 +327,22 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     };
     
     $scope.updateComments = function() {
+        var message = "Cannot load comments :(";
         if ($scope.state.mapping !== null) {
             return $http.get(urls.comments($scope.project, $scope.caseDefinitionName))
             .error(function(err, code) {
                 switch (code) {
                     case 401:
-                        $scope.setMessage("Not logged in anymore :( Please reload.");
+                        $scope.setMessage("Your session timed out :( Please reload.");
                         console.log("Not authorized.", err);
                         break;
                     default:
-                        $scope.setMessage("Cannot load comments :( Please reload the page.");
+                        $scope.setMessage(message);
                         console.log("Cannot load comments.", err, code);
                 }
             })
             .success(function(comments) {
+                $scope.unsetMessage(message);
                 var commentsByCui = {};
                 angular.forEach(comments, function(comment) {
                     comment.timestamp = new Date(comment.timestamp);

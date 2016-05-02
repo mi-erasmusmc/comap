@@ -36,19 +36,19 @@
     <div class="row">
       <div class="col-md-4">
         <div ng-controller="LoggedInCtrl" ng-if="user">
-          Hello, <span ng-bind="user.username" class="username"></span>
+          Welcome, <span ng-bind="user.username" class="username"></span>
           (<a href="#/overview">overview</a>)
           <button ng-click="logout()" class="btn btn-default btn-xs"><i class="glyphicon glyphicon-log-out"></i> Logout</button>
         </div>
       </div>
       <div class="col-md-4 ">
-      </div>
-      <div class="col-md-4 text-right">
         <span>
           Help? Suggestions?
           <a href="mailto:b.becker@erasmusmc.nl?subject=AdvanceCodeMapper">Drop an email</a>, or
           <a target="_blank" href="https://docs.google.com/presentation/d/1vo94NxADoJAMTQDbzK7QRDy9IvfMHZdBiyzdsqecJA0/edit?usp=sharing">watch the walkthrough.</a>
         </span>
+      </div>
+      <div class="col-md-4 text-right">
       </div>
     </div>
     <div class="row">
@@ -60,7 +60,8 @@
         <img class='comap-logo' src="images/logo.png" height="70px"></img>
       </div>
       <div class="col-md-4 text-right">
-        <image class='advance-logo' src="images/logo-advance.png" height="40px" />
+        <img class='' src="images/erasmus_mc.jpg" height="50px" />
+        <img class='' src="images/logo-advance.png" height="30px" />
       </div>
     </div>
     <hr/>

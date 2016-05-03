@@ -2,7 +2,7 @@
 <html ng-app="CodeMapperApp">
   <head>
     <meta charset="utf-8">
-    <title ng-bind="'CoMap &ndash; '+subtitle"></title>
+    <title ng-bind="'CodeMapper &ndash; '+subtitle"></title>
     
     <link rel="shortcut icon" href="favicon.png">
     

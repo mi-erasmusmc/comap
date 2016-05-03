@@ -295,12 +295,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     	if ($scope.state.mapping !== null) {
     	    $scope.updateComments()
     		.success(function() {
-		    showComments($modal, concept, $scope.numberUnsafedChanges == 0)
+		    showComments($modal, concept, true)
 			.then(function(comment) {
-			    if ($scope.numberUnsafedChanges != 0) {
-			        alert("Cannot post comment with unsafed changes to the case definition");
-                                return null;
-			    } else {
 				var url = urls.comments($scope.project, $scope.caseDefinitionName);
 				var data = {
 				    cui: concept.cui,
@@ -320,14 +316,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 				    .success(function() {
 				        $scope.updateComments();
 				    });
-			    }
 			});
     		});
     	}
     };
     
     $scope.updateComments = function() {
-        var message = "Cannot load comments :(";
+        var message = "Cannot load comments :( The server might be unavailable.";
         if ($scope.state.mapping !== null) {
             return $http.get(urls.comments($scope.project, $scope.caseDefinitionName))
             .error(function(err, code) {
@@ -1188,10 +1183,10 @@ function ShowCommentsCtrl($scope, $http, $modalInstance, concept, canEnterNewCom
     $scope.canEnterNewComment = canEnterNewComment;
     $scope.newComment = { text: "" };
     $scope.save = function(newComment) {
-	$modalInstance.close(newComment.text);
+        $modalInstance.close(newComment.text);
     };
     $scope.cancel = function() {
-	$modalInstance.dismiss();
+        $modalInstance.dismiss();
     };
 }
 

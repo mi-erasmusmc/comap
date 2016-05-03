@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
+<Configuration status="DEBUG">
   <Appenders>
-    <Console name="Console" target="SYSTEM_OUT">
+    <File type="File" name="File" fileName="${sys:catalina.base}/logs/code-mapper.log" append="false">
+      <PatternLayout pattern="%d{HH:mm:ss} %-5level %logger{1} - %msg%n"/>
+    </File>
+    <Console type="Console" name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d{HH:mm:ss} %-5level %logger{1} - %msg%n"/>
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="nl.erasmusmc.mieur.biosemantics.advance.codemapper" level="info" />
-    <Root level="warn">
+    <Logger name="org.biosemantics.codemapper" level="DEBUG" additivity="false">
+      <AppenderRef ref="File"/>
+    </Logger>
+    <Root level="WARN">
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>

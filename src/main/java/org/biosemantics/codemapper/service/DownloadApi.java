@@ -226,7 +226,7 @@ public class DownloadApi {
 			JSONArray concepts = state.getJSONObject("mapping").getJSONArray("concepts");
             for (int conceptIx = 0; conceptIx < concepts.length(); conceptIx++) {
                 JSONObject concept = concepts.getJSONObject(conceptIx);
-                String tags = formatTags(concept.getJSONArray("tags"));
+                String tags = formatTags(concept.optJSONArray("tags"));
                 JSONArray codes = concept.getJSONObject("codes").getJSONArray(codingSystem);
                 String cui = concept.getString("cui");
                 String conceptName = concept.getString("preferredName");
@@ -270,6 +270,8 @@ public class DownloadApi {
 
 
     private String formatTags(JSONArray tagsArray) {
+        if (tagsArray == null)
+            return null;
         StringBuilder sb = new StringBuilder();
         for (int tagIx = 0; tagIx < tagsArray.length(); tagIx++) {
             if (sb.length() > 0)

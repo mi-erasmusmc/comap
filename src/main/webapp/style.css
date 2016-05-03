@@ -264,9 +264,9 @@ hr {
 .project-members {
 	font-size: smaller;
 }
-.comap-logo {
+img.comap-logo {
   margin: 1em 0em 1em 0em;
 }
-.advance-logo {
-  margin: 3em 1em 1em 0em;
+img.advance-logo {
+  margin-bottom: 0.5em;
 }

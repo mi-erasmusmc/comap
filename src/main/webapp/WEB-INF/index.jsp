@@ -37,15 +37,13 @@
       <div class="col-md-4">
         <div ng-controller="LoggedInCtrl" ng-if="user">
           Welcome, <span ng-bind="user.username" class="username"></span>
-          (<a href="#/overview">overview</a>)
           <button ng-click="logout()" class="btn btn-default btn-xs"><i class="glyphicon glyphicon-log-out"></i> Logout</button>
         </div>
       </div>
-      <div class="col-md-4 ">
+      <div class="col-md-4 text-center">
         <span>
-          Help? Suggestions?
-          <a href="mailto:b.becker@erasmusmc.nl?subject=AdvanceCodeMapper">Drop an email</a>, or
-          <a target="_blank" href="https://docs.google.com/presentation/d/1vo94NxADoJAMTQDbzK7QRDy9IvfMHZdBiyzdsqecJA0/edit?usp=sharing">watch the walkthrough.</a>
+          Help? See the <a target="_blank" href="https://docs.google.com/presentation/d/1vo94NxADoJAMTQDbzK7QRDy9IvfMHZdBiyzdsqecJA0/edit?usp=sharing">presentation</a>
+          or <a href="mailto:b.becker@erasmusmc.nl?subject=CodeMapper">email</a> me. 
         </span>
       </div>
       <div class="col-md-4 text-right">
@@ -57,14 +55,14 @@
         <h2 class="subtitle" ng-bind="subtitle"></h2>
       </div>
       <div class="col-md-4 text-center">
-        <img class='comap-logo' src="images/logo.png" height="70px"></img>
+        <a title="Go to overview" href="#/overview"><img class='comap-logo' src="images/logo.png" height="70px"></img></a>
       </div>
       <div class="col-md-4 text-right">
-        <img class='' src="images/erasmus_mc.jpg" height="50px" />
-        <img class='' src="images/logo-advance.png" height="30px" />
+        <img class='advance-logo' src="images/logo-advance.png" height="23px" />
+        <br/>
+        <img class='erasmus-logo' src="images/erasmus_mc.jpg" height="40px" />
       </div>
     </div>
-    <hr/>
     <div ng-view></div>
   </body>
 </html>

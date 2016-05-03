@@ -1,8 +1,8 @@
 
 <div>
   
-  <alert ng-if="message != null" type="success">{{message}}
-    (<a ng-click="unsetMessage()">discard message</a>)
+  <alert ng-if="message != null" type="success" close="unsetMessage()">
+    {{message}}
   </alert>
   
   <tabset>
@@ -37,8 +37,7 @@
       <div ng-if="state.mapping" class="concepts-controls row">
        
        <div class="filters col-md-2">
-         <label>{{state.mapping.concepts.length}} concept<span ng-if="state.mapping.concepts.length != 1">s</span> in mapping</label>
-         <i class="glyphicon glyphicon-filter"></i>
+         <label>{{state.mapping.concepts.length}} concept<span ng-if="state.mapping.concepts.length != 1">s</span></label>
          <input title="Filter displayed concepts" placeholder="Filter" type="text" ng-model="conceptsGridOptions.filterOptions.filterText" />
        </div>
         

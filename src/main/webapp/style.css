@@ -264,6 +264,9 @@ hr {
 .project-members {
 	font-size: smaller;
 }
+div.alert {
+ padding: 5px 30px 5px 5px;
+}
 img.comap-logo {
   margin: 1em 0em 1em 0em;
 }

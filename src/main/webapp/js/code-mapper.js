@@ -400,6 +400,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     $scope.state.indexing = null;
                     $scope.state.codingSystems = INITIAL.codingSystems;
                     $scope.caseDefinition = "" + INITIAL.caseDefinition;
+                    $rootScope.subtitle = $scope.caseDefinitionName + ' (NEW MAPPING)';
                     break;
                 } 
             })
@@ -448,6 +449,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     .success(function() {
                         $scope.intervalUpdateComments(true);
                         $scope.numberUnsafedChanges = 0;
+                        $rootScope.subtitle = $scope.caseDefinitionName; // Remove NEW (...) from fresh mappings
                     });
             });
     };

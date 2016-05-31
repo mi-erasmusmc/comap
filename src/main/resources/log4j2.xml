@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="DEBUG">
+<Configuration status="WARN">
   <Appenders>
-    <File type="File" name="File" fileName="${sys:catalina.base}/logs/code-mapper.log" append="false">
+    <File name="File" fileName="${sys:catalina.base}/logs/code-mapper.log" append="false">
       <PatternLayout pattern="%d{HH:mm:ss} %-5level %logger{1} - %msg%n"/>
     </File>
-    <Console type="Console" name="Console" target="SYSTEM_OUT">
+    <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d{HH:mm:ss} %-5level %logger{1} - %msg%n"/>
     </Console>
   </Appenders>

@@ -2,6 +2,11 @@
 
 Using servlet 3.0.1 -- requires Tomcat7
 
+## Build
+
+- maven2
+- `mvn package`
+
 # Database
 ## Migration
 

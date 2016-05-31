@@ -78,9 +78,16 @@ label {
 	content: ")";
 }
 .comment-content {
-	display: block;
-	margin-left: 2em;
-	white-space: pre;
+	white-space: pre-wrap;
+	width: 100%;
+	max-width: 55em;
+}
+.new-comment textarea {
+   width: 100%;
+   max-width: 55em;
+}
+.new-comment button {
+ display: block;
 }
 .comment-author {
 	font-style: italic;

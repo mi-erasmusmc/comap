@@ -30,5 +30,8 @@ id="CodeMapper" version="3.0">
     <filter-name>cors</filter-name>
     <url-pattern>/*</url-pattern>
   </filter-mapping>
+  <welcome-file-list>
+    <welcome-file>index.jsp</welcome-file>
+  </welcome-file-list>
   <!-- Configuration of CodeMapper in src/main/resources/code-mapper.properties -->
 </web-app>

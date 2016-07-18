@@ -1,0 +1,28 @@
+* READ
+#+begin_src sql :engine mysql :cmdline -h 127.0.0.1 -P 3307 -u root -proot -D UMLS_ext_mappings
+SELECT v2_conceptid, COUNT(DISTINCT(ctv3_conceptid)) AS num_ctv3
+FROM RCD_V3_to_V2
+GROUP BY v2_conceptid
+ORDER BY num_ctv3
+DESC LIMIT 15;
+#+end_src
+
+#+RESULTS:
+| v2_conceptid | num_ctv3 |
+|--------------+----------|
+| _DRUG        |    39289 |
+| _NONE        |    21680 |
+| 2....        |     8030 |
+| 9....        |     1861 |
+| SL...        |     1310 |
+| 7....        |     1069 |
+| 2J...        |      999 |
+| 14L..        |      833 |
+| 7N0..        |      826 |
+| S....        |      696 |
+| 388..        |      602 |
+| 13...        |      436 |
+| 4I2..        |      430 |
+| 8....        |      426 |
+| B....        |      423 |
+

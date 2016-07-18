@@ -113,12 +113,12 @@ def show(db, users, projects, comments):
                     'from comments as c inner join case_definitions as cd '
                     'on c.case_definition_id = cd.id '
                     'inner join users as u on c.author = u.id '
-                    'order by cd_name, cui, timestamp')
+                    'order by timestamp, cd_name, cui')
         comments = cur.fetchall()
     for comment in comments:
-        print("{}/{}: {} ({}, {})".format(comment['cd_name'],
-                                          comment['cui'], comment['content'], comment['user'],
-                                          comment['timestamp']))
+        print()
+        print("* {user} on {cd_name} ({timestamp}, {cui})".format(**comment))
+        print(comment['content'])
 
 
 def main():
@@ -153,8 +153,7 @@ def main():
 
     args = parser.parse_args()
 
-    db_args = [args.db_host, args.db_user,
-               args.db_password, args.db_name]
+    db_args = [args.db_host, args.db_user, args.db_password, args.db_name]
     if args.db_port:
         db_args += [args.db_port]
     db = pymysql.connect(*db_args, cursorclass=pymysql.cursors.DictCursor)

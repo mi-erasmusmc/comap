@@ -2,7 +2,7 @@
 <Configuration status="WARN">
   <Appenders>
     <File name="File" fileName="${sys:catalina.base}/logs/code-mapper.log" append="false">
-      <PatternLayout pattern="%d{HH:mm:ss} %-5level %logger{1} - %msg%n"/>
+      <PatternLayout pattern="%d{yyy-mm-dd HH:mm:ss} %-5level %logger{1} - %msg%n"/>
     </File>
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d{HH:mm:ss} %-5level %logger{1} - %msg%n"/>

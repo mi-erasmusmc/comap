@@ -10,10 +10,10 @@ logger = utils.get_logger(__name__)
 def expand_concepts_by_codes(concepts, relations, databases, mapping):
 
     "Expand concepts towards related that contribute TP codes to the mapping."
-    
+
     cuis = set(concepts.cuis())
     relateds = comap.get_client().related(cuis, relations, databases.coding_systems())
-    
+
     for cui in relateds:
         for rel in relateds[cui]:
             for related in relateds[cui][rel]:
@@ -34,7 +34,7 @@ def expand_concepts_by_dnf(concepts, relations, dnf):
     reference_cuis = {cui for cuis in dnf.cui_sets() for cui in cuis}
 
     client = comap.get_client()
-    
+
     relateds = client.related(generated_cuis, relations, [])
     for cui in relateds:
         for rel in relateds[cui]:
@@ -48,7 +48,7 @@ def expand_concepts_by_dnf(concepts, relations, dnf):
     return varied_concepts
 
 if redo.running():
-    
+
     project, event, n_relations = redo.snippets
     n_relations = n_relations.split('-')
     n, relations = int(n_relations[0]), n_relations[1:]
@@ -69,9 +69,9 @@ if redo.running():
         mapping = mappings.get(event)
 
     concepts = expand_concepts_by_codes(variation0.concepts, relations, databases, mapping)
-    
+
     variation = Variation(concepts, variation0.mapping)
-    
+
     with redo.output() as f:
         json.dump(variation.to_data(), f)
 

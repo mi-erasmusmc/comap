@@ -9,9 +9,10 @@ import utils
 # http.client.HTTPConnection.debuglevel = 1
 
 logger = utils.get_logger(__name__)
+logger.setLevel('WARN')
 
-PEREGRINE_API_URL = 'http://euadr.erasmusmc.nl:8080/UMLS2014AB_ADVANCE/rest'
-COMAP_API_URL = 'http://localhost:8080/CoMap/rest'
+PEREGRINE_API_URL = 'https://euadr.erasmusmc.nl/UMLS2014AB_ADVANCE/rest'
+COMAP_API_URL = 'http://localhost:8080/CodeMapper/rest' # https://euadr.erasmusmc.nl/CodeMapper/rest
 COMAP_COOKIES_FILE = '.comap-cookies'
 DB_ACCESS = dict(host='127.0.0.1', user='root', password='root', port=3306)
 

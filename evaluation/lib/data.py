@@ -192,7 +192,7 @@ class Mappings:
                     result_mapping.add_exclusion(database, exclusion_codes)
             result.add(event, result_mapping)
         return result
-        
+
 
 class Mapping:
 

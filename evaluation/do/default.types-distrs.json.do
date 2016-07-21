@@ -48,7 +48,7 @@ if redo.running():
             for event in events
         }
 
-    st_name = pd.read_csv('../lib/semantic_types.csv', index_col=0)
+    st_name = pd.read_csv('../../src/main/resources/semantic_types.csv', index_col=0)
 
     types_distr = get_types_distr(types_distrs, st_name)
 

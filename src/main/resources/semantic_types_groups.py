@@ -1,4 +1,4 @@
-from __future__ import print_function
+#!/usr/bin/env python3
 import pandas as pd
 import json
 
@@ -13,7 +13,7 @@ types['Semantic group'] = groups.ix[types.Group].reset_index()['Semantic group']
 li = [
     {
       key.lower().replace(' ', '_'): value
-      for key, value in types.ix[ix].to_dict().iteritems()
+      for key, value in types.ix[ix].to_dict().items()
     }
     for ix in types.index.values
 ]

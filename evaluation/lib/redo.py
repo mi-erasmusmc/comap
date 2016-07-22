@@ -30,17 +30,32 @@ A thin wrapper of redo.
 """
 logger = logging.getLogger("redo")
 
+args = sys.argv[1:]
+
+_running = sys.argv[0][-3:] == '.do'
+
 def running():
     """ Check if the process is really running a redo script """
-    return sys.argv[0][-3:] == '.do'
-
-class NoRedoProcess(Exception):
-    pass
+    return _running
 
 if running():
+    global target, base, temp, short_base, snippets, path
     target = sys.argv[1]
     base = sys.argv[2]
     temp = sys.argv[3]
+    short_base = Path(base).name
+    snippets = short_base.split('.')
+    path = Path(target).parent.resolve()
+else:
+    path = Path()
+
+def fake(target_, base_, temp_):
+    print("Redo: fake")
+    global _running, target, base, temp, short_base, snippets, path
+    _running = True
+    target = target_
+    base = base_
+    temp = temp_
     short_base = Path(base).name
     snippets = short_base.split('.')
     path = Path(target).parent.resolve()
@@ -107,9 +122,6 @@ class RedoCommand(object):
         os.system(command)
 
     def __enter__(self):
-        if not running():
-            logger.warn("No running redo, not generating anything")
-            raise NoRedoProcess()
         def f(filename):
             logger.debug("Open %s", filename)
             return open(str(filename), self.mode)

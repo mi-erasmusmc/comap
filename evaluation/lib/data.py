@@ -175,6 +175,9 @@ class Mappings:
         assert event not in self._by_events
         self._by_events[event] = mapping
 
+    def events(self):
+        return self._by_events.keys()
+
     def get(self, event):
         return self._by_events[event]
 

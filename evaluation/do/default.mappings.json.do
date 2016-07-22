@@ -2,35 +2,67 @@
 from pathlib import Path
 import yaml, json
 import redo
-from normalize import get_normalizer
+import comap
 from data import Mappings, Mapping, Databases
+from normalize import get_normalizer
+import utils
+
+logger = utils.get_logger(__name__)
+
+def expand(codes, coding_system):
+    codes_with_wildcards = {code for code in codes if 'x' in code}
+    codes_without_wildcards = {code for code in codes if 'x' not in code}
+    if not codes_with_wildcards:
+        return codes
+    else:
+        query = "SELECT code FROM MRCONSO WHERE sab = %s AND (" +\
+                " OR ".join(["code LIKE %s"] * len(codes_with_wildcards)) +\
+                ")"
+        codes_with_sql_wildcards = [
+            c.replace('x', '_')
+            for c in codes_with_wildcards
+        ]
+        with comap.get_umls_db().cursor() as cursor:
+            cursor.execute(query, [coding_system] + codes_with_sql_wildcards)
+            codes_expanded = set()
+            for code, in cursor.fetchall():
+                codes_expanded.add(code)
+        return codes_without_wildcards | codes_expanded
 
 
-def normalize(mappings, databases):
+def process(mappings, databases):
     result = Mappings()
-    for event, mapping in mappings._by_events.items():
+    for event in mappings.events():
+        mapping = mappings.get(event)
         result_mapping = Mapping()
         for database in databases.databases():
+            logger.debug('Process {} {}'.format(database, event))
             coding_system = databases.coding_system(database)
             normalizer = get_normalizer(coding_system)
             codes = mapping.codes(database)
             if codes is None:
                 result_mapping.add(database, None)
             else:
-                codes = normalizer(codes)
-                result_mapping.add(database, codes)
+                codes1 = normalizer(codes)
+                codes2 = expand(codes1, coding_system)
+                result_mapping.add(database, codes2)
+                logger.debug('Include: {}'.format(codes))
+                if not (codes == codes1 == codes2):
+                    logger.debug('Normalized: {}'.format(codes1))
+                    logger.debug('Expanded: {}'.format(codes2))
             exclusion_codes = mapping.exclusion_codes(database)
             if exclusion_codes is None:
                 result_mapping.add_exclusion(database, None)
             else:
-                exclusion_codes = normalizer(exclusion_codes)
-                result_mapping.add_exclusion(database, exclusion_codes)
+                exclusion_codes1 = normalizer(exclusion_codes)
+                exclusion_codes2 = expand(exclusion_codes1, coding_system)
+                result_mapping.add_exclusion(database, exclusion_codes2)
+                logger.debug('Exclude: {}'.format(exclusion_codes))
+                if not (exclusion_codes == exclusion_codes1 == exclusion_codes2):
+                    logger.debug('Normalized: {}'.format(exclusion_codes1))
+                    logger.debug('Expande: {}'.format(exclusion_codes2))
         result.add(event, result_mapping)
     return result
-
-
-def expand_wildcards(mappings):
-    return mappings
 
 
 if redo.running():
@@ -41,15 +73,12 @@ if redo.running():
     with redo.ifchange(project_path / 'config.yaml') as f:
         config = yaml.load(f)
         databases = Databases.of_config(config)
-
-    with redo.ifchange(project_path / 'events.yaml') as f:
-        events = yaml.load(f)
+        events = config['events']
 
     with redo.ifchange(project_path / 'mappings.yaml') as f:
         mappings0 = Mappings.of_raw_data(yaml.load(f), events, databases)
 
-    mappings1 = normalize(mappings0, databases)
-    mappings2 = expand_wildcards(mappings1)
+    mappings = process(mappings0, databases)
 
     with redo.output() as f:
-        json.dump(mappings2.to_data(), f)
+        json.dump(mappings.to_data(), f)

@@ -53,8 +53,8 @@ def normalize_read(code):
         return None
 
 _normalizers = {
-    'ICPC': [normalize_upper, normalize_drop_suffix_dot, normalize_xdd_code, normalize_3letters],
-    'ICD': [normalize_upper, format_icd],
+    'ICPC': [normalize_drop_suffix_dot, normalize_xdd_code, normalize_3letters],
+    'ICD': [format_icd],
     'RCD': [normalize_read],
 }
 

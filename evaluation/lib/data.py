@@ -146,11 +146,24 @@ class Mappings:
         self._by_events = by_events or {}
 
     @classmethod
-    def of_raw_data_and_normalize(cls, data, events, databases):
+    def of_raw_data(cls, data, events, databases):
         return Mappings({
             event: Mapping.of_raw_data(data['by-event'][event], databases)
             for event in events
-        }).normalize(databases)
+        })
+
+    @classmethod
+    def of_data(cls, data):
+        return Mappings({
+            e: Mapping.of_data(data[e])
+            for e in data
+        })
+
+    def to_data(self):
+        return {
+            e: Mapping.to_data(self._by_events[e])
+            for e in self._by_events
+        }
 
     def describe(self, exclusions=False, with_exclusions=False):
         return pd.DataFrame({
@@ -171,28 +184,6 @@ class Mappings:
             codes.update(self.get(event).codes(database) or [])
         return codes
 
-    def normalize(self, databases):
-        result = Mappings()
-        for event, mapping in self._by_events.items():
-            result_mapping = Mapping()
-            for database in databases.databases():
-                coding_system = databases.coding_system(database)
-                normalizer = get_normalizer(coding_system)
-                codes = mapping.codes(database)
-                if codes is None:
-                    result_mapping.add(database, None)
-                else:
-                    codes = normalizer(codes)
-                    result_mapping.add(database, codes)
-                exclusion_codes = mapping.exclusion_codes(database)
-                if exclusion_codes is None:
-                    result_mapping.add_exclusion(database, None)
-                else:
-                    exclusion_codes = normalizer(exclusion_codes)
-                    result_mapping.add_exclusion(database, exclusion_codes)
-            result.add(event, result_mapping)
-        return result
-
 
 class Mapping:
 
@@ -204,13 +195,22 @@ class Mapping:
     def of_data(cls, data):
         return Mapping({
             key: set(codes) if codes else None
-            for key, codes in data.items()
+            for key, codes in data['inclusion'].items()
+        }, {
+            key: set(codes) if codes else None
+            for key, codes in data['exclusion'].items()
         })
 
     def to_data(self):
         return {
-            key: list(codes) if codes else None
-            for key, codes in self._mapping.items()
+            'inclusion': {
+                key: list(codes) if codes else None
+                for key, codes in self._mapping.items()
+            },
+            'exclusion': {
+                key: list(codes) if codes else None
+                for key, codes in self._exclusion_mapping.items()
+            }
         }
 
     def describe(self, exclusions=False, with_exclusions=False):

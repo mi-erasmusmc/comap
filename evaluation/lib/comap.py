@@ -5,8 +5,8 @@ import pickle
 import pymysql
 import utils
 
-# import http.client
-# http.client.HTTPConnection.debuglevel = 1
+import http.client
+http.client.HTTPConnection.debuglevel = 0
 
 logger = utils.get_logger(__name__)
 logger.setLevel('WARN')

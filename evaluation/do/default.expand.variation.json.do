@@ -64,8 +64,8 @@ if redo.running():
         variation0_id = '{}-{}.expand'.format(n-1, '-'.join(relations))
     with redo.ifchange('{}.{}.{}.variation.json'.format(project, event, variation0_id)) as f:
         variation0 = Variation.of_data(json.load(f))
-    with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
+    with redo.ifchange('{}.mappings.json'.format(project)) as f:
+        mappings = Mappings.of_data(json.load(f))
         mapping = mappings.get(event)
 
     concepts = expand_concepts_by_codes(variation0.concepts, relations, databases, mapping)

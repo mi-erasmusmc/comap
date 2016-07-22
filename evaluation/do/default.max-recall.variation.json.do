@@ -96,9 +96,9 @@ if redo.running():
     with redo.ifchange(project_path / 'config.yaml') as f:
         databases = Databases.of_config(yaml.load(f))
     with redo.ifchange(project_path / 'events.yaml') as f:
-        events = yaml.load(f)    
-    with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
+        events = yaml.load(f)
+    with redo.ifchange('{}.mappings.json'.format(project)) as f:
+        mappings = Mappings.of_data(json.load(f))
         mapping = mappings.get(event)
     with redo.ifchange('{}.{}.dnf.json'.format(project, event)) as f:
         dnf = Dnf.of_data(json.load(f))
@@ -108,7 +108,7 @@ if redo.running():
         database: databases.coding_system(database)
         for database in databases.databases()
     }
-    cuis = max_recall_cuis(cosynonyms.to_data(), mapping.to_data(), coding_systems)
+    cuis = max_recall_cuis(cosynonyms.to_data(), mapping.to_data()['inclusion'], coding_systems)
     concepts_raw_data = comap.get_client().umls_concepts(cuis, databases.coding_systems())
     concepts = Concepts.of_raw_data_and_normalize(concepts_raw_data, databases.coding_systems())
 

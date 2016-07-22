@@ -120,7 +120,7 @@ def create_error_analysis_fn(event, database, databases, dnf, evaluation,
             return 'isolated'
         if any(evaluation.cuis & relateds.get(cui, set()) for cui in fn_cuis):
             return 'next-expansion'
-        if code in exclusion_codes:
+        if exclusion_codes and code in exclusion_codes:
             return 'exclusion'
         if database_specific(code, database, databases, dnf, mapping):
             return 'database-specific'
@@ -172,8 +172,8 @@ if redo.running():
     with redo.ifchange(project_path / 'events.yaml') as f:
         events = yaml.load(f)
 
-    with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
+    with redo.ifchange('{}.mappings.json'.format(project)) as f:
+        mappings = Mappings.of_data(json.load(f))
 
     with redo.ifchange(project_path / 'residuals-info.yaml') as f:
         data = yaml.load(f)

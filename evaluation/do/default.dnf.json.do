@@ -50,9 +50,9 @@ if redo.running():
         config = yaml.load(f)
         databases = Databases.of_config(config)
     with redo.ifchange(project_path / 'events.yaml') as f:
-        events = yaml.load(f)    
-    with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
+        events = yaml.load(f)
+    with redo.ifchange('{}.mappings.json'.format(project)) as f:
+        mappings = Mappings.of_data(json.load(f))
         mapping = mappings.get(event)
     with redo.ifchange('{}.{}.cosynonyms.json'.format(project, event)) as f:
         cosynonyms = Cosynonyms.of_data(json.load(f))

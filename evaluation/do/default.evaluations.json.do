@@ -105,9 +105,9 @@ if redo.running():
         events = yaml.load(f)
     with redo.ifchange(project_path / 'variations.yaml') as f:
         variation_ids = yaml.load(f)
-    with redo.ifchange(project_path / 'mappings.yaml') as f:
-        mappings = Mappings.of_raw_data_and_normalize(yaml.load(f), events, databases)
-        
+    with redo.ifchange('{}.mappings.json'.format(project)) as f:
+        mappings = Mappings.of_data(json.load(f))
+
     variations = {}
     for variation_id in variation_ids:
         variations[variation_id] = {}

@@ -18,7 +18,7 @@ def get_concepts(index, databases):
 
 
 if redo.running():
-    
+
     project, event = redo.snippets
     project_path = Path('projects') / project
 
@@ -28,10 +28,8 @@ if redo.running():
 
     with redo.ifchange('{}.{}.index.json'.format(project, event)) as f:
         index = json.load(f)
-    
+
     concepts = get_concepts(index, databases)
-    
+
     with redo.output() as f:
         json.dump(concepts.to_data(), f)
-
-    

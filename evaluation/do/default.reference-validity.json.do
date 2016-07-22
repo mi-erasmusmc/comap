@@ -31,7 +31,7 @@ def create(mappings, events, codes_in_dbs, databases):
 if redo.running():
     project, = redo.snippets
     project_path = redo.path / 'projects' / project
-    
+
     with redo.ifchange(project_path / 'config.yaml') as f:
         config = yaml.load(f)
         databases = Databases.of_config(config)
@@ -44,5 +44,5 @@ if redo.running():
 
     res = create(mappings, events, codes_in_dbs, databases)
     with redo.output() as f:
-       json.dump(res, f) 
+       json.dump(res, f)
 

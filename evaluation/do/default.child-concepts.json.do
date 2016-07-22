@@ -25,8 +25,6 @@ if redo.running():
 
     coding_systems = sorted(set(config['coding-systems'].values()))
     concepts = get_child_concepts(concepts, databases)
-    
+
     with redo.output() as f:
         json.dump(concepts, f)
-
-    

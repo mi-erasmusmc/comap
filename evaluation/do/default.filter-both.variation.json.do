@@ -11,7 +11,7 @@ if redo.running():
 
     project, event = redo.snippets[:2]
     variation0_id = '.'.join(redo.snippets[2:])
-    
+
     project_path = redo.path / 'projects' / project
 
     with redo.ifchange(project_path / 'config.yaml') as f:
@@ -24,7 +24,7 @@ if redo.running():
     concepts = variation0.concepts.filter_codes_in_dbs(codes_in_dbs)
     mapping = variation0.mapping.filter_codes_in_dbs(codes_in_dbs, databases)
     variation = Variation(concepts, variation0.mapping)
-    
+
     with redo.output() as f:
         json.dump(variation.to_data(), f)
 

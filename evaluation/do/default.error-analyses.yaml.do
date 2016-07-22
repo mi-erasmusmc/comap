@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 
 def create_error_analyses(events, databases, mappings, dnfs,
-                          evaluations, 
+                          evaluations,
                           residuals_info):
     error_analyses_fn = defaultdict(dict)
     error_analyses_fp = defaultdict(dict)
@@ -47,13 +47,13 @@ def create_error_analysis_fp(event, database, databases, dnf, evaluation, mappin
     coding_system = databases.coding_system(database)
     tp, fp, fn = evaluation.tp, evaluation.fp, evaluation.fn
     dnf_codes = dnf.codes(coding_system)
-    
+
     def categorize(code):
         if code in dnf_codes:
             return 'in-dnf'
         else:
             return 'other-fp'
-        
+
     code_categories, unassigned = dict(), set()
     for code in fp:
         category = categorize(code)
@@ -99,7 +99,7 @@ def get_cuis(codes, coding_system, dnf):
             if codes & for_cuis.get(coding_system, set())
             for cui in cuis}
 
-                
+
 def create_error_analysis_fn(event, database, databases, dnf, evaluation,
                              exclusion_codes, residuals_info, mapping):
     coding_system = databases.coding_system(database)
@@ -198,11 +198,11 @@ if redo.running():
         evaluations = Evaluations.of_data(json.load(f))\
             .for_variation(variation_id, events, databases.databases())
 
-        
+
     error_analyses = create_error_analyses(events, databases,
                                            mappings, dnfs,
                                            evaluations,
                                            residuals_info)
-    
+
     with redo.output() as f:
         yaml.dump(error_analyses.to_data(), f, default_flow_style=False)

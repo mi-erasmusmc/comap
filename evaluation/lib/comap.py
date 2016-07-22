@@ -98,7 +98,7 @@ class ComapClient(object):
         if r.ok:
             return r.json()
         else:
-            raise Exception("Couldn't retrieve known codes")        
+            raise Exception("Couldn't retrieve known codes")
 
     def hyponyms(self, cuis, coding_systems):
         logger.info('Get UMLS hyponyms for %d CUIs', len(cuis))
@@ -189,14 +189,14 @@ def translation_read_3to2(codes):
 def code_names(codes, coding_system):
     if not codes:
         return {}
-    
+
     original_coding_system = coding_system
     if coding_system == 'RCD2':
         coding_system = 'RCD'
         original_codes = codes
         t = translation_read_2to3(codes)
         codes = { code3 for code in codes for code3 in t[code] }
-        
+
     query = """
     select distinct code, str from MRCONSO
     where ts = 'P' and stt = 'PF' and ispref = 'Y' and lat = 'ENG'
@@ -230,7 +230,7 @@ def cui_names(cuis):
     with get_umls_db().cursor() as cursor:
         cursor.execute(query, [cuis])
         return dict(cursor.fetchall())
-    
+
 def codes_of_raw_concept(concept, coding_system):
     return {
         sourceConcept['id']

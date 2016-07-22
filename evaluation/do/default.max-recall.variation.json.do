@@ -11,7 +11,7 @@ import utils
 logger = utils.get_logger(__name__)
 
 def max_recall_cuis(cosynonyms, mapping, coding_systems, min_codes=None):
-    
+
     """
     The CUIs such that their codes capture the mapping with minimal codes
     outside the mapping, i.e.
@@ -89,7 +89,7 @@ def max_recall_cuis(cosynonyms, mapping, coding_systems, min_codes=None):
 
 
 if redo.running():
-    
+
     project, event = redo.snippets
     project_path = redo.path / 'projects' / project
 

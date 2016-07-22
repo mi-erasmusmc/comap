@@ -7,7 +7,7 @@ if redo.running():
     logging.config.fileConfig(str(redo.path / 'lib' / 'logging.config'))
 
 # Logging
-    
+
 def get_logger(name):
     return logging.getLogger(name)
 

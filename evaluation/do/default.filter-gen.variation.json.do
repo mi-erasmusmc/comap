@@ -23,7 +23,7 @@ if redo.running():
 
     concepts = variation0.concepts.filter_codes_in_dbs(codes_in_dbs)
     variation = Variation(concepts, variation0.mapping)
-    
+
     with redo.output() as f:
         json.dump(variation.to_data(), f)
 

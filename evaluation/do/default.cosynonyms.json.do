@@ -45,7 +45,7 @@ def cosynonym_codes(codes, coding_system, target_coding_systems):
     return res
 
 def all_cosynonyms(mapping, databases):
-    
+
     res = defaultdict(lambda: defaultdict(set))
 
     for database, coding_system in databases:

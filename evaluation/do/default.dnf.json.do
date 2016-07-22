@@ -59,7 +59,7 @@ if redo.running():
 
     dnf = cosynonyms.to_dnf()
     assert cosynonyms.equals(dnf.to_cosynonyms()) # Just checking ...
-    
+
     with redo.output() as f:
         json.dump(dnf.to_data(), f)
 

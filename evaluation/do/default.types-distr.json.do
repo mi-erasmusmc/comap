@@ -72,4 +72,3 @@ if redo.running():
 
     with redo.output() as f:
         json.dump(types_distr, f)
-    

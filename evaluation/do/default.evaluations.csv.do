@@ -47,6 +47,3 @@ if redo.running():
 
     df = evaluations_to_df(evaluations)
     df.to_csv(redo.temp, index=False)
-    
-
-    

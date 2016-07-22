@@ -99,7 +99,7 @@ class CodesByCodingSystems:
             coding_system: set(data[coding_system])
             for coding_system in data
         })
-            
+
     def to_data(self):
         return {
             coding_system: list(self._by_coding_systems[coding_system])
@@ -131,7 +131,7 @@ class CodesByCodingSystems:
     def add(self, coding_system, codes):
         assert coding_system not in self._by_coding_systems
         self._by_coding_systems[coding_system] = codes
-    
+
     def codes(self, coding_system):
         """ Returns codes """
         return self._by_coding_systems.get(coding_system, set())
@@ -284,7 +284,7 @@ class Mapping:
 
     def keys(self):
         return list(self._mapping.keys())
-        
+
 
 class Evaluations:
 
@@ -308,7 +308,7 @@ class Evaluations:
         return {
             variation_id: {
                 event: {
-                    database: None if evaluation is None else evaluation.to_data() 
+                    database: None if evaluation is None else evaluation.to_data()
                     for database, evaluation in self._evaluations[variation_id][event].items()
                 }
                 for event in self._evaluations[variation_id]
@@ -316,7 +316,7 @@ class Evaluations:
             for variation_id in self._evaluations
         }
 
-    
+
     def add(self, variation_id, event, database, evaluation):
         assert database not in self._evaluations[variation_id][event]
         self._evaluations[variation_id][event][database] = evaluation
@@ -339,7 +339,7 @@ class Evaluations:
             for event in events
         }
 
-    
+
 class Evaluation:
 
     def __init__(self, cuis, generated, reference, tp, fp, fn, recall, precision):
@@ -534,7 +534,7 @@ class Dnf:
             }
             for cuis, by_coding_systems in data
         })
-    
+
     def add(self, cuis, coding_system, code):
         cuis = frozenset(cuis)
         if cuis not in self._disjunction:
@@ -619,7 +619,7 @@ class Dnf:
 #             if type(value) == set:
 #                 return list(value)
 #             if type(value) == float:
-#                 return value    
+#                 return value
 #         return OrderedDict([
 #             (key, for_value(key, self.__dict__[key]))
 #             for key in ErrorAnalysis.keys

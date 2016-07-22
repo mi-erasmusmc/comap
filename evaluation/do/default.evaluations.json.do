@@ -55,7 +55,7 @@ def evaluate(variations, databases, mappings):
 
 #     # False negative codes that are in UMLS and inclusion codes
 #     fn_inclusions_in_umls = fn - exclusion_codes - fn_not_in_umls
-    
+
 #     # False positive codes that in the maximum recall
 #     fp_in_dnf = fp & max_recall_codes
 
@@ -85,7 +85,7 @@ def evaluate(variations, databases, mappings):
 #         precision_over_dnf = len(generated & max_recall_codes) / len(generated)
 #     else:
 #         precision_over_dnf = float('nan')
-    
+
 #     return ErrorAnalysis(fp_in_dnf, fn_not_in_umls, fn_exclusions,
 #                          fn_inclusions_in_umls,
 #                          reference_inclusions_in_umls, recall_in_umls,
@@ -94,7 +94,7 @@ def evaluate(variations, databases, mappings):
 #                          precision_over_dnf)
 
 if redo.running():
-    
+
     (project, ) = redo.snippets
     project_path = Path('projects') / project
 
@@ -118,7 +118,7 @@ if redo.running():
                 variations[variation_id][event] = variation
 
     evaluations = evaluate(variations, databases, mappings)
-    
+
     with redo.output() as f:
         json.dump(evaluations.to_data(), f)
 

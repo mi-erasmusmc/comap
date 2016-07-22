@@ -20,7 +20,7 @@ def average_and_format(df, variation_ids, events, databases):
         for database in databases.databases()
         for column in ['generated', 'reference', 'TP', 'FP', 'FN'] + measures
     ] + [('Average', m) for m in measures])
-    
+
     def format_list(v):
         if v != v: # is nan
             return v
@@ -28,7 +28,7 @@ def average_and_format(df, variation_ids, events, databases):
             assert type(v) == str
             li = json.loads(v)
             return len(li)
-    
+
     result = pd.DataFrame(columns=columns)
     for variation in variation_ids:
         variation_data = []
@@ -76,5 +76,5 @@ if redo.running():
         df = pd.read_csv(f)
 
     df = average_and_format(df, variation_ids, events, databases)
-    
+
     df.to_excel(redo.temp) #float_format='%.2f'

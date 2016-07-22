@@ -94,9 +94,9 @@ if redo.running():
     project_path = redo.path / 'projects' / project
 
     with redo.ifchange(project_path / 'config.yaml') as f:
-        databases = Databases.of_config(yaml.load(f))
-    with redo.ifchange(project_path / 'events.yaml') as f:
-        events = yaml.load(f)
+        config = yaml.load(f)
+        databases = Databases.of_config(config)
+        events = config['events']
     with redo.ifchange('{}.mappings.json'.format(project)) as f:
         mappings = Mappings.of_data(json.load(f))
         mapping = mappings.get(event)

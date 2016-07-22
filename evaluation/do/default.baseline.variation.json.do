@@ -16,10 +16,11 @@ if redo.running():
         config = yaml.load(f)
         databases = Databases.of_config(config)
         semantic_types = config['semantic-types']
-    with redo.ifchange(project_path / 'events.yaml') as f:
-        events = yaml.load(f)
+        events = config['events']
+
     with redo.ifchange('{}.{}.concepts.json'.format(project, event)) as f:
         concepts = Concepts.of_data(json.load(f))
+
     with redo.ifchange('{}.mappings.json'.format(project)) as f:
         mappings = Mappings.of_data(json.load(f))
         mapping = mappings.get(event)

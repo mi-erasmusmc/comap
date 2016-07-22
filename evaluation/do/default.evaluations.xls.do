@@ -62,16 +62,15 @@ def average_and_format(df, variation_ids, events, databases):
 
 if redo.running():
 
-    (project,) = redo.snippets
+    project, = redo.snippets
     project_path = Path('projects') / project
 
     with redo.ifchange(project_path / 'config.yaml') as f:
         config = yaml.load(f)
         databases = Databases.of_config(config)
-    with redo.ifchange(project_path / 'events.yaml') as f:
-        events = yaml.load(f)
-    with redo.ifchange(project_path / 'variations.yaml') as f:
-        variation_ids = yaml.load(f)
+        events = config['events']
+        variation_ids = config['variations']
+
     with redo.ifchange('{}.evaluations.csv'.format(project)) as f:
         df = pd.read_csv(f)
 

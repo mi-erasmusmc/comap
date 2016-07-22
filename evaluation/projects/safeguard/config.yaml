@@ -1,14 +1,36 @@
 project: safeguard
-databases: [ Medicare, IPCI, CPRD, GePaRD ]
+events: [ ap, bc, hs, is, mi, pc, va ] # , scd
 coding-systems:
-  Lombardy: ICD9CM
+  Medicare: ICD9CM
   IPCI: ICPC2EENG
   CPRD: RCD2
   GePaRD: ICD10/CM
+  Lombardy: ICD9CM
   BIFAB: ICPC2EENG
-  Medicare: ICD9CM
   unknown: ICD10/CM
   Puglia: ICD9CM
   PHARMO: ICD9CM
 semantic-types: [T020, T190, T049, T019, T047, T050, T037, T048, T191,
   T046, T184, T033, T005, T004, T204, T007]
+databases: [ Medicare, IPCI, CPRD, GePaRD ]
+variations:
+  - baseline0 # No Filter
+  - baseline1 # Filter FP concepts
+  - baseline  # Filter by disorders
+  - baseline.filter-gen
+  #- baseline.filter-both
+  - max-recall
+  - max-recall.filter-gen
+  #- max-recall.filter-both
+  - 1-RN-RB.expand
+  - 1-RN-CHD.expand
+  - 1-RB-PAR.expand
+  - 1-PAR-CHD.expand
+  - 1-RN-CHD-RB-PAR.expand
+  - 2-RN-CHD-RB-PAR.expand
+  - 3-RN-CHD-RB-PAR.expand
+  - 3-RN-CHD-RB-PAR.expand
+  - 3-RN-CHD-RB-PAR.expand.filter-gen
+  - 4-RN-CHD-RB-PAR.expand
+  - 4-RN-CHD-RB-PAR.expand.filter-gen
+  #- 4-RN-CHD-RB-PAR.expand.filter-both

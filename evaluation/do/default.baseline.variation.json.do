@@ -7,6 +7,16 @@ import utils
 
 logger = utils.get_logger(__name__)
 
+
+def filter_fp_concepts(variation, databases):
+    for cui in variation.concepts.cuis():
+        codes_by_voc = variation.concepts.codes_by_coding_systems(cui)
+        if not any(variation.mapping.codes(db) & codes_by_voc.codes(voc)
+                   for db, voc in databases
+                   if variation.mapping.codes(db)):
+            variation.concepts.remove(cui)
+
+
 if redo.running():
 
     project, event = redo.snippets
@@ -26,6 +36,8 @@ if redo.running():
         mapping = mappings.get(event)
 
     variation = Variation(concepts.filter_by_semantic_types(semantic_types), mapping)
+
+    # filter_fp_concepts(variation, databases)
 
     with redo.output() as f:
         json.dump(variation.to_data(), f)

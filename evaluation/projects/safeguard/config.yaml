@@ -15,7 +15,6 @@ semantic-types: [T020, T190, T049, T019, T047, T050, T037, T048, T191,
 databases: [ Medicare, IPCI, CPRD, GePaRD ]
 variations:
   - baseline0 # No Filter
-  - baseline1 # Filter FP concepts
   - baseline  # Filter by disorders
   - baseline.filter-gen
   #- baseline.filter-both

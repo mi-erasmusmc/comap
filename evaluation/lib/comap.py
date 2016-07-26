@@ -11,10 +11,12 @@ http.client.HTTPConnection.debuglevel = 0
 logger = utils.get_logger(__name__)
 logger.setLevel('WARN')
 
-PEREGRINE_API_URL = 'https://euadr.erasmusmc.nl/UMLS2014AB_ADVANCE/rest'
+PEREGRINE_API_URL = 'http://localhost:8081/rest' # 'https://euadr.erasmusmc.nl/UMLS2014AB_ADVANCE/rest'
 COMAP_API_URL = 'http://localhost:8080/CodeMapper/rest' # https://euadr.erasmusmc.nl/CodeMapper/rest
+UMLS_DB_ACCESS = dict(db='umls', host='127.0.0.1', user='umls', password='umls', port=3308)
+UMLS_EXT_DB_ACCESS = dict(db='umls_ext', host='127.0.0.1', user='umls', password='umls', port=3308)
+
 COMAP_COOKIES_FILE = '.comap-cookies'
-DB_ACCESS = dict(host='127.0.0.1', user='root', password='root', port=3306)
 
 def get_cookies():
     try:
@@ -141,14 +143,14 @@ _umls_db = None
 def get_umls_db():
     global _umls_db
     if _umls_db is None:
-        _umls_db = pymysql.connect(db='UMLS2014AB_CoMap', **DB_ACCESS)
+        _umls_db = pymysql.connect(**UMLS_DB_ACCESS)
     return _umls_db
 
 _umls_ext_db = None
 def get_umls_ext_db():
     global _umls_ext_db
     if _umls_ext_db is None:
-        _umls_ext_db = pymysql.connect(db='UMLS_ext_mappings', **DB_ACCESS)
+        _umls_ext_db = pymysql.connect(**UMLS_EXT_DB_ACCESS)
     return _umls_ext_db
 
 

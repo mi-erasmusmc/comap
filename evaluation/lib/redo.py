@@ -119,7 +119,10 @@ class RedoCommand(object):
         all_filenames_str = ' '.join('"{}"'.format(filename)
                                      for filename in all_filenames)
         command = self.command_name + ' ' + all_filenames_str
-        os.system(command)
+        res = os.system(command)
+        if res != 0:
+            print("Redo failed")
+            exit(res)
 
     def __enter__(self):
         def f(filename):

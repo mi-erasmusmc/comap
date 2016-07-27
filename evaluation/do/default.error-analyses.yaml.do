@@ -135,7 +135,7 @@ def create_error_analysis_fn(event, database, databases, dnf, evaluation,
             unassigned.add(code)
 
     if unassigned:
-        logger.warn("Unasssigned codes for %s: %s", coding_system, ", ".join(unasssigned))
+        logger.warn("Unassigned codes for %s: %s", coding_system, ", ".join(unassigned))
         if coding_system == 'RCD2':
             t = translation_read_2to3(unassigned)
         names = cui_names(fn_cuis)

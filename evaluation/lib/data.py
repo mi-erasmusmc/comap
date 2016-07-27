@@ -235,10 +235,15 @@ class Mapping:
     @classmethod
     def of_raw_data(cls, for_event, databases):
         def codes(for_database):
+            inclusion, exclusion = None, None
             if 'inclusion' in for_database:
-                return set(for_database['inclusion'])
-            else:
+                inclusion = set(for_database['inclusion'])
+            if 'exclusion' in for_database:
+                exclusion = set(for_database['exclusion'])
+            if inclusion is None:
                 return None
+            else:
+                return inclusion | (exclusion or set())
         def exclusion_codes(for_database):
             if 'inclusion' in for_database:
                 if 'exclusion' in for_database:

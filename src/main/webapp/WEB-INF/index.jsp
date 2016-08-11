@@ -37,6 +37,7 @@
       <div class="col-md-4">
         <div ng-controller="LoggedInCtrl" ng-if="user">
           Welcome, <span ng-bind="user.username" class="username"></span>
+          <a href="#/overview"><button title="Go to overview" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-list"></span> All mappings</button></a>
           <button ng-click="logout()" class="btn btn-default btn-xs"><i class="glyphicon glyphicon-log-out"></i> Logout</button>
         </div>
       </div>
@@ -58,9 +59,9 @@
         <a title="Go to overview" href="#/overview"><img class='comap-logo' src="images/logo.png" height="70px"></img></a>
       </div>
       <div class="col-md-4 text-right">
-        <img class='advance-logo' src="images/logo-advance.png" height="23px" />
-        <br/>
         <img class='erasmus-logo' src="images/erasmus_mc.jpg" height="40px" />
+        <br/>
+        <img class='advance-logo' src="images/logo-advance.png" height="23px" />
       </div>
     </div>
     <div ng-view></div>

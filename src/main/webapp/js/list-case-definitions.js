@@ -40,8 +40,11 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
             });
         });
     
+    var projectNameRegex = /^[\w\d _()-]+$/;
     $scope.validNewName = function(project, name) {
-        return name.length > 0 && $scope.caseDefinitions[project].indexOf(name) == -1;
+        return name.length > 0 && 
+            $scope.caseDefinitions[project].indexOf(name) == -1 &&
+            name.indexOf('/') == -1;
     }
     
     $scope.create = function(project, name) {

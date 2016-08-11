@@ -69,8 +69,10 @@ public class CodeMapperApplication extends ResourceConfig {
 			Properties properties = new Properties();
 			properties.load(getClass().getResourceAsStream(CODE_MAPPER_PROPERTIES));
 
-			List<String> availableCodingSystems = Arrays.asList(
-					properties.getProperty("available-coding-systems").split(",\\s*"));
+			String availableCodingSystemsStr = properties.getProperty("available-coding-systems");
+            List<String> availableCodingSystems = null;
+            if (availableCodingSystemsStr != null)
+                availableCodingSystems = Arrays.asList(availableCodingSystemsStr.split(",\\s*"));
 
 			List<String> codingSystemsWithDefinition = Arrays.asList(
 					properties.getProperty("coding-systems-with-definition").split(",\\s*"));

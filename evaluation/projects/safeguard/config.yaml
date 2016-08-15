@@ -28,8 +28,10 @@ variations:
   - 1-RN-CHD-RB-PAR.expand
   - 2-RN-CHD-RB-PAR.expand
   - 3-RN-CHD-RB-PAR.expand
-  - 3-RN-CHD-RB-PAR.expand
-  - 3-RN-CHD-RB-PAR.expand.filter-gen
+  - 3-RN-RB.expand
+  - 3-CHD-PAR.expand
   - 4-RN-CHD-RB-PAR.expand
+  - 4-RN-RB.expand
+  - 4-CHD-PAR.expand
   - 4-RN-CHD-RB-PAR.expand.filter-gen
   #- 4-RN-CHD-RB-PAR.expand.filter-both

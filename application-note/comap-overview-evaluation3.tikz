@@ -1,0 +1,136 @@
+% -*- mode: LaTeX -*-
+\usetikzlibrary{arrows,calc,shapes.geometric,shapes.arrows,positioning,fit,backgrounds,patterns}
+
+
+\begin{tikzpicture}[%
+rect/.style n args={4}{
+        draw=none,
+        rectangle,
+        append after command={
+            \pgfextra{%
+                \pgfkeysgetvalue{/pgf/outer xsep}{\oxsep}
+                \pgfkeysgetvalue{/pgf/outer ysep}{\oysep}
+                \def\arg@one{#1}
+                \def\arg@two{#2}
+                \def\arg@three{#3}
+                \def\arg@four{#4}
+                \begin{pgfinterruptpath}
+                    \ifx\\#1\\\else
+                        \draw[draw,#1] ([xshift=-\oxsep,yshift=+\pgflinewidth]\tikzlastnode.south east) edge ([xshift=-\oxsep,yshift=0\ifx\arg@two\@empty-\pgflinewidth\fi]\tikzlastnode.north east);
+                    \fi\ifx\\#2\\\else
+                        \draw[draw,#2] ([xshift=-\pgflinewidth,yshift=-\oysep]\tikzlastnode.north east) edge ([xshift=0\ifx\arg@three\@empty+\pgflinewidth\fi,yshift=-\oysep]\tikzlastnode.north west);
+                    \fi\ifx\\#3\\\else
+                        \draw[draw,#3] ([xshift=\oxsep,yshift=0-\pgflinewidth]\tikzlastnode.north west) edge ([xshift=\oxsep,yshift=0\ifx\arg@four\@empty+\pgflinewidth\fi]\tikzlastnode.south west);
+                    \fi\ifx\\#4\\\else
+                        \draw[draw,#4] ([xshift=0+\pgflinewidth,yshift=\oysep]\tikzlastnode.south west) edge ([xshift=0\ifx\arg@one\@empty-\pgflinewidth\fi,yshift=\oysep]\tikzlastnode.south east);
+                    \fi
+                \end{pgfinterruptpath}
+            }
+        }
+    },
+    every node/.style={%
+      font=\sffamily,
+      align=center
+    },
+    every path/.style={%
+      font=\sffamily
+    },
+    insidearrow/.style={%
+      -latex,
+      very thick,
+      shorten <= 3pt,
+      shorten >= 3pt
+    },
+    insidenode/.style={%
+      draw=black!50,
+      fill=black!10,
+%       postaction={
+%           pattern=dots
+%       },
+      rounded corners=0.1em,
+      text depth=0em
+    },%
+    outsidenode/.style={%
+%       pattern=dots,
+      draw=black!50,
+%      fill=black!20,
+      rounded corners=0.1em,
+      text depth=0em
+    },
+    outsidearrow/.style={%
+      dashed,
+      color=black!70,thick,
+      -latex, very thick,
+      shorten <= 3pt,
+      shorten >= 3pt
+    },
+    dot/.style={circle,fill=#1,inner sep=0,minimum size=4pt},
+  ]
+
+  \node[outsidenode] (casedef) {Case definition \\[-0.4em] \footnotesize (free-text)};
+  \node[insidenode] (base) [below left=of casedef] {Baseline};
+  \node[insidenode] (expand) [below=of base] {Expansion step};
+
+
+%  \node (comap) [above left=1em and 1.5em of casedef] {CodeMapper \\[-0.4em] \footnotesize (automatic)};
+%  \node[above right=1em and -2.5em of casedef, align=right] (manual) {Reference mapping \\[-0.3em] \footnotesize (manual)};
+
+\tikzset{dot/.style={circle,fill=#1,inner sep=0,minimum size=4pt}}
+
+%  \node (proj) [right=of zero, align=right] {Project \\[-0.4em] \scriptsize (manual)};
+
+  \node[draw,rect={solid}{}{}{},fit=(base) (expand)] (mappings) {};
+
+  \node[outsidenode] (mappingcodes) [right=of mappings] {CodeMapper \\[-0.3em] code sets};
+  \node[outsidenode] (refer) [right=of mappingcodes] {Reference \\[-0.3em] code sets};
+  
+  \path (casedef)
+    edge[insidearrow,out=190,in=90]
+    node[above left,align=right,near end] (indexing) {\small Concept \\[-0.3em] identification}
+    (base);
+
+  \path (base)
+    edge[insidearrow]
+%    node[left, align=right] (indexing) {\small = Expansion step 0}
+    (expand);
+
+% 
+  \draw[insidearrow] ($ (expand.south) + (0.4,0) $)
+    .. controls +(-.05,-.6) and +(0.15,-.6) ..
+    node[below] (revision) {\small Revision}
+     ($ (expand.south) + (-.4,0) $);
+
+  \path (casedef)
+    edge[insidearrow,out=-15	, in=90,dashed]
+    (refer);
+
+  \path (mappingcodes)
+    edge[insidearrow, latex-latex, double]
+%    node[below] {\footnotesize Comparison}
+    (refer);
+
+  \path (mappings)
+    edge[insidearrow]
+    (mappingcodes);
+
+    \coordinate (legend) at ($(current bounding box.north east) + (-2em,-1.5em)$);
+    \draw[insidearrow]
+      (legend)
+      ++(0, 0em) -- ++(2.5em, 0)
+      node[right] {\scriptsize CodeMapper operation (automatic)};
+    \draw[insidearrow, dashed]
+      (legend)
+      ++(0, -1em) -- ++(2.5em, 0)
+      node[right] {\scriptsize Manual mapping (reference project)};
+    \draw[insidearrow, latex-latex, double]
+      (legend)
+      ++(0, -2em) -- ++(2.5em, 0)
+      node[right] {\scriptsize Comparison for evaluation};
+ 
+    \node[insidenode, anchor=south west] at ($(legend) + (0.75em,0.75em)$) {\ };
+	\draw[draw=none] (legend) 
+      ++(0, 1em) -- ++(2.5em, 0)
+      node[right] {\scriptsize CodeMapper mappings};
+
+%   \node[dot=red] at (legend) {};
+\end{tikzpicture}

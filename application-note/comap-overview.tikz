@@ -1,7 +1,6 @@
 % -*- mode: LaTeX -*-
 \usetikzlibrary{arrows,calc,shapes.geometric,shapes.arrows,positioning,fit,backgrounds}
 
-
 \begin{tikzpicture}[%
     every node/.style={%
       font=\sffamily,
@@ -20,7 +19,8 @@
       draw=black!50,
       fill=black!10,
       rounded corners=0.1em,
-      text depth=0em
+      text depth=0em,
+      execute at begin node=\setlength{\baselineskip}{0.8em}
     },%
     outsidenode/.style={%
       text=black!70,%
@@ -39,21 +39,35 @@
     },
   ]
 
-  \node[insidenode] (concepts) {Concepts};
-  \node[insidenode] (casedef) [left=5em of concepts] {Case definition \\[-0.4em] \scriptsize (free-text)};
-  \node[insidenode] (codes) [right=5em of concepts] {Codes\\[-0.4em] \scriptsize (per coding systems)};
+  \begin{scope}[
+    every node/.append style={insidenode, node distance=6em}
+  ]
+    \node (concepts) {Concepts};
+    \node (casedef) [left=of concepts]
+      {Case definition \\ \scriptsize (free-text)};
+    \node (codes) [right=of concepts]
+      {Codes \\ \scriptsize (per vocabulary)};
+  \end{scope}
 
-  \path (casedef)
-    edge[insidearrow]
-    node[below] (indexing) {\small 1. Indexing \\[-0.4em] \scriptsize (automatic)}
+  \node [left=of casedef, rotate=90, anchor=center] {\emph{CodeMapper}};
+
+  \begin{scope}[
+    every edge/.append style=insidearrow,
+    every path/.append style=insidearrow,
+    every node/.append style={execute at begin node=\setlength{\baselineskip}{0.8em}}
+  ]
+  \path (casedef) edge
+    node[below] (indexing)
+      {\small 1.\ Concept \\ \small identification \\ \scriptsize (automatic)}
     (concepts);
-  \path (concepts)
-    edge[insidearrow]
-    node[below] (mapping) {\small 3. Mapping \\[-0.4em] \scriptsize (automatic)}
+  \path (concepts) edge
+    node[below] (mapping)
+      {\small 3.\ Projection \\ \scriptsize (automatic)}
     (codes);
-  \draw[insidearrow] ($ (concepts.south) + (0.4,0) $)
+  \draw ($ (concepts.south) + (0.4,0) $)
     .. controls +(-.05,-.6) and +(0.15,-.6) ..
-    node[below] (revision) {\small 2. Revision\\[-0.4em] \scriptsize (manual) \& \\[-0.2em] \small Logging}
+    node[below] (revision)
+      {\small 2.\ Revision \\ \scriptsize (manual) \\ \small \& logging}
      ($ (concepts.south) + (-.4,0) $);
-
+  \end{scope}
 \end{tikzpicture}

@@ -1,0 +1,84 @@
+% -*- mode: LaTeX -*-
+\usetikzlibrary{arrows,calc,shapes.geometric,shapes.arrows,positioning,fit,backgrounds,patterns,matrix}
+
+\begin{tikzpicture}[
+  every node/.style={
+    font=\sffamily
+  }
+]
+
+\begin{scope}[shift={(0,-2.2)}, inner sep=1.5, node distance=.75, circle]
+  \node [anchor=base] (a) at (0,0) {a};
+  \node [right=of a.base, anchor=base] (b) {b};
+  \node [above right=.7 and 0.5 of b.base, anchor=base] (c) {c};
+  \node [right=of c.base, anchor=base] (d) {d};
+%  \node [below right=.7 and 0.5 of d.base, anchor=base] (e) {e};
+  \node [below right=.7 and 0.5 of d.base, anchor=base] (f) {e};
+  \node [right=of f.base, anchor=base] (g) {f};
+  \node [right=of g.base, anchor=base] (h) {g};
+  \node [right=of h.base, anchor=base] (i) {h};
+  \node [right=of i.base, anchor=base] (j) {i};
+  \node [right=of j.base, anchor=base] (k) {j};
+  \node [right=of k.base, anchor=base] (l) {k};
+\end{scope}
+
+\node (s0) at ($(f)+(0,.25)$) {};
+\node (s1) at ($(f)-(0,.25)$) {};
+
+% Concepts
+\begin{scope}[shift={(1.1,0)},draw,circle,align=center,anchor=base,inner sep=1, node distance=1.8]
+  \node [anchor=base] (c1) {C$_\mathsf  1$};
+%   \node [above right=1 and 1 of c1.base, anchor=base] (c5) {C$_\mathsf 2$};
+%   \node [below right=1 and 1 of c5.base, anchor=base] (c2)  {C$_\mathsf 3$};
+  \node [right=of c1.base, anchor=base] (c2)  {C$_\mathsf 3$};
+  \node [right=of c2.base, anchor=base] (c3) {C$_\mathsf 4$};
+  \node [right=of c3.base, anchor=base] (c4) {C$_\mathsf 5$};
+\end{scope}
+
+% \path (c2) edge[-latex, dashed, bend right] node[above right] {\scriptsize broader} (c5);
+
+\begin{scope}[inner sep=.5]
+  \node (ref) [draw, fill=black, fill opacity=0.1, rounded corners, fit=(a) (i) (s1), inner sep=2, pin={left:Reference codes}] {};
+  \node (gen) [draw, fill=black, fill opacity=0.1, rounded corners, fit=(f) (l) (s0), inner sep=2, pin={right:Generated codes}] {};
+  \node (meta) [draw,rounded corners, fit=(b) (c) (s1) (gen), inner sep=6, pin={[align=right]170:{Codes in the\\Metathesaurus}}] {};
+  \node (mapping) [align=left, draw, fill=black, fill opacity=0.1, rounded corners, fit=(c2) (c3) (c4), inner sep=2, pin=right:{Selected concepts}] {};
+  \node[align=left, draw,rounded corners, fit=(c1) (mapping), inner sep=6, pin={175:Concept identifiers}] {};
+\end{scope}
+
+\begin{scope}[-latex]
+  \path (c1) edge (b) edge (c) edge (d);
+%   \path (c2) edge (f) edge (g);
+  \path (c3) edge (h) edge (i) edge (j);
+  \path (c4) edge (k) edge (l);
+%  \path (c5) edge (e);
+\end{scope}
+
+\begin{scope}[shift={(-.25,-2.5)}, anchor=north east]
+  \matrix[matrix of nodes,nodes={font=\scriptsize\sffamily},column 1/.style={anchor=base east}]{
+    \node{False negatives};\\
+    \node(fnwotp) {not in UMLS/CodeMapper\ \textbullet\ };\\
+    \node(fnnoref) {no sibling in reference\ \textbullet\ };\\
+   % \node(fnexp) {true positive in next expansion\ \textbullet\ };\\
+  };
+\end{scope}
+
+\begin{scope}[shift={(7.4,-2.5)}, anchor=north west]
+  \matrix[matrix of nodes,nodes={font=\scriptsize\sffamily},column 1/.style={anchor=base west}]{
+    \node{False positives};\\
+    \node(fpwotp){\ \textbullet\ without true-positive sibling};\\
+    \node(fpwtp) {\ \textbullet\ with true-positive sibling};\\
+    \node(tp) {True positives};\\
+  };
+\end{scope}
+
+\begin{scope}[every edge/.append style={gray, rounded corners, to path={-| (\tikztotarget)}}]
+  \path (fpwotp) edge (l) edge (k);
+  \path (fpwotp) edge (l) edge (k);
+  \path (fpwtp) edge (j);
+  \path (fnwotp) edge (a);
+  \path (fnnoref) edge (b);
+%  \path (fnexp) edge (e);
+  \path (tp) edge (f) edge (g) edge (h) edge (i);
+\end{scope}
+
+\end{tikzpicture}

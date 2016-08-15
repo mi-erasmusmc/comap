@@ -1,0 +1,164 @@
+\usetikzlibrary{arrows,calc,positioning,fit,backgrounds}
+
+\begin{tikzpicture}[
+    every node/.style={%
+      font=\sffamily,
+      align=center
+    },
+    every path/.style={%
+      font=\sffamily
+    },
+    insidearrow/.style={%
+      -latex,
+      thick,
+      shorten <= 3pt,
+      shorten >= 3pt,
+      rounded corners
+    },
+    insidenode/.style={%
+      draw=black!70,
+      fill=black!20,
+      rounded corners=0.1em,
+      text depth=0em,
+      execute at begin node=\setlength{\baselineskip}{0.8em}
+    },%
+]
+
+\node (comap) {
+\begin{tikzpicture}
+  \begin{scope}[
+    every node/.append style={insidenode, node distance=6em}
+  ]
+    \node (concepts) {Concepts};
+    \node (casedef) [left=of concepts]
+      {Case definition \\ \scriptsize (free-text)};
+    \node (codes) [right=of concepts]
+      {Codes \\ \scriptsize (per vocabulary)};
+  \end{scope}
+
+  \begin{scope}[
+    every edge/.append style=insidearrow,
+    every path/.append style=insidearrow,
+    every node/.append style={execute at begin node=\setlength{\baselineskip}{0.8em}}
+  ]
+  \path (casedef) edge
+    node[below] (indexing)
+      {\small 1.\ Concept \\ \small identification \\ \scriptsize (automatic)}
+    (concepts);
+  \path (concepts) edge
+    node[below] (mapping)
+      {\small 3.\ Projection \\ \scriptsize (automatic)}
+    (codes);
+  \draw ($ (concepts.south) + (0.4,0) $)
+    .. controls +(-.05,-.6) and +(0.15,-.6) ..
+    node[below] (revision)
+      {\small 2.\ Revision \\ \scriptsize (manual) \\ \small \& logging}
+     ($ (concepts.south) + (-.4,0) $);
+  \end{scope}
+\end{tikzpicture}
+};
+
+\node (umls) [below=of comap] {
+\begin{tikzpicture}
+\node (terms) {
+\begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+\node (c1)  [insidenode] {Cough};
+\foreach \a [count=\c] in {
+  {READ CTV3:\\"Observation of cough"},
+  {ICPC-2:\\"Cough"},
+  {SNOMED-CT:\\"Cough" "Coughing"},
+  {ICD-10:\\"Cough"},
+  {MedDRA:\\"Coughing"},
+  {\ldots:\\"Cough symptom"},
+  {MeSH:\\"Coughs"},
+  {}
+}
+{
+  \ifnum\c<8
+  \path (c1.north) ++(\c*360/7:3 and 1.4) node[font=\scriptsize] {\a} edge[thick] (c1);
+  \fi
+}
+\end{tikzpicture}
+};
+
+\node (hier) [right=-1em of terms] {
+\begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+ \node (c2) [insidenode] {Cough};
+\begin{scope}[
+    every node/.append style={draw, rounded corners},
+    every edge/.append style={thick}
+]
+\begin{scope}[
+    every node/.append style={draw, rounded corners, node distance=1em and 3em,draw=black!40,fill=black!10},
+]
+  \node (p1) [above left=of c2] {Respiratory\\disorders} edge[latex-] (c2);
+  \node (p2) [above=of c2] {Respiratory\\reflex} edge[latex-] (c2);
+  \node (p3) [above right=of c2] {Abnormal\\breathing} edge[latex-] (c2);
+\end{scope}
+\begin{scope}[
+    every node/.append style={node distance=.5em and 1.5em,draw=black!40,fill=black!10},
+]
+  \node (p4) [below left=of c2] {Evening\\cough} edge[-latex] (c2);
+  \node (p5) [below right=of c2] {Paroxysmal\\cough} edge[-latex] (c2);
+\end{scope}
+\begin{scope}[every node/.append style={node distance=1em and -1em, draw=none}]
+%   \node [above right=of p1, d
+  \node [above left=of p1] {} edge[latex-] (p1);
+%   \node [above right=of p1] {} edge[latex-] (p1);
+  \node [above left=of p2] {} edge[latex-] (p2);
+  \node [above right=of p2] {} edge[latex-] (p2);
+  \node [above=of p3] {} edge[latex-] (p3);
+%   \node [above right=of p3] {} edge[latex-] (p3);
+%   \node [below left=of p4] {} edge[-latex] (p4);
+  \node [below right=of p4] {} edge[-latex] (p4);
+  \node [below left=of p5] {} edge[-latex] (p5);
+  \node [below right=of p5] {} edge[-latex] (p5);
+\end{scope}
+\end{scope}
+\end{tikzpicture}
+};
+
+\node (codes) [right=-1em of hier] {
+\begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+\node (c3) [insidenode] {Cough};
+\foreach \a [count=\c] in {
+  {READ CTV3:\\XE0qn},
+  {ICPC-2:\\R05},
+  {SNOMED-CT:\\158383001},
+  {ICD-10:\\R05},
+  {MedDRA:\\10011224},
+  {\ldots},
+  {MeSH:\\D003371},
+  {}
+}
+{
+  \ifnum\c<8
+  \path (c1.north) ++(\c*360/7:3 and 1.4) node[font=\scriptsize] {\a} edge [thick] (c3);
+  \fi
+}
+\end{tikzpicture}
+};
+\end{tikzpicture}
+};
+
+\node (lterms) at (-7.5,-2.75) {Terms};
+\node (lhier) at (.5,-2.75) {Hierarchy};
+\node (lcodes) at (7.75,-2.75) {Codes};
+
+\begin{scope}[every edge/.append style={thick, dashed,-latex}]
+  \draw (lterms) edge (-3,-.5);
+  \draw (lhier) edge (0.3,-1.3);
+  \draw (lcodes) edge (3.25,-.15);
+\end{scope}
+
+\begin{scope}[on background layer]
+% \draw [black!10] (-15,-10) grid (12,2);
+  \fill[black!3,draw=black!40,rounded corners] (-7.25,1.5) rectangle (6.5,-1.5)
+    node[pos=0,anchor=north east,rotate=90,text=black] {CodeMapper};
+  \fill[black!3,draw=black!40,rounded corners] (-11.75,-2.1) rectangle (11.5, -7.25)
+    node[pos=0,anchor=north east, rotate=90, text=black] {UMLS};
+\end{scope}
+
+% \node [fit=(lumls)
+
+\end{tikzpicture}

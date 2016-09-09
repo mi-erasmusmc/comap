@@ -6,6 +6,7 @@ import argparse
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import sys
+from glob import glob
 
 HELP = """
 This program connects the code counts resulting from the event fingerprinting
@@ -80,30 +81,32 @@ def get_mappings(comap_xls_files, vocabularies):
     ]).reset_index(drop=True)
 
 
-def get_mapped_codes(code_counts, mappings):
-    SEP = '/'
-    extracted = code_counts.Event + SEP + code_counts['Code']
-    mapped_set = set(mappings.Event + SEP + mappings.Code)
-    def search_prefix(code):
+def get_mapped_codes(code_counts, mappings, norm_prefix, norm_dots, norm_case):
+    def norm(code):
+        code0 = code
+        if norm_prefix and code.startswith(norm_prefix):
+            code = code[len(norm_prefix):]
+        if norm_dots:
+            code = code.replace('.', '')
+        if norm_case:
+            code = code.lower()
+        return code
+    mapped = [(row.Event, row.Code) for _, row in mappings.iterrows()]
+    def search_prefix(row):
         # Search mapped code that is a prefix
-        for N in range(0, len(code)-1):
-            if N != 0 and code[-N] == SEP:
-                break
-            prefix = code[:-N] if N else code
-            if prefix in mapped_set:
-                return prefix[prefix.index(SEP)+1:]
-        # Search mapped code that is a prefix, case-insensitive
-        for N in range(0, len(code)-1):
-            if N != 0 and code[-N] == SEP:
-                break
+        event, code = row.Event, row.Code
+        for N in range(0, len(code)):
             prefix = code[:-N] if N else code
             try:
-                s = next(c for c in mapped_set if prefix.lower() == c.lower())
-                return s[s.index(SEP)+1:]
+                return next(
+                    c for e, c in mapped
+                    if event == e
+                    and norm(prefix) == norm(c)
+                )
             except StopIteration:
                 pass
         return '???'
-    return extracted.map(search_prefix)
+    return code_counts.apply(search_prefix, axis=1)
 
 
 def get_count_mapped(mappings, code_counts, code_names, mapped_codes):
@@ -132,14 +135,14 @@ def get_count_mapped(mappings, code_counts, code_names, mapped_codes):
     res['Count']               = res['Count'].fillna(0)
     res['FirstCount']          = res['FirstCount'].fillna(0)
     res.loc[res['Code'] == res['Extracted code'], 'Note'] = 'Generated and extracted'
-    res.loc[res['Code'] != res['Extracted code'], 'Note'] = 'Generated and extracted subcode'
+    res.loc[res['Code'] != res['Extracted code'], 'Note'] = 'Generated and extracted similar'
     res.loc[res['Code'] == '???'                , 'Note'] = 'Not generated'
     res.loc[res['Extracted code'] == '-'        , 'Note'] = 'Not extracted'
     res.sort_values(['Event', 'Note', 'Vocabulary', 'Code'], inplace=True)
     return res
 
 
-def run(vocabularies, code_counts_csv, code_names_csv, comap_xls_files, output_xls):
+def run(vocabularies, code_counts_csv, code_names_csv, comap_xls_files, norm_prefix, norm_dots, norm_case, output_xls):
     # Event × Vocabulary × Code × ...
     mappings     = get_mappings(comap_xls_files, vocabularies)
     # Code × Name
@@ -147,7 +150,7 @@ def run(vocabularies, code_counts_csv, code_names_csv, comap_xls_files, output_x
     # Event × Code × Count × FirstCount
     code_counts  = get_code_counts(code_counts_csv)
     # Code
-    mapped_codes = get_mapped_codes(code_counts, mappings)
+    mapped_codes = get_mapped_codes(code_counts, mappings, norm_prefix, norm_dots, norm_case)
     # Event × Vocabulary × Code × Count × FirstCount × Extracted code × Note × ...
     count_mapped = get_count_mapped(mappings, code_counts, code_names, mapped_codes)
     row_order = [
@@ -155,7 +158,19 @@ def run(vocabularies, code_counts_csv, code_names_csv, comap_xls_files, output_x
         'Code', 'Code name', 'Extracted code', 'Extracted code name',
         'Count', 'FirstCount', 'Note'
     ]
-    count_mapped[row_order].to_excel(output_xls, index=False)
+    res = count_mapped[row_order]
+    with pd.ExcelWriter(output_xls) as writer:
+        res.to_excel(writer, 'Codes', index=False)
+        parameters = pd.DataFrame.from_records([
+            ('Vocabularies', ' '.join(vocabularies)),
+            ('Code counts', code_counts_csv),
+            ('Code names', code_names_csv),
+            ('Mappings', ', '.join(comap_xls_files)),
+            ('Norm prefix', norm_prefix),
+            ('Norm dots', 'Yes' if norm_dots else 'No'),
+            ('Norm case', 'Yes' if norm_case else 'No'),
+        ], columns=['Parameter', 'Value'])
+        parameters.to_excel(writer, 'Parameters', index=False)
 
 
 def main_command_line():
@@ -164,14 +179,23 @@ def main_command_line():
                         help="CodeMapper/UMLS vocabularies for the database")
     parser.add_argument('--code-counts', metavar='FILE', required=True,
                         help="A CSV file with the code counts generated in event fingerprinting")
-    parser.add_argument('--code-names', metavar='FILE', required=True,
+    parser.add_argument('--code-names', metavar='FILE',
                         help="A CSV file with local code names for the database")
     parser.add_argument('--mappings', metavar='FILE', nargs="*", required=True,
                         help="A list of XLS file containing the event mappings generated by CodeMapper")
+    parser.add_argument('--norm-prefix', metavar='STR',
+                        help="A prefix that is ignored when comparing codes")
+    parser.add_argument('--norm-dots', action='store_true',
+                        help="Ignore dots when comparing codes")
+    parser.add_argument('--norm-case', action='store_true',
+                        help="Ignore case when comparing codes")
     parser.add_argument('--output', metavar='FILE', required=True,
                         help="Output XLS file")
     args = parser.parse_args()
-    run(args.vocabularies, args.code_counts, args.code_names, args.mappings, args.output)
+    if len(args.mappings) == 1 and os.path.isdir(args.mappings[0]):
+        args.mappings = glob(os.path.join(args.mappings[0], '*.xls'))
+        print("Globbed mappings directory", ', '.join(args.mappings))
+    run(args.vocabularies, args.code_counts, args.code_names, args.mappings, args.norm_prefix, args.norm_dots, args.norm_case, args.output)
 
 
 class TkApplication(tk.Frame):

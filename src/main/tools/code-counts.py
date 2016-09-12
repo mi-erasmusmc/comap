@@ -97,14 +97,9 @@ def get_mapped_codes(code_counts, mappings, norm_prefix, norm_dots, norm_case):
         event, code = row.Event, row.Code
         for N in range(0, len(code)):
             prefix = code[:-N] if N else code
-            try:
-                return next(
-                    c for e, c in mapped
-                    if event == e
-                    and norm(prefix) == norm(c)
-                )
-            except StopIteration:
-                pass
+            for e, c in mapped:
+                if e == event and norm(c) == norm(prefix):
+                    return c
         return '???'
     return code_counts.apply(search_prefix, axis=1)
 
@@ -128,7 +123,6 @@ def get_count_mapped(mappings, code_counts, code_names, mapped_codes):
         mappings
         .merge(code_counts, how='outer', on=['Event', 'Code'])
         .merge(code_names, how='left', on='Extracted code')
-        .sort_values(['Event', 'Code'])
     )
     res['Extracted code']      = res['Extracted code'].fillna('-')
     res['Extracted code name'] = res['Extracted code name'].fillna('')

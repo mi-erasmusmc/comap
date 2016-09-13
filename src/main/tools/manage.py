@@ -49,6 +49,15 @@ def get_project(db, name):
         return cur.fetchone()['id']
 
 
+def get_mapping(db, project_id, name):
+    with db.cursor() as cur:
+        cur.execute('SELECT id FROM case_definitions '
+                    'WHERE project_id = %s '
+                    'AND name = %s',
+                    [project_id, name])
+        return cur.fetchone()['id']
+
+
 def add_user_to_project(db, username, project, role):
     user_id = get_user(db, username)
     project_id = get_project(db, project)
@@ -60,6 +69,22 @@ def add_user_to_project(db, username, project, role):
         print("Added user %d to project %d with ID %d" %
               (user_id, project_id, db.insert_id()))
     db.commit()
+
+
+def move_mapping(db, project, mapping, target_project, target_mapping):
+    if not target_mapping:
+        target_mapping = mapping
+    project_id = get_project(db, project)
+    mapping_id = get_mapping(db, project_id, mapping)
+    target_project_id = get_project(db, target_project)
+    with db.cursor() as cur:
+        cur.execute('UPDATE case_definitions '
+                    'SET project_id = %s '
+                    'WHERE id = %s',
+                    [target_project_id, mapping_id])
+        print("Moved mapping %d to project %d" %
+              (mapping_id, target_project_id))
+        db.commit()
 
 
 def show(db, users, projects, comments):
@@ -144,6 +169,13 @@ def main():
     parser_add_user_to_project.add_argument('--project', required=True)
     parser_add_user_to_project.add_argument('--role', choices='CE', required=True)
     parser_add_user_to_project.set_defaults(func=add_user_to_project)
+
+    parser_move_mapping = subparsers.add_parser('move-mapping')
+    parser_move_mapping.add_argument('--project', required=True)
+    parser_move_mapping.add_argument('--mapping', required=True)
+    parser_move_mapping.add_argument('--target-project', required=True)
+    parser_move_mapping.add_argument('--target-mapping')
+    parser_move_mapping.set_defaults(func=move_mapping)
 
     parser_show = subparsers.add_parser('show')
     parser_show.add_argument("--users", action='store_true', default=None)

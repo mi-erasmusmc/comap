@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import pandas as pd
 from pathlib import Path
-import os
+from os import path
 import argparse
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -83,7 +83,6 @@ def get_mappings(comap_xls_files, vocabularies):
 
 def get_mapped_codes(code_counts, mappings, norm_prefix, norm_dots, norm_case):
     def norm(code):
-        code0 = code
         if norm_prefix and code.startswith(norm_prefix):
             code = code[len(norm_prefix):]
         if norm_dots:
@@ -186,9 +185,8 @@ def main_command_line():
     parser.add_argument('--output', metavar='FILE', required=True,
                         help="Output XLS file")
     args = parser.parse_args()
-    if len(args.mappings) == 1 and os.path.isdir(args.mappings[0]):
-        args.mappings = glob(os.path.join(args.mappings[0], '*.xls'))
-        print("Globbed mappings directory", ', '.join(args.mappings))
+    if len(args.mappings) == 1 and path.isdir(args.mappings[0]):
+        args.mappings = glob(path.join(args.mappings[0], '*.xls'))
     run(args.vocabularies, args.code_counts, args.code_names, args.mappings, args.norm_prefix, args.norm_dots, args.norm_case, args.output)
 
 
@@ -288,7 +286,7 @@ class TkApplication(tk.Frame):
     def run(self):
         vocabularies = self.get_vocabularies()
         if vocabularies and self.code_counts and self.mappings and self.output:
-            if os.path.isfile(self.output) and \
+            if path.isfile(self.output) and \
                not messagebox.askyesno("File exists", "File {} already exists. Overwrite?"
                                        .format(self.output)):
                 return

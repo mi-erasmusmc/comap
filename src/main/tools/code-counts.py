@@ -76,7 +76,7 @@ def get_mappings(comap_xls_files, vocabularies):
          .pipe(lambda df: df[(df.Vocabulary != 'RCD2') | ~df.Code.isin(EXCLUDE_RCD2_CODES)])
          .drop_duplicates('Code')
          .assign(Event=Path(filename).name[:-4])
-        [['Event', 'Vocabulary', 'Concept', 'Concept name', 'Code', 'Code name']]
+        [['Event', 'Vocabulary', 'Concept', 'Concept name', 'Tags', 'Code', 'Code name']]
         for filename in comap_xls_files
     ]).reset_index(drop=True)
 
@@ -148,7 +148,7 @@ def run(vocabularies, code_counts_csv, code_names_csv, comap_xls_files, norm_pre
     # Event × Vocabulary × Code × Count × FirstCount × Extracted code × Note × ...
     count_mapped = get_count_mapped(mappings, code_counts, code_names, mapped_codes)
     row_order = [
-        'Event', 'Vocabulary', 'Concept', 'Concept name',
+        'Event', 'Vocabulary', 'Concept', 'Concept name', 'Tags',
         'Code', 'Code name', 'Extracted code', 'Extracted code name',
         'Count', 'FirstCount', 'Note'
     ]

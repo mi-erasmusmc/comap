@@ -1,5 +1,7 @@
 % -*- mode: LaTeX -*-
-\usetikzlibrary{arrows,calc,shapes.geometric,shapes.arrows,positioning,fit,backgrounds,patterns,matrix}
+\usetikzlibrary{calc,positioning,fit,matrix}
+
+% Resulting EPS file is rasterized due to the use of opacity!
 
 \begin{tikzpicture}[
   every node/.style={

@@ -73,7 +73,34 @@ function compareByCodeCount(c1, c2) {
 }
 
 function intersection(a1, a2) {
-    return a1.filter(function(v) { return a2.indexOf(v) != -1; });
+    return a1.filter(function(v) {
+        return a2.indexOf(v) != -1;
+    });
+}
+
+function difference(a1, a2) {
+    return a1.filter(function(v) {
+        return a2.indexOf(v) == -1;
+    });
+}
+
+function flatten(a) {
+    return [].concat.apply([], a);
+}
+
+var objectMap = function(obj, f) {
+    var res = {};
+    angular.forEach(obj, function(v, k) {
+        var v1 = f(v, k);
+        if (v1 !== undefined) {
+            res[k] = v1;
+        }
+    });
+    return res;
+}
+
+function unique(v, ix, arr) {
+    return ix == arr.indexOf(v);
 }
 
 /** Encodes an 2-D array of data to CSV. */

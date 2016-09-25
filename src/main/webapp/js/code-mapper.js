@@ -5,12 +5,7 @@
  * The initial state that is used when no state is found for the case
  * definition.
  */
-var INITIAL = {
-    caseDefinition: "",
-    history: [],
-    concepts: [],
-    codingSystems: ["ICD9CM", "ICD10", "ICD10CM", "ICPC2EENG", "ICPC2P", "MDR", "MSH", "RCD", "RCD2"]
-};
+var DEFAULT_CODING_SYSTEMS = ["ICD9CM", "ICD10", "ICD10CM", "MTHICD9", "ICPC2EENG", "ICPC2P", "RCD2"];
 
 var SHOW_UMLS_COLUMN = false;
 var FILTER_BY_STOPWORDS = false;
@@ -70,6 +65,9 @@ function upgradeState(state) {
             });
         });
     }
+    if (!state.hasOwnProperty("targetDatabases")) {
+        state.targetDatabases = {};
+    }
     return state;
 }
 
@@ -105,6 +103,87 @@ function anyTags(concepts) {
     });
 }
 
+function getConceptsMissingCodes(state) {
+    // console.log("getConceptsMissingCodes", state);
+    var conceptGroups = {}; // {CUI|TAG: [CONCEPT]}
+    state.mapping.concepts.forEach(function(concept) {
+        var tags = (concept.tags || [])
+            .filter(function(tag) {
+                return !(/^[A-Z0-9_]+$/.test(tag));
+            });
+        if (tags.length > 0) {
+            tags.forEach(function(tag) {
+                if (!conceptGroups.hasOwnProperty(tag)) {
+                    conceptGroups[tag] = [];
+                }
+                conceptGroups[tag].push(concept);
+            });
+        } else {
+            conceptGroups[concept.cui] = [concept];
+        }
+    });
+
+    var vocabularyGroups = {}; // {VOC|DB: [VOC]}
+    state.codingSystems.forEach(function(voc) {
+        if (state.targetDatabases.hasOwnProperty(voc)) {
+            state.targetDatabases[voc].forEach(function(db) {
+                if (!vocabularyGroups.hasOwnProperty(db)) {
+                    vocabularyGroups[db] = [];
+                }
+                vocabularyGroups[db].push(voc);
+            });
+        } else {
+            vocabularyGroups[voc] = [voc];
+        }
+    });
+
+
+    // {CUI|TAG: {VOC|DB: [CODE]}}
+    var codeSets = objectMap(conceptGroups, function(concepts) {
+        return objectMap(vocabularyGroups, function(vocs) {
+            return flatten(concepts.map(function(concept) {
+                return flatten(vocs.map(function(voc) {
+                    return concept.codes[voc]
+                        .map(function(sourceConcept) {
+                            return sourceConcept.id;
+                        });
+                }));
+            })).filter(unique);
+        });
+    });
+
+    // {CUI|TAG: [VOC|DB]}
+    var missings = objectMap(codeSets, function(codesByDb, cuiTag) {
+        var dbs = [];
+        angular.forEach(codesByDb, function(codes, db) {
+            if (codes.length == 0) {
+                dbs.push(db);
+            }
+        });
+        if (dbs.length > 0) {
+            return dbs;
+        }
+    });
+
+    var res = {};
+    state.mapping.concepts.forEach(function(concept) {
+        var forConcept = [];
+        if (missings.hasOwnProperty(concept.cui)) {
+            forConcept = forConcept.concat(missings[concept.cui]);
+        }
+        (concept.tags || []).forEach(function(tag) {
+            if (missings.hasOwnProperty(tag)) {
+                forConcept = forConcept.concat(missings[tag]);
+            }
+        });
+        if (forConcept.length > 0) {
+            res[concept.cui] = forConcept;
+        }
+    });
+
+    return res;
+}
+
 function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $interval, $q, $log, $routeParams, $location, config, urls, dataService, user) {
     
     $scope.user = user;
@@ -117,6 +196,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $rootScope.subtitle = $scope.caseDefinitionName;
     
     $scope.state = State.empty();
+    $scope.conceptsMissingCodes = {};
     $scope.numberUnsafedChanges = 0;
     
     dataService.completed
@@ -206,7 +286,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     
     /* CONCEPTS */
     
-    $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], true, false);
+    $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], true, false, {});
     $scope.conceptsGridOptions = {
         data: "state.mapping.concepts",
         rowHeight: 70,
@@ -398,8 +478,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 case 404:
                     $scope.state.mapping = null;
                     $scope.state.indexing = null;
-                    $scope.state.codingSystems = INITIAL.codingSystems;
-                    $scope.caseDefinition = "" + INITIAL.caseDefinition;
+                    $scope.state.codingSystems = DEFAULT_CODING_SYSTEMS.slice();
+                    $scope.state.targetDatabases = {};
+                    $scope.conceptsMissingCodes = {};
+                    $scope.caseDefinition = "";
                     $rootScope.subtitle = $scope.caseDefinitionName + ' (NEW MAPPING)';
                     break;
                 } 
@@ -407,8 +489,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             .success(function(state) {
                 console.log("Loaded", state);
                 $scope.state = upgradeState(state);
-                $scope.$broadcast("indexingUpdated", state.indexing);
-                $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, hasAnyTags($scope.state.mapping.concepts));
+                $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                $scope.$broadcast("indexingUpdated", $scope.state.indexing);
+                $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, hasAnyTags($scope.state.mapping.concepts), $scope.state.targetDatabases);
                 $scope.activateTab("concepts-tab");
                 if (angular.isArray(roles) && roles.indexOf('Commentator') != -1) {
                     $scope.setMessage("Click the speech baloon in the column on the right to view or add comments for a concept.");
@@ -417,7 +500,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             })
         ['finally'](function() {
             $scope.numberUnsafedChanges = 0;
-            $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, hasAnyTags($scope.state.mapping.concepts));
+            $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, hasAnyTags($scope.state.mapping.concepts), $scope.state.targetDatabases);
         });
     };
     
@@ -456,33 +539,33 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     
     $scope.changeCodingSystems = function() {
         console.log("changeCodingSystems", dataService);
-        selectCodingSystemsDialog($modal, dataService.codingSystems, $scope.state.codingSystems)
-            .then(function(newCodingSystems) {
-
-                var addCodingSystems = newCodingSystems
+        selectCodingSystemsDialog($modal, dataService.codingSystems, $scope.state.codingSystems, $scope.state.targetDatabases)
+            .then(function(res) {
+                console.log("Change coding systems", res);
+                var addCodingSystems = res.codingSystems
                     .filter(function(codingSystem) {
                         return $scope.state.codingSystems.indexOf(codingSystem) == -1;
                     });
                 var removeCodingSystems = $scope.state.codingSystems
                     .filter(function(codingSystem) {
-                        return newCodingSystems.indexOf(codingSystem) == -1;
+                        return res.codingSystems.indexOf(codingSystem) == -1;
                     });
 
-                console.log("change coding systems", newCodingSystems, addCodingSystems, removeCodingSystems);
+                console.log("change coding systems", res.codingSystems, addCodingSystems, removeCodingSystems);
                 var data = {
                     cuis: $scope.state.mapping.concepts.map(getCui),
                     codingSystems: addCodingSystems
                 };
                 $http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
                     .success(function(newConcepts) {
-
                         var newConceptsByCui = byKey(newConcepts, getCui);
-                        $scope.state.codingSystems = newCodingSystems;
+                        $scope.state.codingSystems = res.codingSystems;
+                        $scope.state.targetDatabases = res.targetDatabases;
                         $scope.state.mapping.concepts = $scope.state.mapping.concepts.map(function(concept) {
                             // Remove source concepts
                             concept.sourceConcepts = concept.sourceConcepts
                                 .filter(function(sourceConcept) {
-                                    return newCodingSystems.indexOf(sourceConcept.codingSystem) != -1;
+                                    return res.codingSystems.indexOf(sourceConcept.codingSystem) != -1;
                                 });
                             // Add source concepts
                             if (newConceptsByCui.hasOwnProperty(concept.cui)) {
@@ -490,14 +573,15 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                                     concept.sourceConcepts.push(sourceConcept);
                                 });
                             }
-                            return patchConcept(concept, newCodingSystems);
+                            return patchConcept(concept, res.codingSystems);
                         });
-                        $scope.conceptsColumnDefs = createConceptsColumnDefs(false, newCodingSystems, true, hasAnyTags($scope.state.mapping.concepts));
+                        $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                        $scope.conceptsColumnDefs = createConceptsColumnDefs(false, res.codingSystems, true, hasAnyTags($scope.state.mapping.concepts), $scope.state.targetDatabases);
                         var argAdded = addCodingSystems.map(function(voc) { return "+"+voc; }).join(", ");
-                        var argRemoved = removeCodingSystems.map(function(voc) { return "-"+voc; }).join(", "); 
+                        var argRemoved = removeCodingSystems.map(function(voc) { return "-"+voc; }).join(", ");
                         var arg =  argAdded + (argAdded && argRemoved ? ", " : "") + argRemoved;
-                        var res = $scope.state.codingSystems.join(", ");
-                        $scope.historyStep("Change coding systems", arg, res, null);
+                        var result = $scope.state.codingSystems.join(", ");
+                        $scope.historyStep("Change coding systems", arg, result, null);
                     });
             });
     };
@@ -512,7 +596,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             concepts: null,
             history: []
         };
-        $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, false);
+        $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, false, $scope.state.targetDatabases);
         var concepts = $scope.state.indexing.concepts
             .filter(function(concept) {
                 return $scope.state.cuiAssignment[concept.cui] != ASSIGNMENT_EXCLUDE; 
@@ -536,6 +620,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         };
                         return concept;
                     });
+                $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
                 var descr = "Automatic mapping created.";
                 $scope.historyStep("Automatic coding", null, $scope.state.mapping.concepts.map(reduceConcept), descr);
                 $scope.intervalUpdateComments(true);
@@ -620,10 +705,11 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         } else {
                             var title = "Concepts for search query \"" + searchQuery + "\"";
                             var message = "Found " + concepts.length + " concepts" + comments;
-                            return selectConceptsInDialog($modal, concepts, title, true, message, $scope.state.codingSystems)
+                            return selectConceptsInDialog($modal, concepts, title, true, message, $scope.state.codingSystems, $scope.state.targetDatabases)
                                 .then(function(selectedConcepts) {
                                     if (angular.isArray(selectedConcepts)) {
                                         $scope.state.mapping.concepts = [].concat(selectedConcepts, $scope.state.mapping.concepts);
+                                        $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
                                         $scope.setSelectedConcepts(selectedConcepts.map(getCui));
                                         var descr = "Added " + selectedConcepts.length + " concepts by search on \"" + searchQuery + "\"";
                                         $scope.historyStep("Search", searchQuery, selectedConcepts.map(reduceConcept), descr);
@@ -651,6 +737,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     root: null
                 };
                 $scope.state.mapping.concepts = [].concat([concept], $scope.state.mapping.concepts);
+                $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
                 $scope.setSelectedConcepts([concept.cui]);
                 var descr = "Added concept " + concept.preferredName;
                 $scope.historyStep("Add", null, reduceConcept(concept), descr);
@@ -665,7 +752,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         $scope.$apply(function() {
             $scope.intervalUpdateComments(false);
             $scope.state.mapping = null;
-            $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], false, false);
+            $scope.conceptsMissingCodes = null;
+            $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], false, false, {});
         });
     };
     
@@ -689,6 +777,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         return true;
                     }
                 });
+            $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
             $scope.setSelectedConcepts([]);
             var descr = "Deleted " + deletedCuis.length + " " + pluralize("concept", deletedCuis.length); 
             $scope.historyStep("Delete", concepts.map(reduceConcept), null, descr);
@@ -782,6 +871,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         });
                         $scope.setSelectedConcepts(selectedRelatedConcepts.map(getCui));
                         
+                        $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                        
                         var descr = "Expanded " + conceptNames +
                                 " with " + selectedRelatedConcepts.length + 
                                 " " + pluralize(hyponymOrHypernym, selectedRelatedConcepts);
@@ -808,8 +899,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     }
                     tagsString += t;
                 })
+                $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
                 $scope.historyStep("Set tags", concepts.map(reduceConcept), tagsString);
-                $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, hasAnyTags($scope.state.mapping.concepts));
+                $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true, hasAnyTags($scope.state.mapping.concepts), $scope.state.targetDatabases);
             });
     };
     
@@ -862,6 +954,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         descr = "Added " + added.length + " and removed " + removed.length + " codes";
                         result = "added: " + resultCodes(added, "to") + ", removed: " + resultCodes(removed, "from");
                     }
+                    $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
                     $scope.historyStep("Edit codes", concepts.map(reduceConcept), result, descr);
                 }
             });
@@ -876,24 +969,26 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     };
 };
 
-function selectCodingSystemsDialog($modal, codingSystems, currentCodingSystems) {
+function selectCodingSystemsDialog($modal, codingSystems, currentCodingSystems, targetDatabases) {
     var dialog = $modal.open({
         templateUrl: 'partials/coding-systems.html',
         controller: 'SelectCodingSystemsCtrl',
         size: 'lg',
         resolve: {
             codingSystems: function() { return codingSystems; },
-            currentCodingSystems: function() { return currentCodingSystems; }
+            currentCodingSystems: function() { return currentCodingSystems; },
+            targetDatabases: function() { return targetDatabases; }
         }
     });
     return dialog.result;
 };
 
-function SelectCodingSystemsCtrl($scope, $modalInstance, $timeout, codingSystems, currentCodingSystems) {
+function SelectCodingSystemsCtrl($scope, $modalInstance, $timeout, codingSystems, currentCodingSystems, targetDatabases) {
 
     $scope.codingSystems = codingSystems;
     $scope.currentCodingSystems = currentCodingSystems;
     $scope.codingSystemsByName = byKey(codingSystems, getAbbreviation);
+    $scope.targetDatabases = objectMap(targetDatabases, function(dbs) { return dbs.join(", "); });
 
     $scope.gridOptions = {
         data: "codingSystems",
@@ -922,10 +1017,24 @@ function SelectCodingSystemsCtrl($scope, $modalInstance, $timeout, codingSystems
             }
         });
     };
-    
-    $scope.ok = function (newCodingSystems) {
-        newCodingSystems = newCodingSystems.map(getAbbreviation);
-        $modalInstance.close(newCodingSystems);
+
+    $scope.ok = function (newCodingSystems, newTargetDatabases) {
+        var targetDatabases = {};
+        console.log(newTargetDatabases);
+        angular.forEach(newTargetDatabases, function(dbs, voc) {
+            targetDatabases[voc] = dbs
+                .split(",")
+                .map(function(s) {
+                    return s.trim()
+                })
+                .filter(function(s) {
+                    return s;
+                });
+        })
+        $modalInstance.close({
+            codingSystems: newCodingSystems.map(getAbbreviation),
+            targetDatabases: targetDatabases
+        });
     };
     $scope.cancel = function () {
         $modalInstance.dismiss();
@@ -933,7 +1042,7 @@ function SelectCodingSystemsCtrl($scope, $modalInstance, $timeout, codingSystems
 }
 
 /** The controller for the dialog to select hyper-/hyponyms. */
-function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSystems, title, selectable, message) {
+function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSystems, title, selectable, message, targetDatabases) {
     
     $scope.message = message;
     $scope.concepts = concepts;
@@ -947,7 +1056,7 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
         filterOptions: { filterText: '' },
         enableRowSelection: $scope.selectable,
         showSelectionCheckbox: $scope.selectable,
-        columnDefs: createConceptsColumnDefs(false, codingSystems, false, false)
+        columnDefs: createConceptsColumnDefs(false, codingSystems, false, false, targetDatabases)
     };
     
     $scope.ok = function () {
@@ -959,7 +1068,7 @@ function ShowConceptsCtrl($scope, $modalInstance, $timeout, concepts, codingSyst
     };
 };
 
-function selectConceptsInDialog($modal, concepts, title, selectable, message, codingSystems) {
+function selectConceptsInDialog($modal, concepts, title, selectable, message, codingSystems, targetDatabases) {
     // Display retrieved concepts in a dialog
     var dialog = $modal.open({
         templateUrl: 'partials/ShowConcepts.html',
@@ -970,7 +1079,8 @@ function selectConceptsInDialog($modal, concepts, title, selectable, message, co
             concepts: function() { return concepts.sort(compareByCodeCount); },
             codingSystems: function() { return codingSystems; },
             selectable: function() { return selectable; },
-            message: function() { return message; }
+            message: function() { return message; },
+            targetDatabases: function() { return targetDatabases; }
         }
     });
     return dialog.result;
@@ -1230,20 +1340,32 @@ var tagsColumnDef = {
 };
 
 /** Generate column definitions */
-function createConceptsColumnDefs(showOrigin, codingSystems, showComments, showTags) {
+function createConceptsColumnDefs(showOrigin, codingSystems, showComments, showTags, targetDatabases) {
 
-    var name = 
-            { displayName: "Concept", field: 'preferredName', cellClass: 'cellToolTip', cellTemplate: "partials/nameCell.html"};
-    
+    var name = { displayName: "Concept", field: 'preferredName', cellClass: 'cellToolTip', cellTemplate: "partials/nameCell.html"};
+
     var cuiCellTemplate = "<span class='cui' ng-bind='row.entity.cui' title='{{row.entity.preferredName}}'></span>";
     var cui = { displayName: "UMLS", field: 'cui', cellTemplate: cuiCellTemplate };
-    
+
     codingSystems = angular.copy(codingSystems);
-    codingSystems.sort();
+    codingSystems.sort(function(cs1, cs2) {
+        var s1 = cs1, s2 = cs2;
+        if (targetDatabases.hasOwnProperty(cs1) && targetDatabases[cs1].length > 0) {
+            s1 = targetDatabases[cs1][0]
+        }
+        if (targetDatabases.hasOwnProperty(cs2) && targetDatabases[cs2].length > 0) {
+            s2 = targetDatabases[cs2][0]
+        }
+        return s1.localeCompare(s2);
+    });
     var codingSystemsColumnDefs = codingSystems
         .map(function(codingSystem) {
+            var targetDatabase = "";
+            if (targetDatabases.hasOwnProperty(codingSystem)) {
+                targetDatabase = " (" + targetDatabases[codingSystem].join(", ") + ")";
+            }
             return {
-                displayName: codingSystem,
+                displayName: codingSystem + targetDatabase,
                 field: "codes." + codingSystem,
                 cellClass: 'scroll-y',
                 cellTemplate:

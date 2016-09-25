@@ -1,7 +1,21 @@
-<button title='Show and create comments' class='btn btn-default btn-xs'
-	ng-click='showComments(row.entity)'
-	ng-disabled='row.entity.comments | isUndefined'>
-	<i class='glyphicon glyphicon-comment'></i>
-	<span class='comments-count' ng-bind='row.entity.comments.length' ng-if='row.entity.comments'></span>
-</button>
-<i class='glyphicon glyphicon-option-horizontal' ng-if='row.entity.comments | isUndefined'></i>
+<span>
+  <button title='Show and create comments' class='btn btn-default btn-xs'
+          ng-click='showComments(row.entity)'
+          ng-disabled='row.entity.comments | isUndefined'>
+    <i class='glyphicon glyphicon-comment'></i>
+    <span class='comments-count'
+          ng-if='row.entity.comments'
+          ng-bind='row.entity.comments.length'></span>
+  </button>
+  <i class='glyphicon glyphicon-option-horizontal'
+     ng-if='row.entity.comments | isUndefined'></i>
+</span>
+<span>
+  <i class="glyphicon glyphicon-warning-sign"
+     ng-if="conceptsMissingCodes[row.entity.cui]"
+     title="Missing codes for {{conceptsMissingCodes[row.entity.cui].join(', ')}}">
+  </i>
+  <span class='comments-count'
+        ng-if='conceptsMissingCodes[row.entity.cui]'
+        ng-bind='conceptsMissingCodes[row.entity.cui].length'></span>
+</span>

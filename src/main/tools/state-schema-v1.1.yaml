@@ -15,6 +15,14 @@ definitions:
         type: array
         items: {$ref: '#/definitions/coding_system'}
       mapping: {$ref: '#/definitions/mapping'}
+      targetDatabases:
+        object: object
+        patternProperties:
+          '^[A-Z0-9_]+$':
+            type: array
+            items:
+              type: string
+        additionalProperties: false
     additionalProperties: false
     required: [indexing, cuiAssignment, codingSystems, mapping]
   coding_system:

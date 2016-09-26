@@ -24,6 +24,10 @@ public class UmlsConcept {
         this.semanticTypes = semanticTypes;
         this.sourceConcepts = sourceConcepts;
     }
+    
+    public String toString() { 
+        return String.format("%s (%s)", preferredName, cui);
+    }
 
 	public UmlsConcept(String cui, String preferredName) {
         this.cui = cui;

@@ -184,6 +184,37 @@ function getConceptsMissingCodes(state) {
     return res;
 }
 
+function insertConcepts(concepts, selectedConcepts, scope, operation, descr) {
+
+    // Inherit tags
+    var tags = everyTags(concepts);
+    selectedConcepts.forEach(function(concept) {
+        concept.tags = tags;
+    });
+
+    // Search position of original inital concepts
+    var conceptOffsets = {};
+    concepts.map(getCui).forEach(function(cui) {
+        scope.state.mapping.concepts.forEach(function(c, cIx) {
+            if (c.cui == cui) {
+                conceptOffsets[cui] = cIx;
+            }
+        });
+    });
+    console.log(conceptOffsets);
+    
+    // Insert each related concept in list of concepts
+    selectedConcepts.forEach(function(related, ix) {
+        var offset = ++conceptOffsets[related.origin.data.cui];
+        scope.state.mapping.concepts.splice(offset, 0, related);
+    });
+    scope.setSelectedConcepts(selectedConcepts.map(getCui));
+
+    scope.conceptsMissingCodes = getConceptsMissingCodes(scope.state);
+
+    scope.historyStep(operation, concepts.map(reduceConcept), selectedConcepts.map(reduceConcept), descr);
+}
+
 function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $interval, $q, $log, $routeParams, $location, config, urls, dataService, user) {
     
     $scope.user = user;
@@ -227,7 +258,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     
     var ctrlKeydownCallbacks = {
         48 /* 0 */: function() {
-            console.log("State", $scope.state);
+            console.log("State", $scope.state, $scope.conceptsMissingCodes);
         }
     };
     
@@ -784,6 +815,84 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         });
     };
     
+
+    $scope.operationSuggestConcepts = function(concepts_) {
+        if ($scope.state == null || $scope.state.mapping == null) {
+            error("CodeMapperCtrl.expandRelated called without mapping");
+            return;
+        }
+        if (concepts_.length != 1) {
+            error("Suggest concepts must be called with one selected concept");
+            return;
+        }
+        var concept = concepts_[0];
+        var cuis = [concept.cui];
+        var missingCodingSystems = ($scope.conceptsMissingCodes[concept.cui] || [])
+            .map(function(vocOrDb) {
+                if ($scope.state.codingSystems.indexOf(vocOrDb) != -1) {
+                    // vocOrDb is a vocabulary
+                    return [vocOrDb];
+                } else {
+                    // vocOrDb is a database
+                    var forDb = [];
+                    angular.forEach($scope.state.targetDatabases, function(databases, voc) {
+                        if (databases.indexOf(vocOrDb) != -1) {
+                            forDb.push(voc);
+                        }
+                    });
+                    return forDb;
+                }
+                return $scope.state.targetDatabases[vocOrDb] || [vocOrDb];
+            });
+        missingCodingSystems = flatten(missingCodingSystems).filter(unique);
+        var excludeCuis = $scope.state.mapping.concepts.map(getCui);
+        var data = {
+            cuis: cuis,
+            codingSystems: $scope.state.codingSystems,
+            missingCodingSystems: missingCodingSystems,
+            relations: ["PAR", "CHD", "RN", "RB"],
+            excludeCuis: excludeCuis
+        };
+        console.log("d", data);
+        $http.post(urls.suggestConcepts, data, FORM_ENCODED_POST)
+            .error(function(err, status) {
+                if (status == 401) {
+                    alert("Your session has timed out :( You have to re-login!");
+                } else {
+                    var msg = "ERROR: Couldn't lookup related concepts at " + urls.relatedConcepts;
+                    alert(msg);
+                    console.log(msg, err);
+                }
+            })
+            .success(function(suggestedConcepts) {
+                suggestedConcepts = suggestedConcepts
+                    .map(function(concept) {
+                        return patchConcept(concept, $scope.state.codingSystems);
+                    });
+                suggestedConcepts.forEach(function(c) {
+                    c.origin = {
+                        type: "suggested",
+                        data: {
+                            cui: concept.cui,
+                            preferredName: concept.preferredName
+                        },
+                        root: reduceConcept(concept)
+                    };
+                });
+                var title = "Concepts suggested for " + concept.preferredName;
+                console.log(suggestedConcepts);
+                selectConceptsInDialog($modal, suggestedConcepts, title, true, null, $scope.state.codingSystems, $scope.state.targetDatabases)
+                    .then(function(selectedConcepts) {
+                        var operation = "suggest";
+                        var descr = "Suggested " + selectedConcepts.length + " for " + concept.preferredName;
+                        insertConcepts([concept], selectedConcepts, $scope, operation, descr);
+                    });
+            })
+            ['finally'](function() {
+                blockUI.stop();
+            });
+    };
+    
     /**
      * Expand a given concept to its hypernyms or hyponyms, show selection
      * dialog and integrate in the list of concepts ($scope.state.concepts).
@@ -845,46 +954,20 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 });
                 var specificOrGeneral = hyponymsNotHypernyms ? "specific" : "general";
                 var title = "Concepts that are more " + specificOrGeneral + " than " + conceptNames;
-                selectConceptsInDialog($modal, relatedConcepts, title, true, null, $scope.state.codingSystems)
-                    .then(function(selectedRelatedConcepts) {
-                        
-                        // Inherit tags
-                        var tags = everyTags(concepts);
-                        selectedRelatedConcepts.forEach(function(concept) {
-                            concept.tags = tags;
-                        });
-                        
-                        // Search position of original inital concepts
-                        var conceptOffsets = {};
-                        cuis.forEach(function(cui) {
-                            $scope.state.mapping.concepts.forEach(function(c, cIx) {
-                                if (c.cui == cui) {
-                                    conceptOffsets[cui] = cIx;
-                                }
-                            });
-                        });
-                        
-                        // Insert each related concept in list of concepts
-                        selectedRelatedConcepts.forEach(function(related, ix) {
-                            var offset = ++conceptOffsets[related.origin.data.cui];
-                            $scope.state.mapping.concepts.splice(offset, 0, related);
-                        });
-                        $scope.setSelectedConcepts(selectedRelatedConcepts.map(getCui));
-                        
-                        $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
-                        
+                selectConceptsInDialog($modal, relatedConcepts, title, true, null, $scope.state.codingSystems, $scope.state.targetDatabases)
+                    .then(function(selectedConcepts) {
                         var descr = "Expanded " + conceptNames +
-                                " with " + selectedRelatedConcepts.length + 
-                                " " + pluralize(hyponymOrHypernym, selectedRelatedConcepts);
+                            " with " + selectedConcepts.length +
+                            " " + pluralize(hyponymOrHypernym, selectedConcepts);
                         var operation = hyponymsNotHypernyms ? "Expand to more specific" : "Expand to more general";
-                        $scope.historyStep(operation, concepts.map(reduceConcept), selectedRelatedConcepts.map(reduceConcept), descr);
+                        insertConcepts(concepts, selectedConcepts, $scope, operation, descr);
                     });
             })
             ['finally'](function() {
                 blockUI.stop();
             });
     };
-    
+
     $scope.operationEditTags = function(concepts, allConcepts) {
         editTags($modal, concepts, allConcepts)
             .then(function(newTags) {

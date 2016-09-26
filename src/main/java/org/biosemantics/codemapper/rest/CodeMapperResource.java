@@ -170,4 +170,21 @@ public class CodeMapperResource {
 			throw e.asWebApplicationException();
 		}
 	}
+	
+	@POST
+	@Path("suggest-concepts")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<UmlsConcept> getSimilarConcepts(
+	        @FormParam("cuis") List<String> cuis,
+	        @FormParam("codingSystems") List<String> codingSystems,
+	        @FormParam("missingCodingSystems") List<String> missingCodingSystems,
+	        @FormParam("excludeCuis") List<String> excludeCuis,
+	        @Context User user) {
+        AuthentificationResource.assertAuthentificated(user);
+        try {
+            return api.getSimilarConcepts(cuis, missingCodingSystems, codingSystems, excludeCuis);
+        } catch (CodeMapperException e) {
+            throw e.asWebApplicationException();
+        }
+	}
 }

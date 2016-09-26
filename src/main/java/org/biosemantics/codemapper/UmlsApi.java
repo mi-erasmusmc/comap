@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +33,14 @@ import org.biosemantics.codemapper.umls_ext.ExtCodingSystem;
  *
  */
 public class UmlsApi  {
+
+    private static final List<String> RELATIONS_MORE_GENERAL = Arrays.asList("RB", "PAR");
+    private static final List<String> RELATIONS_MORE_SPECIFIC = Arrays.asList("RN", "CHD");
+    private static final List<String> RELATIONS_MORE_SPECIFIC_OR_GENERAL = Arrays.asList("RN", "RB", "PAR", "CHD");
+    private static final List<String> RELATIONS_LOCAL = Arrays.asList("RL", "SY"); // the relationship is similar or "alike"
+    private static final List<String> RELATIONS_SIBLING = Arrays.asList("SIB");
+
+    private static final int SIMILAR_CONCEPTS_MAX_DEPTH = 3;
 
     private static Logger logger = LogManager.getLogger(UmlsApi.class);
 
@@ -429,7 +438,6 @@ public class UmlsApi  {
 	 * @throws CodeMapperException
 	 */
 	public Map<String, Map<String, List<UmlsConcept>>> getRelated(List<String> cuis, List<String> codingSystems, List<String> relations) throws CodeMapperException {
-		System.out.println(String.format("%d - %d - %d", cuis.size(), codingSystems.size(), relations.size()));
 		if (cuis.isEmpty() || relations.isEmpty())
 			return new TreeMap<>();
 		else {
@@ -624,4 +632,108 @@ public class UmlsApi  {
 	        return concepts;
 		}
 	}
+	
+    class Node {
+	    final String cui;
+	    final String relation;
+        public Node(String cui, String relation) {
+            this.cui = cui;
+            this.relation = relation;
+        }
+        public String toString() {
+            return String.format("%s/%s", cui, relation);
+        }
+	}
+
+    public List<UmlsConcept> getSimilarConcepts(
+            List<String> cuis,
+            List<String> missingCodingSystems,
+            List<String> codingSystems,
+            List<String> excludeCuis0
+    ) throws CodeMapperException {
+        
+        if (cuis.isEmpty() || missingCodingSystems.isEmpty())
+            return Arrays.asList();
+        
+        Set<String> excludedCuis = new HashSet<>(excludeCuis0);
+        Map<String, List<Node>> paths = new HashMap<>();
+        for (String cui: cuis)
+            paths.put(cui, new LinkedList<Node>());
+        
+        for (int i = 0; i <= SIMILAR_CONCEPTS_MAX_DEPTH; i++) {
+            Set<String> newCuis = new HashSet<>();
+            List<String> resultCuis = new LinkedList<>();
+            Map<String, List<String>> cuisByRel = new HashMap<>();
+            for (String cui: cuis) {
+                String rel = null;
+                List<Node> path = paths.get(cui);
+                if (path.size() > 0)
+                    for (Node node: path)
+                        if (RELATIONS_MORE_SPECIFIC_OR_GENERAL.contains(node.relation)) {
+                            rel = node.relation;
+                            break;
+                        }
+                if (!cuisByRel.containsKey(rel))
+                    cuisByRel.put(rel, new LinkedList<String>());
+                cuisByRel.get(rel).add(cui);
+            }
+            Map<String, Map<String, List<UmlsConcept>>> relateds = new HashMap<>();
+            for (String rel0: cuisByRel.keySet()) {
+                List<String> relations1;
+                if (rel0 == null) {
+                    relations1 = new LinkedList<>(RELATIONS_MORE_SPECIFIC_OR_GENERAL);
+                    // relations1.addAll(RELATIONS_SIBLING);
+                } else if (RELATIONS_MORE_SPECIFIC.contains(rel0))
+                    relations1 = new LinkedList<>(RELATIONS_MORE_SPECIFIC);
+                else if (RELATIONS_MORE_GENERAL.contains(rel0))
+                    relations1 = new LinkedList<>(RELATIONS_MORE_GENERAL);
+                else
+                    throw new RuntimeException("Impossible relation");
+                relations1.addAll(RELATIONS_LOCAL);
+                Map<String, Map<String, List<UmlsConcept>>> relateds1 =
+                        getRelated(cuisByRel.get(rel0), missingCodingSystems, new LinkedList<>(relations1));
+                for (String cui: relateds1.keySet()) {
+                    if (!relateds.containsKey(cui))
+                        relateds.put(cui, new HashMap<String, List<UmlsConcept>>());
+                    for (String rel: relateds1.get(cui).keySet()) {
+                        if (!relateds.get(cui).containsKey(rel))
+                            relateds.get(cui).put(rel, new LinkedList<UmlsConcept>());
+                        relateds.get(cui).get(rel).addAll(relateds1.get(cui).get(rel));
+                    }
+                }
+            }
+            for (String cui: relateds.keySet())
+                for (String rel: relateds.get(cui).keySet())
+                    for (UmlsConcept concept: relateds.get(cui).get(rel))
+                        if (!excludedCuis.contains(concept.getCui())) {
+                            excludedCuis.add(concept.getCui());
+                            List<Node> path = new LinkedList<>(paths.get(cui));
+                            path.add(new Node(cui, rel));
+                            paths.put(concept.getCui(), path);
+                            if (!RELATIONS_LOCAL.contains(rel))
+                                newCuis.add(concept.getCui());
+                            for (SourceConcept sourceConcept : concept.getSourceConcepts())
+                                if (missingCodingSystems.contains(sourceConcept.getCodingSystem())) {
+                                    resultCuis.add(concept.getCui());
+                                    break;
+                                }
+                    }
+            if (!resultCuis.isEmpty()) {
+                Map<String, UmlsConcept> concepts = getConcepts(resultCuis, codingSystems);
+                for (UmlsConcept concept: concepts.values())
+                    System.out.println(String.format(" - %s: %s", concept, paths.get(concept.getCui())));
+                return new LinkedList<>(concepts.values());
+            } else
+                cuis = new LinkedList<>(newCuis);
+        }
+        return Arrays.asList();
+    }
+
+    private List<UmlsConcept> flattenRelateds(Map<String, Map<String, List<UmlsConcept>>> relateds) {
+        List<UmlsConcept> res = new LinkedList<>();
+        for (String cui: relateds.keySet())
+            for (List<UmlsConcept> concepts: relateds.get(cui).values())
+                res.addAll(concepts);
+        return res;
+    }
 }

@@ -61,6 +61,14 @@
               </button> 
           </div>
           
+          <button class='btn btn-xs btn-default'
+                  ng-click='operationSuggestConcepts(selectedConcepts)'
+                  ng-disabled='selectedConcepts.length == 0'
+                  title='Suggest related concepts that fill missing codes'>
+            <i class='glyphicon glyphicon-screenshot'></i>
+            Suggest
+          </button> 
+          
           <button class="btn btn-xs btn-default" ng-click="operationEditCodes(selectedConcepts)" ng-disabled="selectedConcepts.length == 0" title="Enable/disable source codes of selected concepts">
             <i class='glyphicon glyphicon-edit'></i>
             Codes

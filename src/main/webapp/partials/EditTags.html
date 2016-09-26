@@ -8,6 +8,12 @@
     <span class="tag">{{tag}} <i class="glyphicon glyphicon-remove" title="Remove tag" ng-click="remove(tag)"></i></span>
   </li>
   </ul>
+ <h4>Available tags:</h4>
+ <ul class="comma-separated">
+  <li ng-repeat="tag in offTags">
+   <span class="tag">{{tag}} <i class="glyphicon glyphicon-plus" title="Add tag" ng-click="add(tag)"></i></span>
+  </li>
+ </ul>
  <form>
   <input type="text" ng-model="newTag"></input>
   <button class="btn btn-primary btn-xs"
@@ -15,16 +21,10 @@
       ng-disabled="!validNewTag(newTag, tags)"
       title="Create new tag">
    <i class="glyphicon glyphicon-plus"></i>
-   Create new tag
+   New tag
   </button>
   <span class="hint">(Only letters, numbers, underscores and dashes)</span>
  </form>
- <h4>Available tags:</h4>
- <ul class="comma-separated">
-  <li ng-repeat="tag in offTags">
-   <span class="tag">{{tag}} <i class="glyphicon glyphicon-plus" title="Add tag" ng-click="add(tag)"></i></span>
-  </li>
- </ul>
 </div>
 <div class="modal-footer">
  <button class="btn btn-primary" ng-click="ok()">OK</button>

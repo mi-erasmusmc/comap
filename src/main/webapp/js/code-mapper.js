@@ -1254,7 +1254,7 @@ function editTags($modal, concepts, allConcepts) {
     return $modal.open({
         templateUrl: 'partials/EditTags.html',
         controller: 'EditTagsCtrl',
-        size: 'lg',
+        size: 'sm',
         resolve: {
             concepts: function() {
                 return concepts;

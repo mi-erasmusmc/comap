@@ -1,6 +1,6 @@
 
 <div class="modal-header">
- <h3 class="modal-title">Add or remove coding systems</h3>
+ <h3 class="modal-title">Modify coding systems and target databases</h3>
 </div>
 <div class="modal-body">
  <tabset>
@@ -28,22 +28,28 @@
  <div ng-grid="gridOptions" class="grid coding-systems-grid"></div>
  </tab>
  <tab heading="Target databases">
- <table>
+ <table class="coding-systems-options">
   <tr>
    <th>Vocabulary</th>
+   <th>Show</th>
    <th>Target databases (comma-separated)</th>
   <tr>
   <tr ng-repeat="voc in gridOptions.$gridScope.selectedItems">
    <td><span title="{{voc.name}}" ng-bind="voc.abbreviation"></span></td>
+   <td><input type="checkbox" ng-model="showVocabularies[voc.abbreviation]"></input></td>
    <td><input ng-model="targetDatabases[voc.abbreviation]"></input></td>
   </tr>
  </table>
+ <ul>
+   <li>Coding systems can be hidden one by one</li>
+   <li>Coding systems can be grouped into target databases. This is used to generate warnings about missing codes by databases instead of by coding systems.</li>
+ </ul>
  </tab>
  </tabset>
 </div>
 
 <div class="modal-footer">
  <button class="btn btn-primary"
-  ng-click="ok(gridOptions.$gridScope.selectedItems, targetDatabases)">OK</button>
+  ng-click="ok(gridOptions.$gridScope.selectedItems, targetDatabases, showVocabularies)">OK</button>
  <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
 </div>

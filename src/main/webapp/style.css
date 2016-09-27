@@ -271,3 +271,10 @@ img.advance-logo {
 .hint {
    color: #8e8e8e;
 }
+.coding-systems-options tr, .coding-systems-options th {
+    padding-top: 0px;
+    padding-right: 0.4em;
+    padding-bottom: 0px;
+    padding-left: 0.4em;
+}
+}

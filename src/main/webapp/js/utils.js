@@ -72,6 +72,20 @@ function compareByCodeCount(c1, c2) {
     return c2.sourceConceptsCount - c1.sourceConceptsCount;
 }
 
+function setEquals(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (a.length != b.length) return false;
+    a = a.slice();
+    b = b.slice();
+    for (var i = 0; i < a.length; ++i) {
+      if (a[i] !== b[i]) {
+          return false;
+      }
+    }
+    return true;
+}
+
 function intersection(a1, a2) {
     return a1.filter(function(v) {
         return a2.indexOf(v) != -1;

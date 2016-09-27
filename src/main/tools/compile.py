@@ -28,10 +28,12 @@ def open_xls_files(xls_files):
             .pipe(lambda df: df[df.Code.notnull()])
             .assign(Event=event_name)
         )
+        def relevant_tag(t):
+            return not t or t.isupper()
         tag = (
             codes.Tags
             .fillna('').str.split(', ')
-            .apply(lambda s: pd.Series(sorted(set(s))))
+            .apply(lambda s: pd.Series(sorted({t for t in s if relevant_tag(t)})))
             .stack()
             .reset_index(level=1, drop=True)
             .to_frame('Tag')

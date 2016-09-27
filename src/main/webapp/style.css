@@ -59,6 +59,10 @@ label {
   padding: 2px 5px;
   font-size: 12px;
 }
+.code-id {
+ /*font-style: italic;*/
+ font-weight: bold;
+}
 .cui, .code, .vocabulary {
   background-color: #ECECEC;
   border: 1px solid #adadad;
@@ -239,26 +243,9 @@ hr {
 	margin-left: 1em;
 }
 
-.ngCell  {
-  display : table-cell;
-  height: auto !important;
-  overflow: hidden;
-  position: static;
-}
+
 .ngCell.scroll-y {
-	overflow-y: hidden;
-	overflow-y: hidden;
-    overflow: -moz-scrollbars-none;
-}
-.ngCellText{
-  height: auto !important;
-  white-space: normal;
-  overflow:visible;
-}
-.ngRow {
-  display : table-row;
-  height: auto !important;
-  position: static;
+    overflow-y: auto;
 }
 .ngRow.selected.even {
   background-color: #C4E0E6;

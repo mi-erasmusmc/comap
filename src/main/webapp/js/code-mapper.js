@@ -1,10 +1,6 @@
 
 "use strict";
 
-/**
- * The initial state that is used when no state is found for the case
- * definition.
- */
 var DEFAULT_CODING_SYSTEMS = ["ICD9CM", "ICD10", "ICD10CM", "MTHICD9", "ICPC2EENG", "ICPC2P", "RCD2"];
 
 var SHOW_UMLS_COLUMN = false;
@@ -1451,9 +1447,7 @@ function createConceptsColumnDefs(showOrigin, codingSystems, showComments, showT
                 displayName: codingSystem + targetDatabase,
                 field: "codes." + codingSystem,
                 cellClass: 'scroll-y',
-                cellTemplate:
-                "<span ng-repeat='code in row.getProperty(col.field)' ng-bind='code.preferredTerm' title='{{code.id}}'" +
-                    "class='code' ng-class=\"code.selected ? 'selected' : 'unselected'\"></span>",
+                cellTemplate: "partials/code-cell.html",
                 sortFn: function(cs1, cs2) {
                     if (cs1.length != cs2.length) {
                         return cs2.length - cs1.length;

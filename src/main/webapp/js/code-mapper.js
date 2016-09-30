@@ -64,6 +64,9 @@ function upgradeState(state) {
     if (!state.hasOwnProperty("targetDatabases")) {
         state.targetDatabases = {};
     }
+    state.mapping.history.sort(function(s1, s2) {
+        return -s1.date.localeCompare(s2.date);
+    });
     return state;
 }
 
@@ -295,7 +298,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     /** Create a history step for $scope.state.history */
     $scope.historyStep = function(operation, argument, result, descr) {
         $scope.numberUnsafedChanges += 1;
-        $scope.state.mapping.history.push({
+        $scope.state.mapping.history.unshift({
             date: new Date().toJSON(),
             operation: operation,
             argument: argument,

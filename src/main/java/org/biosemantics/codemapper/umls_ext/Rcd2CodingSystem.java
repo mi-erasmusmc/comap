@@ -30,21 +30,27 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 	public final String FAMILY = "Read thesaurus, version 2";
 
     public final String QUERY_3to2_FMT =
-            "SELECT DISTINCT CTV3_CONCEPTID, V2_CONCEPTID FROM RCD_V3_to_V2 "
+            "SELECT DISTINCT CTV3_CONCEPTID, V2_CONCEPTID FROM %s "
             // Make CTV3_CONCEPTID case sensitive!
-            + "WHERE CAST(CTV3_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%s) "
+            + "WHERE CAST(CTV3_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%%s) "
+            + "AND MAPTYP != 'N' "
+            + "AND MAPSTATUS = 1 "
             + "AND V2_CONCEPTID NOT IN ('_DRUG', '_NONE')";
 
     public final String QUERY_2to3_FMT =
-            "SELECT DISTINCT V2_CONCEPTID, CTV3_CONCEPTID FROM RCD_V3_to_V2 "
+            "SELECT DISTINCT V2_CONCEPTID, CTV3_CONCEPTID FROM %s "
             // Make CTV3_CONCEPTID case sensitive!
-            + "WHERE CAST(V2_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%s) "
+            + "WHERE CAST(V2_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%%s) "
+            + "AND MAPTYP != 'N' "
+            + "AND MAPSTATUS = 1 "
             + "AND V2_CONCEPTID NOT IN ('_DRUG', '_NONE')";
 
 	private DataSource umlsExtConnectionPool;
+    private String ctv3rctTableName;
 
-	public Rcd2CodingSystem(DataSource umlsExtConnectionPool) {
+	public Rcd2CodingSystem(DataSource umlsExtConnectionPool, String ctv3rctTableName) {
 		this.umlsExtConnectionPool = umlsExtConnectionPool;
+		this.ctv3rctTableName = ctv3rctTableName;
 	}
 
 	@Override
@@ -124,10 +130,10 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 	    String queryFormat = null;
 	    switch (direction) {
 	        case From2to3:
-	            queryFormat = QUERY_2to3_FMT;
+	            queryFormat = String.format(QUERY_2to3_FMT, ctv3rctTableName);
 	            break;
 	        case From3to2:
-	            queryFormat = QUERY_3to2_FMT;
+	            queryFormat = String.format(QUERY_3to2_FMT, ctv3rctTableName);
 	            break;
 	        default:
 	            assert false;

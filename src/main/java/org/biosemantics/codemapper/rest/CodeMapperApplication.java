@@ -83,7 +83,8 @@ public class CodeMapperApplication extends ResourceConfig {
 			umlsApi = new UmlsApi(umlsConnectionPool, availableCodingSystems, codingSystemsWithDefinition);
 
             DataSource umlsExtConnectionPool = getConnectionPool("umls-ext-db", properties);
-            umlsApi.registerCodingSystemsExtension(new Rcd2CodingSystem(umlsExtConnectionPool));
+            String ctv3rctTableName = properties.getProperty("umls-ext-db-ctv3rct-table");
+            umlsApi.registerCodingSystemsExtension(new Rcd2CodingSystem(umlsExtConnectionPool, ctv3rctTableName));
             umlsApi.registerCodingSystemsExtension(new Icd10AnyCodingSystem(umlsConnectionPool));
 
             DataSource codeMapperConnectionPool = getConnectionPool("code-mapper-db", properties);

@@ -379,28 +379,33 @@ public class UmlsApi  {
 
 					ExtCodingSystem extCodingSystem = extCodingSystems.get(extAbbr);
 
+					// Get reference source concepts
 					Map<String, List<SourceConcept>> referenceSourceConcepts = new HashMap<>();
 					for (String cui: sourceConcepts.keySet()) {
 						referenceSourceConcepts.put(cui, new LinkedList<SourceConcept>());
-						List<SourceConcept> sourceConceptsForCui = sourceConcepts.get(cui);
-                        for (SourceConcept sourceConcept: new LinkedList<>(sourceConceptsForCui))
-							if (extCodingSystem.getReferenceCodingSystems().contains(sourceConcept.getCodingSystem())) {
-							    sourceConceptsForCui.remove(sourceConcept);
+						for (SourceConcept sourceConcept: sourceConcepts.get(cui))
+							if (extCodingSystem.getReferenceCodingSystems().contains(sourceConcept.getCodingSystem()))
 								referenceSourceConcepts.get(cui).add(sourceConcept);
-							}
-                        sourceConcepts.put(cui, sourceConceptsForCui);
 					}
 
+					// Map reference to extended source concepts
 					Map<String, Map<String, List<SourceConcept>>> extSourceConcepts =
 							extCodingSystem.mapCodes(referenceSourceConcepts);
 
-					for (String cui: sourceConcepts.keySet()) {
-						Set<SourceConcept> extSourceConceptsForCui = new HashSet<>();
-						if (extSourceConcepts.containsKey(cui))
+					// Insert extended source concepts
+					for (String cui: sourceConcepts.keySet())
+					    if (extSourceConcepts.containsKey(cui)) {
+					        Set<SourceConcept> extSourceConceptsForCui = new HashSet<>();
 							for (List<SourceConcept> extSourceConceptForCui: extSourceConcepts.get(cui).values())
 								extSourceConceptsForCui.addAll(extSourceConceptForCui);
-						sourceConcepts.get(cui).addAll(extSourceConceptsForCui);
-					}
+							sourceConcepts.get(cui).addAll(extSourceConceptsForCui);
+					    }
+
+					// Remove reference source concepts
+                    for (String cui: sourceConcepts.keySet())
+                        for (SourceConcept sourceConcept: new LinkedList<>(sourceConcepts.get(cui)))
+                            if (!codingSystems0.contains(sourceConcept.getCodingSystem()))
+                                sourceConcepts.get(cui).remove(sourceConcept);
 				}
 
 				Set<String> missings = new TreeSet<>(cuis);

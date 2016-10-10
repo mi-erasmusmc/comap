@@ -32,6 +32,51 @@ function handleError(err, status) {
     }
 }
 
+// Patch: adapt concepts for the code mapper application
+function patchConcept(concept0, codingSystems, semanticTypesByType) {
+    var concept = angular.copy(concept0);
+    if (concept.preferredName == null) {
+        concept.preferredName = concept.cui;
+    }
+    // Add field `codes` that is a mapping from coding systems to
+    // source concepts
+    concept.codes = {};
+    codingSystems.forEach(function(codingSystem) {
+        concept.codes[codingSystem] = concept.sourceConcepts
+            .filter(function(sourceConcept) {
+                return sourceConcept.codingSystem == codingSystem;
+            })
+            .map(function(sourceConcept) {
+                // Select all codes by default
+                sourceConcept.selected = true;
+                return sourceConcept;
+            });
+    });
+    // Add the count of source codes
+    concept.sourceConceptsCount = concept.sourceConcepts.length;
+    // Enrich information about semantic types by descriptions and
+    // groups.
+    var types = concept.semanticTypes
+        .map(function(type) {
+            return semanticTypesByType[type].description;
+        })
+        .filter(function(v, ix, arr) {
+            return ix == arr.indexOf(v);
+        });
+    var groups = concept.semanticTypes
+        .map(function(type) {
+            return semanticTypesByType[type].group;
+        })
+        .filter(function(v, ix, arr) {
+            return ix == arr.indexOf(v);
+        });
+    concept.semantic = {
+        types: types,
+        groups: groups
+    };
+    return concept;
+}
+
 function upgradeState(state) {
     state = angular.copy(state);
     if (!state.hasOwnProperty("cuiAssignment")) {
@@ -354,52 +399,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             });
         }, 0);
     };
-    
-    // Patch: adapt concepts for the code mapper application
-    function patchConcept(concept0, codingSystems) {
-        var concept = angular.copy(concept0);
-        if (concept.preferredName == null) {
-            concept.preferredName = concept.cui;
-        }
-        // Add field `codes` that is a mapping from coding systems to
-        // source concepts
-        concept.codes = {};
-        codingSystems.forEach(function(codingSystem) {
-            concept.codes[codingSystem] = concept.sourceConcepts
-                .filter(function(sourceConcept) {
-                    return sourceConcept.codingSystem == codingSystem;
-                })
-                .map(function(sourceConcept) {
-                    // Select all codes by default
-                    sourceConcept.selected = true;
-                    return sourceConcept;
-                });
-        });
-        // Add the count of source codes
-        concept.sourceConceptsCount = concept.sourceConcepts.length; 
-        // Enrich information about semantic types by descriptions and
-        // groups.
-        var types = concept.semanticTypes
-            .map(function(type) {
-                return dataService.semanticTypesByType[type].description;
-            })
-            .filter(function(v, ix, arr) {
-                return ix == arr.indexOf(v);
-            });
-        var groups = concept.semanticTypes
-            .map(function(type) {
-                return dataService.semanticTypesByType[type].group;
-            })
-            .filter(function(v, ix, arr) {
-                return ix == arr.indexOf(v);
-            });
-        concept.semantic = {
-            types: types,
-            groups: groups
-        };
-        return concept;
-    }
-    
     /* COMMENTS */
     
     $scope.showComments = function(concept) {

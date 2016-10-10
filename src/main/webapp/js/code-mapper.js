@@ -645,7 +645,32 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 }
             });
     };
-    
+
+    $scope.reloadMapping = function() {
+        console.log("Reload mapping");
+        var data = {
+            cuis: $scope.state.mapping.concepts.map(getCui),
+            codingSystems: $scope.state.codingSystems
+        };
+        $http.post(urls.umlsConcepts, data, FORM_ENCODED_POST)
+            .success(function(concepts) {
+                console.log("Received concepts", concepts);
+                var conceptsByCui = {};
+                $scope.state.mapping.concepts.forEach(function(concept) {
+                   conceptsByCui[concept.cui] = concept; 
+                });
+                $scope.state.mapping.concepts = concepts.map(function(concept0) {
+                    var concept = patchConcept(concept0, $scope.state.codingSystems, dataService.semanticTypesByType);
+                    concept.origin = conceptsByCui[concept.cui].origin;
+                    concept.tags = conceptsByCui[concept.cui].tags;
+                    concept.comments = conceptsByCui[concept.cui].comments;
+                    return concept;
+                });
+                $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                $scope.historyStep("Reload mapping", null, null, null);
+            });
+    };
+
     $scope.createInitalTranslations = function(caseDefinition) {
         $log.info("Create initial coding");
         if ($scope.state.mapping != null || $scope.state.indexing == null) {
@@ -1365,8 +1390,13 @@ function ChangePasswordCtrl($scope, $modalInstance, $http, urls) {
     };
 }
 
-function changePassword($modal) {
+function reloadMapping() {
+    var div = document.getElementById('code-mapper-mappings');
+    var scope = angular.element(div).scope();
+    scope.reloadMapping();
+}
 
+function changePassword($modal) {
     var dialog = $modal.open({
         templateUrl: 'partials/ChangePassword.html',
         controller: 'ChangePasswordCtrl',

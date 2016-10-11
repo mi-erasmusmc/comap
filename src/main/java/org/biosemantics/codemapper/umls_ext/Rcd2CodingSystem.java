@@ -13,6 +13,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import javax.sql.DataSource;
 
@@ -44,6 +46,11 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
             + "AND MAPTYP != 'N' "
             + "AND MAPSTATUS = 1 "
             + "AND V2_CONCEPTID NOT IN ('_DRUG', '_NONE')";
+
+    private static final String QUERY_V2_LABELS =
+            "SELECT DISTINCT CODE, DESCRIPTION FROM Corev2 "
+            // Make CTV3_CONCEPTID case sensitive!
+            + "WHERE CAST(CODE AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%s)";
 
 	private DataSource umlsExtConnectionPool;
     private String ctv3rctTableName;
@@ -102,6 +109,12 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 			return new HashMap<>();
 
 		Map<String, List<String>> mapping = translate(codes, Direction.From3to2);
+		
+		Set<String> targetCodes = new TreeSet<>();
+		for (List<String> cs: mapping.values())
+		    targetCodes.addAll(cs);
+		
+		Map<String, String> labels = getRead2Labels(targetCodes);
 
 		/** res: {CUI: {Code3: [SourceConcept2]}} */
 		Map<String, Map<String, List<SourceConcept>>> res = new HashMap<>();
@@ -110,10 +123,16 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 			for (SourceConcept sourceConceptRcd3: referenceCodes.get(cui)) {
 			    assert(REFERENCE_CODING_SYSTEM.equals(sourceConceptRcd3.getCodingSystem()));
 				String code3 = sourceConceptRcd3.getId();
-				String preferredTerm = preferredTerms.containsKey(code3) ? preferredTerms.get(code3) : null;
 				List<SourceConcept> sourceConceptsRcd2 = new LinkedList<>();
 				if (mapping.containsKey(code3))
 					for (String code2: mapping.get(code3)) {
+					    String preferredTerm;
+					    if (labels.containsKey(code2))
+					        preferredTerm = labels.get(code2);
+					    else if (preferredTerms.containsKey(code3))
+					        preferredTerm = preferredTerms.get(code3) + " (CTv3)";
+					    else
+					        preferredTerm = null;
 						SourceConcept sourceConcept2 = new SourceConcept(cui, ABBREVIATION, code2, preferredTerm);
 						sourceConceptsRcd2.add(sourceConcept2);
 					}
@@ -124,7 +143,32 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 		return res;
 	}
 	
-	private static enum Direction { From2to3, From3to2 };
+	private Map<String, String> getRead2Labels(Set<String> codes) throws CodeMapperException {
+	    Map<String, String> labels = new TreeMap<>();
+	    if (codes.isEmpty())
+	        return labels;
+	    else {
+    	    String query = String.format(QUERY_V2_LABELS, Utils.sqlPlaceholders(codes.size()));
+    	    try (Connection connection = umlsExtConnectionPool.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(query)) {
+                     int offset = 1;
+                     for (Iterator<String> iter = codes.iterator(); iter.hasNext(); offset++)
+                         statement.setString(offset, iter.next());
+                     System.out.println(statement);
+                     ResultSet result = statement.executeQuery();
+                     while (result.next()) {
+                         String code = result.getString(1);
+                         String description = result.getString(2);
+                         labels.put(code, description);
+                     }
+                     return labels;
+            } catch (SQLException e) {
+                throw CodeMapperException.server("Cannot execute query for Read-v2 labels", e);
+            }
+	    }
+    }
+
+    private static enum Direction { From2to3, From3to2 };
 	
 	public Map<String, List<String>> translate(Collection<String> codes, Direction direction) throws CodeMapperException {
 	    String queryFormat = null;

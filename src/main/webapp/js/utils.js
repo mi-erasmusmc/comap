@@ -47,6 +47,10 @@ function getCui(concept) {
     return concept.cui;
 }
 
+function getPreferredName(concept) {
+	return concept.preferredName;
+}
+
 function reduceConcept(concept) {
     return {
         cui: concept.cui,

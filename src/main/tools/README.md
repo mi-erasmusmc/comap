@@ -35,3 +35,4 @@ The script includes a Tk graphical user interface.
 Use `./code-counts.py --help` for a full description of functionality and
 options. Pyinstaller can be used to compile it into a single (windows) .exe
 file.
+

@@ -315,6 +315,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             if (callback) {
                 callback();
             }
+        } else if (event.key == "Delete") {
+        	$timeout(function() {
+        		var msg = "Delete " + $scope.selectedConcepts.map(getPreferredName).join(", ") + "?";
+                if (window.confirm(msg)) {
+                	event.preventDefault();
+                	$scope.operationDeleteConcepts($scope.selectedConcepts);
+                }
+        	}, 0);
         }
     };
 

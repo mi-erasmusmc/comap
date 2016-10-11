@@ -157,7 +157,7 @@ public class CodeMapperResource {
 	}
 
 	@POST
-	@Path("related")
+	@Path("related-concepts")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Map<String, Map<String, List<UmlsConcept>>> getRelated(@FormParam("cuis") List<String> cuis,
 			@FormParam("codingSystems") List<String> codingSystems,

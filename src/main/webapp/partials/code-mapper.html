@@ -51,11 +51,15 @@
           </button>
           
           <div class='btn-group'> 
-              <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, false)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more general concepts'> 
+              <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, ["PAR", "RB"], "broader")' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more general concepts'> 
                 <i class='glyphicon glyphicon-chevron-up'></i>
                 Broader
               </button> 
-              <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, true)' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more specific concepts'> 
+              <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, ["SIB"], "siblings")' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to siblings'> 
+                <i class='glyphicon glyphicon-resize-horizontal'></i>
+                Siblings
+              </button> 
+              <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, ["CHD", "RN"], "narrower")' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more specific concepts'> 
                 <i class='glyphicon glyphicon-chevron-down'></i>
                 Narrower
               </button> 
@@ -65,7 +69,7 @@
                   ng-click='operationSuggestConcepts(selectedConcepts)'
                   ng-disabled='selectedConcepts.length == 0'
                   title='Suggest related concepts that fill missing codes'>
-            <i class='glyphicon glyphicon-screenshot'></i>
+            <i class='glyphicon glyphicon-resize-full'></i>
             Suggest
           </button> 
           

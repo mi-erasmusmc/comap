@@ -585,9 +585,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             .then(function(res) {
                 console.log("Change coding systems", res);
                 var addCodingSystems = res.codingSystems
-                                .filter(function(codingSystem) {
-                                    return $scope.state.codingSystems.indexOf(codingSystem) == -1;
-                                });
+                    .filter(function(codingSystem) {
+                        return $scope.state.codingSystems.indexOf(codingSystem) == -1;
+                    });
                 var removeCodingSystems = $scope.state.codingSystems
                     .filter(function(codingSystem) {
                         return res.codingSystems.indexOf(codingSystem) == -1;
@@ -955,20 +955,18 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
      * Expand a given concept to its hypernyms or hyponyms, show selection
      * dialog and integrate in the list of concepts ($scope.state.concepts).
      */
-    $scope.operationExpandRelatedConcepts = function(concepts, hyponymsNotHypernyms) {
+    $scope.operationExpandRelatedConcepts = function(concepts, relations, label) {
         if ($scope.state == null || $scope.state.mapping == null) {
-            error("CodeMapperCtrl.expandRelated called without mapping");
+            error("CodeMapperCtrl.operationExpandRelatedConcepts called without mapping");
             return;
         }
         var conceptNames =concepts.length <= 3
             ? concepts.map(function(c) { return c.preferredName; }).join(", ")
-        : concepts.length + " " + pluralize("concept", concepts);
-        var hyponymOrHypernym = hyponymsNotHypernyms ? "hyponym" : "hypernym";
-        var cuis = concepts.map(getCui);
+            : concepts.length + " " + pluralize("concept", concepts);
         var data = {
-            cuis: cuis,
-            hyponymsNotHypernyms: hyponymsNotHypernyms,
-            codingSystems: $scope.state.codingSystems
+            cuis: concepts.map(getCui),
+            codingSystems: $scope.state.codingSystems,
+            relations: relations
         };
         var currentCuis = $scope.state.mapping.concepts.map(getCui);
         // Retrieve related concepts from the API
@@ -984,7 +982,14 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             })
             .success(function(relatedConceptsByCuis) {
                 var relatedConcepts = [];
-                angular.forEach(relatedConceptsByCuis, function(relatedConceptsForCui, forCui) {
+                angular.forEach(relatedConceptsByCuis, function(relatedConceptsForCuiByRel, forCui) {
+                    
+                    var relatedConceptsForCui = [];
+                    angular.forEach(relatedConceptsForCuiByRel, function(concepts, forRelation) {
+                        relatedConceptsForCui = relatedConceptsForCui.concat(concepts);
+                        console.log("Related concepts", forCui, forRelation, concepts);
+                    });
+                    
 
                     var relatedConceptsCuis = relatedConcepts.map(getCui);
                     relatedConceptsForCui = relatedConceptsForCui
@@ -998,27 +1003,29 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             return patchConcept(concept, $scope.state.codingSystems, dataService.semanticTypesByType);
                         });
 
+                    var rootConceptCui = concepts[concepts.map(getCui).indexOf(forCui)].origin.root;
+                    var rootConcept = null;
+                    if (rootConceptCui) {
+                        var rootConceptIx = $scope.state.mapping.concepts.map(getCui).indexOf(forCui);
+                        rootConcept = $scope.state.mapping.concepts[rootConceptIx].origin.root.cui;
+                    }
                     relatedConceptsForCui.forEach(function(c) {
                         c.origin = {
-                            type: hyponymOrHypernym,
+                            type: label,
                             data: {
                                 cui: forCui,
                                 preferredName: concepts.filter(function(c1) { return forCui == c1.cui; })[0].preferredName
                             },
-                            root: reduceConcept(concepts[concepts.map(getCui).indexOf(forCui)])
+                            root: rootConcept ? reduceConcept(rootConcept) : null
                         };
                     });
                     relatedConcepts = relatedConcepts.concat(relatedConceptsForCui);
                 });
-                var specificOrGeneral = hyponymsNotHypernyms ? "specific" : "general";
-                var title = "Concepts that are more " + specificOrGeneral + " than " + conceptNames;
+                var title = "Select " + label + " concepts for " + conceptNames;
                 selectConceptsInDialog($modal, relatedConcepts, title, true, null, $scope.state.codingSystems, $scope.state.targetDatabases)
                     .then(function(selectedConcepts) {
-                        var descr = "Expanded " + conceptNames +
-                            " with " + selectedConcepts.length +
-                            " " + pluralize(hyponymOrHypernym, selectedConcepts);
-                        var operation = hyponymsNotHypernyms ? "Expand to more specific" : "Expand to more general";
-                        insertConcepts(concepts, selectedConcepts, $scope, operation, descr);
+                        var descr = "Expanded " + conceptNames + " to " + label;
+                        insertConcepts(concepts, selectedConcepts, $scope, "Expand concepts to "+label, descr);
                     });
             })
         ['finally'](function() {

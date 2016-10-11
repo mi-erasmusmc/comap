@@ -1449,7 +1449,7 @@ function askSummary($modal, caseDefinitionName, history, numberUnsafedChanges) {
         resolve: {
             caseDefinitionName: function() { return caseDefinitionName; },
             changes: function() {
-                return history.slice(history.length - numberUnsafedChanges);
+                return history.slice(0,  numberUnsafedChanges);
             }
         }
     });

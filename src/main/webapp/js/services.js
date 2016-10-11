@@ -44,7 +44,7 @@ function UrlsService() {
     var codeMapperApi = 'rest/code-mapper';
     this.codingSystems = codeMapperApi + '/coding-systems';
     this.umlsConcepts = codeMapperApi + '/umls-concepts';
-    this.relatedConcepts = codeMapperApi + '/related-hypernyms-or-hyponyms';
+    this.relatedConcepts = codeMapperApi + '/related-concepts';
     this.suggestConcepts = codeMapperApi + '/suggest-concepts';
     this.config = codeMapperApi + '/config';
     this.autocomplete = codeMapperApi + '/autocomplete';

@@ -3,6 +3,19 @@
 Code sets for conditions (events) mapped in CodeMapper can be downloaded as XLS
 files from the web application.
 
+## Batch download mappings
+
+    http -v --form --session /tmp/s POST http://localhost:8080/CodeMapper/rest/authentification/login username=$username password=$password
+
+    project=ADVANCE-POC
+    events=(ADEM CONVULS DEATH FCONVULS FEVER GCONVULS HHE ISR PCRYING PERTUSSIS PNEUMONIA SOMNOL)
+    casedefat="https://euadr.erasmusmc.nl/CodeMapper"
+    downloadfrom="https://euadr.erasmusmc.nl/CodeMapper"
+    for event in $events; do
+        http --session /tmp/s "$downloadfrom/rest/services/download/case-definition-xls" \
+            project=="$project" caseDefinition=="$event" url=="$casedefat/#/case-definition/$project/$event" > "$event".xls
+    done
+
 ## Manage
 
 The script `manage.py` is used to administrating the CodeMapper database.
@@ -35,3 +48,4 @@ The script includes a Tk graphical user interface.
 Use `./code-counts.py --help` for a full description of functionality and
 options. Pyinstaller can be used to compile it into a single (windows) .exe
 file.
+

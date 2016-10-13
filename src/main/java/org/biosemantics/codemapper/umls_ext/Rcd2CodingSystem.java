@@ -37,6 +37,7 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
             + "WHERE CAST(CTV3_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%%s) "
             + "AND MAPTYP != 'N' "
             + "AND MAPSTATUS = 1 "
+            + "AND ISASSURED = 1 "
             + "AND V2_CONCEPTID NOT IN ('_DRUG', '_NONE')";
 
     public final String QUERY_2to3_FMT =
@@ -45,6 +46,7 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
             + "WHERE CAST(V2_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%%s) "
             + "AND MAPTYP != 'N' "
             + "AND MAPSTATUS = 1 "
+            + "AND ISASSURED = 1 "
             + "AND V2_CONCEPTID NOT IN ('_DRUG', '_NONE')";
 
     private static final String QUERY_V2_LABELS =

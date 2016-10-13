@@ -182,7 +182,8 @@ public class UmlsApi  {
                             + (semanticTypes != null && !semanticTypes.isEmpty()
                                ? String.format("AND sty.tui IN (%s) ", // that have the selected semantic types
                                                Utils.sqlPlaceholders(semanticTypes.size()))
-                               : "");
+                               : "")
+                           + "LIMIT 100";
 
 			try (Connection connection = connectionPool.getConnection();
 			     PreparedStatement statement = connection.prepareStatement(query)) {

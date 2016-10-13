@@ -48,6 +48,7 @@ function UrlsService() {
     this.suggestConcepts = codeMapperApi + '/suggest-concepts';
     this.config = codeMapperApi + '/config';
     this.autocomplete = codeMapperApi + '/autocomplete';
+    this.autocompleteCode = codeMapperApi + '/autocomplete-code';
     
     var authentificationApi = 'rest/authentification';
     this.login = authentificationApi + '/login';

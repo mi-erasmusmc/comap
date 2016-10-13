@@ -209,6 +209,42 @@ public class UmlsApi  {
 			}
 		}
 	}
+	
+	public List<UmlsConcept> getCodeCompletions(String str, String codingSystem) throws CodeMapperException {
+		if (str.length() < 2)
+			return new LinkedList<>();
+	    String query =
+	            "SELECT DISTINCT cui, sab, code, str "
+	            + "FROM MRCONSO "
+	            + "WHERE sab LIKE ?"
+	            + "AND code LIKE ?"
+	            + "AND ts = 'P' "
+                + "AND stt = 'PF' "
+                + "AND ispref = 'Y' "
+                + "AND lat = 'ENG'"
+                + "LIMIT 100";
+        try (Connection connection = connectionPool.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1,  codingSystem + "%");
+            statement.setString(2,  str + "%");
+            ResultSet result = statement.executeQuery();
+            Map<String, UmlsConcept> concepts = new TreeMap<>();
+            while (result.next()) {
+                String cui = result.getString(1);
+                String sab = result.getString(2);
+                String code = result.getString(3);
+                String preferredName = result.getString(4);
+                String name = String.format("%s in %s: %s", code, sab, preferredName);
+                if (!concepts.containsKey(cui))
+                    concepts.put(cui, new UmlsConcept(cui, name));
+                UmlsConcept concept = concepts.get(cui);
+                concept.getSourceConcepts().add(new SourceConcept(cui, sab, code));
+            }
+            return new LinkedList<UmlsConcept>(concepts.values());
+        } catch (SQLException e) {
+            throw CodeMapperException.server("Cannot execute query for completions", e);
+        }
+    }
 
 	private Map<String, List<String>> getSemanticTypes(Collection<String> cuis) throws CodeMapperException {
 		if (cuis.isEmpty())

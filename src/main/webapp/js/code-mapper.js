@@ -230,6 +230,90 @@ function getConceptsMissingCodes(state) {
     return res;
 }
 
+var CUT_CODES = {
+    RCD2: { cutRegExp: /\.+$/, minLength: 2 }
+};
+
+function ignoreCode(code, voc) {
+    var cut = CUT_CODES[voc] || {};
+    if (cut.cutRegEx) {
+        code = code.replace(cut.cutRegExp, '');
+    }
+    if (code.length > (cut.minLength || 0)) {
+        return code;
+    } else {
+        return null;
+    }
+}
+
+//{VOC: {CODE: [CUI]}}
+function getCuisByCodes(concepts) {
+    var res = {};
+    concepts.forEach(function(concept) {
+        concept.sourceConcepts.forEach(function(sourceConcept) {
+            var voc = sourceConcept.codingSystem,
+                code0 = sourceConcept.id,
+                code = ignoreCode(code0, voc);
+            if (code !== null) {
+                if (!res.hasOwnProperty(voc)) {
+                    res[voc] = {};
+                }
+                if (!res[voc].hasOwnProperty(code)) {
+                    res[voc][code] = [];
+                }
+                if (res[voc][code].indexOf(concept.cui) == -1) {
+                    res[voc][code].push(concept.cui);
+                }
+            }
+        });
+    });
+    return res;
+}
+
+function getSubsumedCodes(state) {
+    var cuisByCodes = getCuisByCodes(state.mapping.concepts);
+    var concepts = byKey(state.mapping.concepts, getCui);
+    var res = {};
+    state.mapping.concepts.forEach(function(concept) {
+        var subsumedCodes = [];
+        concept.sourceConcepts.forEach(function(sourceConcept) {
+            var voc = sourceConcept.codingSystem,
+                code0 = sourceConcept.id;
+            for (var ix = code0.length - 1; ix > 0; ix--) {
+                var code = code0.substring(0, ix);
+                var cuis = cuisByCodes[voc][code];
+                if (cuis) {
+                    var conceptNames = cuis
+                        .map(function(cui) {
+                            return concepts[cui].preferredName;
+                        })
+                        .join(", ");
+                    subsumedCodes.push(code0);
+                }
+            }
+        });
+        if (subsumedCodes.length > 0) {
+            res[concept.cui] = subsumedCodes.filter(unique);
+        }
+    });
+    return res;
+}
+
+function getConceptWarnings(state) {
+    console.log("Get concept warnings");
+    if (state) {
+        return {
+            missingCodes: getConceptsMissingCodes(state),
+            subsumedCodes: getSubsumedCodes(state)
+        };
+    } else {
+        return {
+            missingCodes: null,
+            subsumedCodes: null
+        };
+    }
+}
+
 function insertConcepts(concepts, selectedConcepts, scope, operation, descr) {
 
     // Inherit tags
@@ -256,7 +340,7 @@ function insertConcepts(concepts, selectedConcepts, scope, operation, descr) {
     });
     scope.setSelectedConcepts(selectedConcepts.map(getCui));
 
-    scope.conceptsMissingCodes = getConceptsMissingCodes(scope.state);
+    scope.conceptWarnings = getConceptWarnings(scope.state);
 
     scope.historyStep(operation, concepts.map(reduceConcept), selectedConcepts.map(reduceConcept), descr);
 }
@@ -273,7 +357,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $rootScope.subtitle = $scope.caseDefinitionName;
 
     $scope.state = State.empty();
-    $scope.conceptsMissingCodes = {};
+    $scope.conceptWarnings = getConceptWarnings();
     $scope.numberUnsafedChanges = 0;
     $scope.showVocabulary = {};
 
@@ -305,7 +389,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 
     var ctrlKeydownCallbacks = {
         48 /* 0 */: function() {
-            console.log("State", $scope.state, $scope.conceptsMissingCodes);
+            console.log("State", $scope.state, $scope.conceptWarnings);
         }
     };
 
@@ -382,7 +466,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         enableRowSelection: $scope.userCanEdit,
         enableCellSelection: $scope.userCanEdit,
         filterOptions: { filterText: '' }
-        //plugins: [new ngGridFlexibleHeightPlugin()]
     };
 
     $scope.$watch('state.mapping', function(mapping) {
@@ -524,7 +607,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         $scope.showVocabularies[voc] = true;
                     });
                     $scope.state.targetDatabases = {};
-                    $scope.conceptsMissingCodes = {};
+                    $scope.conceptWarnings = getConceptWarnings();
                     $scope.caseDefinition = "";
                     $rootScope.subtitle = $scope.caseDefinitionName + ' (NEW MAPPING)';
                     break;
@@ -537,7 +620,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 angular.forEach($scope.state.codingSystems, function(voc) {
                     $scope.showVocabularies[voc] = true;
                 });
-                $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                $scope.conceptWarnings = getConceptWarnings($scope.state);
                 $scope.$broadcast("indexingUpdated", $scope.state.indexing);
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true,
                         hasAnyTags($scope.state.mapping.concepts), $scope.state.targetDatabases, $scope.showVocabularies);
@@ -626,7 +709,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                                 }
                                 return patchConcept(concept, res.codingSystems, dataService.semanticTypesByType);
                             });
-                            $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                            $scope.conceptWarnings = getConceptWarnings($scope.state);
                             $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true,
                                     hasAnyTags($scope.state.mapping.concepts), $scope.state.targetDatabases, $scope.showVocabularies);
                             var argAdded = addCodingSystems.map(function(voc) { return "+"+voc; }).join(", ");
@@ -647,7 +730,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     });
                     if (changedTargetDatabases) {
                         $scope.state.targetDatabases = res.targetDatabases;
-                        $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                        $scope.conceptWarnings = getConceptWarnings($scope.state);
                         $scope.historyStep("Change target databases", null, null, null);
                     }
                 }
@@ -674,7 +757,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     concept.comments = conceptsByCui[concept.cui].comments;
                     return concept;
                 });
-                $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                $scope.conceptWarnings = getConceptWarnings($scope.state);
                 $scope.historyStep("Reload mapping", null, null, null);
             });
     };
@@ -718,7 +801,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         };
                         return concept;
                     });
-                $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                $scope.conceptWarnings = getConceptWarnings($scope.state);
                 var descr = "Automatic mapping created.";
                 $scope.historyStep("Automatic coding", null, $scope.state.mapping.concepts.map(reduceConcept), descr);
                 $scope.intervalUpdateComments(true);
@@ -822,7 +905,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                                 .then(function(selectedConcepts) {
                                     if (angular.isArray(selectedConcepts)) {
                                         $scope.state.mapping.concepts = [].concat(selectedConcepts, $scope.state.mapping.concepts);
-                                        $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                                        $scope.conceptWarnings = getConceptWarnings($scope.state);
                                         $scope.setSelectedConcepts(selectedConcepts.map(getCui));
                                         var descr = "Added " + selectedConcepts.length + " concepts by search on \"" + searchQuery + "\"";
                                         $scope.historyStep("Search", searchQuery, selectedConcepts.map(reduceConcept), descr);
@@ -850,7 +933,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     root: null
                 };
                 $scope.state.mapping.concepts = [].concat([concept], $scope.state.mapping.concepts);
-                $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                $scope.conceptWarnings = getConceptWarnings($scope.state);
                 $scope.setSelectedConcepts([concept.cui]);
                 var descr = "Added concept " + concept.preferredName;
                 $scope.historyStep("Add", null, reduceConcept(concept), descr);
@@ -865,7 +948,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         $scope.$apply(function() {
             $scope.intervalUpdateComments(false);
             $scope.state.mapping = null;
-            $scope.conceptsMissingCodes = null;
+            $scope.conceptWarnings = getConceptWarnings();
             $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], false, false, {}, {});
         });
     };
@@ -890,7 +973,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         return true;
                     }
                 });
-            $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+            $scope.conceptWarnings = getConceptWarnings($scope.state);
             $scope.setSelectedConcepts([]);
             var descr = "Deleted " + deletedCuis.length + " " + pluralize("concept", deletedCuis.length);
             $scope.historyStep("Delete", concepts.map(reduceConcept), null, descr);
@@ -908,7 +991,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         }
         var concept = concepts_[0];
         var cuis = [concept.cui];
-        var missingCodingSystems = ($scope.conceptsMissingCodes[concept.cui] || [])
+        var missingCodingSystems = ($scope.conceptWarnings.missingCodes[concept.cui] || [])
             .map(function(vocOrDb) {
                 if ($scope.state.codingSystems.indexOf(vocOrDb) != -1) {
                     // vocOrDb is a vocabulary
@@ -1070,10 +1153,11 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     }
                     tagsString += t;
                 });
-                $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                $scope.conceptWarnings = getConceptWarnings($scope.state);
+
                 $scope.historyStep("Set tags", concepts.map(reduceConcept), tagsString);
                 $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true,
-                                                                     hasAnyTags($scope.state.mapping.concepts), $scope.state.targetDatabases, $scope.state.showVocabularies);
+            		hasAnyTags($scope.state.mapping.concepts), $scope.state.targetDatabases, $scope.showVocabularies);
             });
     };
 
@@ -1126,7 +1210,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         descr = "Added " + added.length + " and removed " + removed.length + " codes";
                         result = "added: " + resultCodes(added, "to") + ", removed: " + resultCodes(removed, "from");
                     }
-                    $scope.conceptsMissingCodes = getConceptsMissingCodes($scope.state);
+                    $scope.conceptWarnings = getConceptWarnings($scope.state);
                     $scope.historyStep("Edit codes", concepts.map(reduceConcept), result, descr);
                 }
             });

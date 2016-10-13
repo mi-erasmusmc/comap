@@ -21,7 +21,6 @@ import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.CodingSystem;
 import org.biosemantics.codemapper.SourceConcept;
 import org.biosemantics.codemapper.Utils;
-import org.biosemantics.codemapper.authentification.AuthentificationApi;
 
 public class Icd10AnyCodingSystem implements ExtCodingSystem {
 

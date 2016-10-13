@@ -38,7 +38,6 @@ public class UmlsApi  {
     private static final List<String> RELATIONS_MORE_SPECIFIC = Arrays.asList("RN", "CHD");
     private static final List<String> RELATIONS_MORE_SPECIFIC_OR_GENERAL = Arrays.asList("RN", "RB", "PAR", "CHD");
     private static final List<String> RELATIONS_LOCAL = Arrays.asList("RL", "SY"); // the relationship is similar or "alike"
-    private static final List<String> RELATIONS_SIBLING = Arrays.asList("SIB");
 
     private static final int SIMILAR_CONCEPTS_MAX_DEPTH = 3;
 
@@ -189,12 +188,12 @@ public class UmlsApi  {
 			     PreparedStatement statement = connection.prepareStatement(query)) {
 				int offset = 1;
 				statement.setString(offset++, q + "%");
-                                if (codingSystems != null && !codingSystems.isEmpty())
-                                    for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
-					statement.setString(offset, iter.next());
-                                if (semanticTypes != null && !semanticTypes.isEmpty())
-                                    for (Iterator<String> iter = semanticTypes.iterator(); iter.hasNext(); offset++)
-					statement.setString(offset, iter.next());
+				if (codingSystems != null && !codingSystems.isEmpty())
+					for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
+						statement.setString(offset, iter.next());
+				if (semanticTypes != null && !semanticTypes.isEmpty())
+					for (Iterator<String> iter = semanticTypes.iterator(); iter.hasNext(); offset++)
+						statement.setString(offset, iter.next());
 				ResultSet result = statement.executeQuery();
 				List<UmlsConcept> completions = new LinkedList<>();
 				while (result.next()) {
@@ -769,13 +768,5 @@ public class UmlsApi  {
                 cuis = new LinkedList<>(newCuis);
         }
         return Arrays.asList();
-    }
-
-    private List<UmlsConcept> flattenRelateds(Map<String, Map<String, List<UmlsConcept>>> relateds) {
-        List<UmlsConcept> res = new LinkedList<>();
-        for (String cui: relateds.keySet())
-            for (List<UmlsConcept> concepts: relateds.get(cui).values())
-                res.addAll(concepts);
-        return res;
     }
 }

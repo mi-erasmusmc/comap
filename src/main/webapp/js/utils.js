@@ -209,7 +209,7 @@ function byKey(array, by) {
     var res = {};
     array.forEach(function(elt) {
         res[by(elt)] = elt;
-    })
+    });
     return res;
 }
 

@@ -1504,12 +1504,6 @@ function ChangePasswordCtrl($scope, $modalInstance, $http, urls) {
     };
 }
 
-function reloadMapping() {
-    var div = document.getElementById('code-mapper-mappings');
-    var scope = angular.element(div).scope();
-    scope.reloadMapping();
-}
-
 function changePassword($modal) {
     var dialog = $modal.open({
         templateUrl: 'partials/ChangePassword.html',
@@ -1517,6 +1511,11 @@ function changePassword($modal) {
         size: 'sm'
     });
     return dialog.result;
+}
+
+function getScope() {
+    var div = document.getElementById('code-mapper-mappings');
+    return angular.element(div).scope();
 }
 
 function AskChangesSummaryCtrl($scope, $http, $modalInstance, $timeout, caseDefinitionName, changes) {

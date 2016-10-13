@@ -55,6 +55,23 @@ public class CodeMapperResource {
 		}
 	}
 
+    @GET
+    @Path("autocomplete-code")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<UmlsConcept> getCodeCompletions(@Context User user,
+            @QueryParam("str") String str,
+            @QueryParam("codingSystem") String codingSystem) {
+        System.out.println(codingSystem + ":" + str);
+        AuthentificationResource.assertAuthentificated(user);
+        try {
+            List<UmlsConcept> res = api.getCodeCompletions(str, codingSystem);
+            System.out.println(res);
+            return res;
+        } catch (CodeMapperException e) {
+            throw e.asWebApplicationException();
+        }
+    }
+
 	@GET
 	@Path("coding-systems")
 	@Produces(MediaType.APPLICATION_JSON)

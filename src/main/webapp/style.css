@@ -74,9 +74,15 @@ label {
 .comment-timestamp::before {
 	content: "(";
 }
-.comments-count {
-	vertical-align: sub;
-	font-size: x-small;
+span.supsub {
+  position: relative;
+  top: 0.5em;
+  display: inline-block;
+  font-size: x-small;
+}
+span.supsub > .superscript,
+span.supsub > .superscript {
+  display: table-row;
 }
 .comment-timestamp::after {
 	content: ")";

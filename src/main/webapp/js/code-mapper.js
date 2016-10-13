@@ -727,25 +727,40 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 
     /** Generate a list of UMLS concept names with a given prefix. */
     $scope.autocompleteConcepts = function(str) {
-        var params = {
-            str: str
-        };
-        return $http.get(urls.autocomplete, { params: params })
-            .then(function(completions) {
-                if (completions.status == 200) {
-                    var currentCuis = $scope.state.mapping.concepts.map(getCui);
-                    return completions.data
-                        .filter(function(c) {
-                            return currentCuis.indexOf(c.cui) == -1;
-                        })
-                        .sort(function(s1, s2) {
-                            return s1.preferredName.length - s2.preferredName.length
-                                || s1.preferredName.localeCompare(s2.preferredName);
-                        });
-                } else {
-                    return null;
-                }
-            });
+        var completionsPromise = null;
+        if (str.indexOf(':') == -1) {
+            if (str.length < 3) {
+            	return [];
+            }
+            var params = { str: str };
+            completionsPromise = $http.get(urls.autocomplete, { params: params });
+        } else {
+            var snippets = str.split(':');
+            var codingSystem = snippets[0];
+            str = snippets.slice(1).join(':');
+            if (str.length < 3) {
+            	return [];
+            }
+            var params = { str: str, codingSystem: codingSystem };
+            completionsPromise = $http.get(urls.autocompleteCode, { params: params });
+        }
+        return completionsPromise.then(function(completions) {
+            if (completions.status == 200) {
+                var currentCuis = $scope.state.mapping.concepts.map(getCui);
+                var res = completions.data
+                    .filter(function(c) {
+                        return currentCuis.indexOf(c.cui) == -1;
+                    })
+                    .sort(function(s1, s2) {
+                        return s1.preferredName.length - s2.preferredName.length
+                            || s1.preferredName.localeCompare(s2.preferredName);
+                    });
+                console.log(res);
+                return res;
+            } else {
+                return null;
+            }
+        });
     };
 
     /**

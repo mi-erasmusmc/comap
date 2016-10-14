@@ -151,7 +151,7 @@ public class UmlsApi  {
 		}
 	}
 
-	public List<UmlsConcept> getCompletions(String q, List<String> codingSystems0, List<String> semanticTypes) throws CodeMapperException {
+	public List<UmlsConcept> getCompletions(String q, List<String> codingSystems0) throws CodeMapperException {
 		if (q.length() < 3) {
 			throw CodeMapperException.user("Completions query too short");
 		} else {
@@ -167,8 +167,6 @@ public class UmlsApi  {
                             + "FROM MRCONSO AS m1 "
                             + "INNER JOIN MRCONSO AS m2 "
                             + "ON m1.cui = m2.cui "
-                            + "INNER JOIN MRSTY AS sty "
-                            + "ON m1.cui = sty.cui "
                             + "WHERE m1.ts = 'P' " // from preferred terms in MRCONSO ...
                             + "AND m1.stt = 'PF' "
                             + "AND m1.ispref = 'Y' "
@@ -178,10 +176,6 @@ public class UmlsApi  {
                                ? String.format("AND m2.sab IN (%s) ", // that are in selected coding systems
                                                Utils.sqlPlaceholders(codingSystems.size()))
                                : "")
-                            + (semanticTypes != null && !semanticTypes.isEmpty()
-                               ? String.format("AND sty.tui IN (%s) ", // that have the selected semantic types
-                                               Utils.sqlPlaceholders(semanticTypes.size()))
-                               : "")
                            + "LIMIT 100";
 
 			try (Connection connection = connectionPool.getConnection();
@@ -190,9 +184,6 @@ public class UmlsApi  {
 				statement.setString(offset++, q + "%");
 				if (codingSystems != null && !codingSystems.isEmpty())
 					for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
-						statement.setString(offset, iter.next());
-				if (semanticTypes != null && !semanticTypes.isEmpty())
-					for (Iterator<String> iter = semanticTypes.iterator(); iter.hasNext(); offset++)
 						statement.setString(offset, iter.next());
 				ResultSet result = statement.executeQuery();
 				List<UmlsConcept> completions = new LinkedList<>();

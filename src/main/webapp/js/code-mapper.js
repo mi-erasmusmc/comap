@@ -638,36 +638,44 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     };
 
     /** Ask a summary of recent changes and save/upload the coding. */
-    $scope.saveMapping = function() {
+    $scope.saveMapping = function(summary) {
         if ($scope.state.mapping == null) {
             error("CodeMapperCtrl.expandRelated called without state");
             return;
         }
-        askSummary($modal, $scope.caseDefinitionName, $scope.state.mapping.history, $scope.numberUnsafedChanges)
-            .then(function(summary) {
-                $scope.historyStep("Summarize", summary, null);
-                var state = angular.copy($scope.state);
-                angular.forEach(state.concepts, function(concept) {
-                    delete concept.comments;
-                });
-                var data = {
-                    state: angular.toJson(state)
-                };
-                $http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)
-                    .error(function(e, status) {
-                        if (status == 401) {
-                            alert("Your session has timed out :( You have to re-login!");
-                        } else {
-                            var msg = "ERROR: An error occurred while saving";
-                            alert(msg);
-                        }
-                    })
-                    .success(function() {
-                        $scope.intervalUpdateComments(true);
-                        $scope.numberUnsafedChanges = 0;
-                        $rootScope.subtitle = $scope.caseDefinitionName; // Remove NEW (...) from fresh mappings
-                    });
+        // Ask summary only if necessary
+        var summaryPromise;
+        if (summary) {
+            var deferred = $q.defer();
+            deferred.resolve(summary);
+            summaryPromise = deferred.promise;
+        } else {
+            summaryPromise = askSummary($modal, $scope.caseDefinitionName, $scope.state.mapping.history, $scope.numberUnsafedChanges);
+        }
+        summaryPromise.then(function(summary) {
+            $scope.historyStep("Summarize", summary, null);
+            var state = angular.copy($scope.state);
+            angular.forEach(state.concepts, function(concept) {
+                delete concept.comments;
             });
+            var data = {
+                state: angular.toJson(state)
+            };
+            $http.post(urls.caseDefinition($scope.project, $scope.caseDefinitionName), data, FORM_ENCODED_POST)
+                .error(function(e, status) {
+                    if (status == 401) {
+                        alert("Your session has timed out :( You have to re-login!");
+                    } else {
+                        var msg = "ERROR: An error occurred while saving";
+                        alert(msg);
+                    }
+                })
+                .success(function() {
+                    $scope.intervalUpdateComments(true);
+                    $scope.numberUnsafedChanges = 0;
+                    $rootScope.subtitle = $scope.caseDefinitionName; // Remove NEW (...) from fresh mappings
+                });
+        });
     };
 
     $scope.changeCodingSystems = function() {
@@ -695,6 +703,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             $scope.showVocabularies = res.showVocabularies;
                             $scope.state.codingSystems = res.codingSystems;
                             $scope.state.targetDatabases = res.targetDatabases;
+                            addCodingSystems.forEach(function(voc) {
+                                $scope.state.targetDatabase[voc] = true;
+                            });;
+                            removeCodingSystems.forEach(function(voc) {
+                                delete $scope.state.targetDatabase[voc];
+                            });;
                             $scope.state.mapping.concepts = $scope.state.mapping.concepts.map(function(concept) {
                                 // Remove source concepts
                                 concept.sourceConcepts = concept.sourceConcepts

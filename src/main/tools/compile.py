@@ -23,19 +23,18 @@ SUBSUMPTION_BY_PREFIX = ['ICD9', 'ICD9CM', 'MTHICD9', 'ICD10', 'ICD10CM', 'RCD2'
 IGNORE_SUFFIX_REGEX = {'RCD2': re.compile('\.+$')}
 
 
-def subsumed_codes(codes):
-    grouped_codes = codes.groupby(['Event', 'Target']).Code.aggregate(lambda s: set(s))
-    return codes.apply(lambda r: is_subsumed(r.Code, grouped_codes[r.Event, r.Target], r['Coding system']), axis=1)
-
-
 def ignore_suffix(code, vocabulary):
     if vocabulary in IGNORE_SUFFIX_REGEX:
         return IGNORE_SUFFIX_REGEX[vocabulary].sub('', code)
     else:
         return code
 
+def is_code_range(code, vocabulary):
+    return '-' in code
 
 def is_subsumed(code, codes, vocabulary):
+    if is_code_range(code, vocabulary):
+        return False
     code = ignore_suffix(code, vocabulary)
     codes = [ignore_suffix(c, vocabulary) for c in codes]
     if vocabulary in SUBSUMPTION_BY_PREFIX:
@@ -43,6 +42,11 @@ def is_subsumed(code, codes, vocabulary):
             if code1 != code and len(code1) > 1 and code.startswith(code1):
                 return True
     return False
+
+def get_subsumed_codes(codes):
+    grouped_codes = codes.groupby(['Event', 'Target']).Code.aggregate(lambda s: set(s))
+    grouped_codes.map(', '.join).to_csv('/tmp/grouped_codes.csv')
+    return codes.apply(lambda r: is_subsumed(r.Code, grouped_codes[r.Event, r.Target], r['Coding system']), axis=1)
 
 
 def open_xls_files(xls_files):
@@ -75,28 +79,16 @@ def compile_codes(codes, rev_voc_map):
         .assign(Target=lambda df: df['Coding system'].map(rev_voc_map))
         .pipe(lambda df: df[df.Target.notnull()])
     )
-    res['Coding system (tag)'] = res.Target + res.Tag.fillna('').map(lambda t: ' (' + t + ')' if t else '')
+    res['Target (tag)'] = res.Target + res.Tag.fillna('').map(lambda t: ' (' + t + ')' if t else '')
     return res
 
 
-def filter_codes(codes):
-    subsumed = subsumed_codes(codes)
-    print('Ignore subsumed codes')
-    print(codes[subsumed][['Event', 'Target', 'Code', 'Code name']].sort_values(['Event', 'Target', 'Code']).drop_duplicates())
-    excluded = (codes['Coding system'] == 'RCD2') & codes.Code.isin(EXCLUDE_RCD2_CODES)
-    res = codes[~subsumed & ~excluded]
-    highlevel_rcd2 = codes[(codes['Coding system'] == 'RCD2') & codes.Code.str.endswith('....')]
-    print('High-level RCD2 codes')
-    print(highlevel_rcd2[['Event', 'Target', 'Code', 'Code name']].sort_values(['Event', 'Target', 'Code']).drop_duplicates())
-    return res
-
-
-def output(codes, mappings_df, out_xls_file):
+def output(codes, mappings_df, subsumed_codes, high_level_rcd2_codes, out_xls_file):
     with pd.ExcelWriter(out_xls_file) as writer:
         for event in sorted(codes.Event.unique()):
             (codes[codes.Event == event]
-             .sort_values(['Coding system (tag)', 'Code'])
-             .set_index(['Coding system (tag)', 'Code', 'Code name'])
+             .sort_values(['Target (tag)', 'Code'])
+             .set_index(['Target (tag)', 'Code', 'Code name'])
              [['Coding system', 'Concept', 'Concept name']]
              .to_excel(writer, event))
         descrs = pd.read_csv(StringIO(VOCABULARY_DESCRIPTIONS),
@@ -106,6 +98,8 @@ def output(codes, mappings_df, out_xls_file):
                                     "Description"])
         descrs.to_excel(writer, "Coding systems", index=False)
         mappings_df.to_excel(writer, "Coding systems", index=False, startrow=len(descrs)+2)
+        subsumed_codes.to_excel(writer, "Subsumed codes", index=False)
+        high_level_rcd2_codes.to_excel(writer, "High-level Read-v2 codes", index=False)
 
 
 def reverse_voc_map(voc_map):
@@ -126,9 +120,15 @@ def create_mappings_df(voc_map):
 def run(xls_files, voc_map, out_xls_file):
     codes0 = open_xls_files(xls_files)
     codes1 = compile_codes(codes0, reverse_voc_map(voc_map))
-    codes2 = filter_codes(codes1)
+    subsumed = get_subsumed_codes(codes1)
+    excluded = (codes1['Coding system'] == 'RCD2') & codes1.Code.isin(EXCLUDE_RCD2_CODES)
+    codes2 = codes1[~subsumed & ~excluded]
+    cols = ['Event', 'Target', 'Code', 'Code name', 'Concept', 'Concept name']
+    highlevel_rcd2 = (codes1['Coding system'] == 'RCD2') & codes1.Code.str.endswith('....')
+    subsumed_codes = codes1[subsumed][cols].sort_values(['Event', 'Target', 'Code']).drop_duplicates()
+    highlevel_rcd2_codes = codes1[highlevel_rcd2][cols].sort_values(['Event', 'Target', 'Code']).drop_duplicates()
     mappings_df = create_mappings_df(voc_map)
-    output(codes2, mappings_df, out_xls_file)
+    output(codes2, mappings_df, subsumed_codes, highlevel_rcd2_codes, out_xls_file)
 
 
 def parse_voc_map(voc_map):

@@ -45,11 +45,10 @@ public class CodeMapperResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<UmlsConcept> getConceptCompletions(@Context User user,
 			@QueryParam("str") String str,
-			@QueryParam("codingSystems") List<String> codingSystems,
-			@QueryParam("semanticTypes") List<String> semanticTypes) {
+			@QueryParam("codingSystems") List<String> codingSystems) {
 		AuthentificationResource.assertAuthentificated(user);
 		try {
-			return api.getCompletions(str, codingSystems, semanticTypes);
+			return api.getCompletions(str, codingSystems);
 		} catch (CodeMapperException e) {
 			throw e.asWebApplicationException();
 		}

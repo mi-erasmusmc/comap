@@ -215,8 +215,8 @@ public class UmlsApi  {
                 + "LIMIT 100";
         try (Connection connection = connectionPool.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1,  codingSystem + "%");
-            statement.setString(2,  str + "%");
+            statement.setString(1, codingSystem + "%");
+            statement.setString(2, str + "%");
             ResultSet result = statement.executeQuery();
             Map<String, UmlsConcept> concepts = new TreeMap<>();
             while (result.next()) {

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import pandas as pd
+import numpy as np
 import re
 from io import StringIO
 import argparse
@@ -79,18 +80,29 @@ def compile_codes(codes, rev_voc_map):
         .assign(Target=lambda df: df['Coding system'].map(rev_voc_map))
         .pipe(lambda df: df[df.Target.notnull()])
     )
-    res['Target (tag)'] = res.Target + res.Tag.fillna('').map(lambda t: ' (' + t + ')' if t else '')
     return res
 
 
 def output(codes, mappings_df, subsumed_codes, high_level_rcd2_codes, out_xls_file):
     with pd.ExcelWriter(out_xls_file) as writer:
         for event in sorted(codes.Event.unique()):
-            (codes[codes.Event == event]
-             .sort_values(['Target (tag)', 'Code'])
-             .set_index(['Target (tag)', 'Code', 'Code name'])
-             [['Coding system', 'Concept', 'Concept name']]
-             .to_excel(writer, event))
+            codes_for_event = codes[codes.Event == event]
+            if (codes_for_event.Tag != '').sum():
+                # Some concept has tags
+                target_column = 'Target (tag)'
+                codes_for_event = (
+                    codes_for_event
+                    .assign(Target=lambda df: df.Target + df.Tag.fillna('').map(lambda t: ' (' + t + ')' if t else ''))
+                    .rename(columns={'Target': target_column})
+                )
+            else:
+                target_column = 'Target'
+            codes_for_event = (
+                codes_for_event
+                .sort_values([target_column, 'Code', 'Code name'])
+                [[target_column, 'Code', 'Code name', 'Coding system', 'Concept', 'Concept name']]
+            )
+            codes_for_event.to_excel(writer, event, index=False)
         descrs = pd.read_csv(StringIO(VOCABULARY_DESCRIPTIONS),
                              sep='\t', index_col=False,
                              names=["Coding system (CodeMapper/UMLS)",

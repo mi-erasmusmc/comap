@@ -38,9 +38,6 @@ Questions to b.becker@erasmusmc.nl
 """.strip()
 
 
-EXCLUDE_RCD2_CODES = ['_DRUG', '_NONE', '2....']
-
-
 def get_code_names(csv_filename):
     """ Read code names, including DB-specific codes. Should be a CSV with columns
     `Code` and `Name`."""
@@ -70,11 +67,10 @@ def get_code_counts(csv_filename):
 
 def get_mappings(comap_xls_files, vocabularies):
     return pd.concat([
-        (pd.read_excel(filename, sheetname='Codes')
-         .rename(columns={'Coding system': 'Vocabulary'}))
+        pd.read_excel(filename, sheetname='Codes')
+         .rename(columns={'Coding system': 'Vocabulary'})
          .pipe(lambda df: df[df.Vocabulary.isin(vocabularies)])
          .pipe(lambda df: df[df.Code != '-'])
-         .pipe(lambda df: df[(df.Vocabulary != 'RCD2') | ~df.Code.isin(EXCLUDE_RCD2_CODES)])
          .drop_duplicates('Code')
          .assign(Event=Path(filename).name[:-4])
         [['Event', 'Vocabulary', 'Concept', 'Concept name', 'Tags', 'Code', 'Code name']]

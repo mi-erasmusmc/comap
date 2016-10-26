@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# git: @GITVERSION@
 import pandas as pd
 from pathlib import Path
 from os import path

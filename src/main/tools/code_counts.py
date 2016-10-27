@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # git: @GITVERSION@
+
 import pandas as pd
 from pathlib import Path
 from os import path
@@ -68,11 +69,11 @@ def get_code_counts(csv_filename):
 def get_mappings(comap_xls_files, vocabularies):
     return pd.concat([
         pd.read_excel(filename, sheetname='Codes')
+         .assign(Event=Path(filename).name[:-4])
          .rename(columns={'Coding system': 'Vocabulary'})
          .pipe(lambda df: df[df.Vocabulary.isin(vocabularies)])
          .pipe(lambda df: df[df.Code != '-'])
          .drop_duplicates('Code')
-         .assign(Event=Path(filename).name[:-4])
         [['Event', 'Vocabulary', 'Concept', 'Concept name', 'Tags', 'Code', 'Code name']]
         for filename in comap_xls_files
     ]).reset_index(drop=True)
@@ -81,20 +82,26 @@ def get_mappings(comap_xls_files, vocabularies):
 def get_mapped_codes(code_counts, mappings, norm_prefix, norm_dots, norm_case):
     def norm(code):
         if norm_prefix and code.startswith(norm_prefix):
+            # Drop prefix
             code = code[len(norm_prefix):]
         if norm_dots:
+            # Remove dots (trailing dots in Read and inner dots in ICD10)
             code = code.replace('.', '')
         if norm_case:
+            # Normalize case
             code = code.lower()
         return code
-    mapped = [(row.Event, row.Code) for _, row in mappings.iterrows()]
+    mapped = [
+        (row.Event, row.Code, norm(row.Code))
+        for _, row in mappings.iterrows()
+    ]
     def search_prefix(row):
         # Search mapped code that is a prefix
         event, code = row.Event, row.Code
         for N in range(0, len(code)):
             prefix = code[:-N] if N else code
-            for e, c in mapped:
-                if e == event and norm(c) == norm(prefix):
+            for e, c, n in mapped:
+                if e == event and n == norm(prefix):
                     return c
         return '???'
     return code_counts.apply(search_prefix, axis=1)
@@ -143,12 +150,12 @@ def run(vocabularies, code_counts_csv, code_names_csv, comap_xls_files, norm_pre
     mapped_codes = get_mapped_codes(code_counts, mappings, norm_prefix, norm_dots, norm_case)
     # Event × Vocabulary × Code × Count × FirstCount × Extracted code × Note × ...
     count_mapped = get_count_mapped(mappings, code_counts, code_names, mapped_codes)
-    row_order = [
+    column_order = [
         'Event', 'Vocabulary', 'Concept', 'Concept name', 'Tags',
         'Code', 'Code name', 'Extracted code', 'Extracted code name',
         'Count', 'FirstCount', 'Note'
     ]
-    res = count_mapped[row_order]
+    res = count_mapped[column_order]
     with pd.ExcelWriter(output_xls) as writer:
         res.to_excel(writer, 'Codes', index=False)
         parameters = pd.DataFrame.from_records([

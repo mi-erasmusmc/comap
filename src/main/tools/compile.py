@@ -30,8 +30,10 @@ def ignore_suffix(code, vocabulary):
     else:
         return code
 
+
 def is_code_range(code, vocabulary):
     return '-' in code
+
 
 def is_subsumed(code, codes, vocabulary):
     if is_code_range(code, vocabulary):
@@ -43,6 +45,7 @@ def is_subsumed(code, codes, vocabulary):
             if code1 != code and len(code1) > 1 and code.startswith(code1):
                 return True
     return False
+
 
 def get_subsumed_codes(codes):
     grouped_codes = codes.groupby(['Event', 'Target']).Code.aggregate(lambda s: set(s))
@@ -154,7 +157,7 @@ def parse_voc_map(voc_map):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--inputs', metavar='FILE', nargs='+', required=True,
-                        help='CodeMapper XLS files')
+                        help='CodeMapper generated XLS files')
     parser.add_argument('--voc-map', dest='voc_map', nargs='*', required=True,
                         help='A mapping like ICD9:ICD9CM+MTHICD9 READ2:RCD2 ICD10:ICD10CM ICPC2:ICPC2EENG')
     parser.add_argument('--output', metavar='FILE', required=True,

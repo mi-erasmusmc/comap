@@ -1170,7 +1170,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     };
 
     $scope.operationEditCodes = function(concepts) {
-        editCodes($modal, concepts, $scope.state.codingSystems)
+        editCodes($modal, concepts, $scope.state.codingSystems, $scope.showVocabularies)
             .then(function(codes) {
                 function isSelected(cui, codingSystem, id) {
                     return codes.filter(function(code) {
@@ -1451,12 +1451,19 @@ function editTags($modal, concepts, allConcepts) {
     }).result;
 }
 
-function EditCodesCtrl($scope, $modalInstance, $timeout, concepts, codes) {
-    $scope.concepts = concepts;
-    $scope.codes = codes.map(function(code) {
-        code.conceptName = code.concept.preferredName;
-        return code;
-    });
+function EditCodesCtrl($scope, $modalInstance, $timeout, concepts, codes, showVocabularies) {
+    
+	$scope.concepts = concepts;
+	
+    $scope.codes = codes
+    	.filter(function(code) {
+    		return showVocabularies[code.codingSystem] === true;
+    	})
+	    .map(function(code) {
+	        code.conceptName = code.concept.preferredName;
+	        return code;
+	    });
+    
     $scope.gridOptions = {
         data: "codes",
         filterOption: { filterText: '' },
@@ -1473,20 +1480,23 @@ function EditCodesCtrl($scope, $modalInstance, $timeout, concepts, codes) {
             { displayName: 'Concept', field: 'conceptName' }
         ]
     };
+    
     $timeout(function() {
         codes.forEach(function(code, index) {
             $scope.gridOptions.selectItem(index, code.selected);
         });
     }, 0);
+    
     $scope.ok = function() {
         $modalInstance.close($scope.gridOptions.$gridScope.selectedItems);
     };
+    
     $scope.cancel = function() {
         $modalInstance.dismiss('cancel');
     };
 }
 
-function editCodes($modal, concepts, codingSystems) {
+function editCodes($modal, concepts, codingSystems, showVocabularies) {
     var dialog = $modal.open({
         templateUrl: 'partials/EditCodes.html',
         controller: 'EditCodesCtrl',
@@ -1507,6 +1517,9 @@ function editCodes($modal, concepts, codingSystems) {
                     });
                 });
                 return codes;
+            },
+            showVocabularies: function() {
+            	return showVocabularies;
             }
         }
     });

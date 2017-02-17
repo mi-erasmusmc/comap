@@ -703,12 +703,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             $scope.showVocabularies = res.showVocabularies;
                             $scope.state.codingSystems = res.codingSystems;
                             $scope.state.targetDatabases = res.targetDatabases;
-                            addCodingSystems.forEach(function(voc) {
-                                $scope.state.targetDatabase[voc] = true;
-                            });;
-                            removeCodingSystems.forEach(function(voc) {
-                                delete $scope.state.targetDatabase[voc];
-                            });;
                             $scope.state.mapping.concepts = $scope.state.mapping.concepts.map(function(concept) {
                                 // Remove source concepts
                                 concept.sourceConcepts = concept.sourceConcepts
@@ -734,8 +728,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         });
                 } else {
                     $scope.showVocabularies = res.showVocabularies;
-                    $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true,
-                            hasAnyTags($scope.state.mapping.concepts), $scope.state.targetDatabases, $scope.showVocabularies);
                     var changedTargetDatabases = false;
                     angular.forEach($scope.state.codingSystems, function(voc) {
                         if (!setEquals($scope.state.targetDatabases[voc]||[], res.targetDatabases[voc]||[])) {
@@ -747,6 +739,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                         $scope.conceptWarnings = getConceptWarnings($scope.state);
                         $scope.historyStep("Change target databases", null, null, null);
                     }
+                    $scope.conceptsColumnDefs = createConceptsColumnDefs(false, $scope.state.codingSystems, true,
+                    		hasAnyTags($scope.state.mapping.concepts), $scope.state.targetDatabases, $scope.showVocabularies);
                 }
             });
     };
@@ -1259,14 +1253,28 @@ function SelectCodingSystemsCtrl($scope, $modalInstance, $timeout, codingSystems
     $scope.codingSystems = codingSystems;
     $scope.currentCodingSystems = currentCodingSystems;
     $scope.codingSystemsByName = byKey(codingSystems, getAbbreviation);
-    $scope.targetDatabases = objectMap(targetDatabases, function(dbs) { return dbs.join(", "); });
     $scope.showVocabularies = showVocabularies;
+    $scope.targetDatabases = objectMap(targetDatabases, function(dbs) { return dbs.join(", "); });
 
+    var disableAfterSelectionChange = true;
+    
     $scope.gridOptions = {
         data: "codingSystems",
         rowHeight: 35,
         showSelectionCheckbox: true,
         filterOptions: { filterText: '' },
+		afterSelectionChange: function(rowItem, event) {
+			if (disableAfterSelectionChange) {
+				return;
+			}
+        	console.log(rowItem, $scope.showVocabularies);
+        	$scope.showVocabularies[rowItem.entity.abbreviation] = rowItem.selected;
+        	if (rowItem.selected) {
+        		$scope.showVocabularies[rowItem.entity.abbreviation] = true
+        	} else {
+        		delete $scope.showVocabularies[rowItem.entity.abbreviation];
+        	}
+        },
         columnDefs: [
             { displayName: 'Name', field: 'name' },
             { displayName: 'Abbreviation', field: 'abbreviation' },
@@ -1279,9 +1287,20 @@ function SelectCodingSystemsCtrl($scope, $modalInstance, $timeout, codingSystems
                 $scope.gridOptions.selectItem(index, true);
             }
         });
-        console.log($scope.gridOptions);
+        $timeout(function() {
+        	disableAfterSelectionChange = false;
+        }, 0)
     }, 0);
-
+    
+    $scope.toggleShowVocabulary = function(abbreviation) {
+    	console.log("Toggle show vocabulary", abbreviation);
+    	var oldValue = true;
+    	if ($scope.showVocabularies.hasOwnProperty(abbreviation)) {
+    		oldValue = $scope.showVocabularies[abbreviation];
+    	}
+    	$scope.showVocabularies[abbreviation] = !oldValue;
+    };
+    
     $scope.unselect = function(abbreviation) {
         $scope.codingSystems.forEach(function(voc1, index) {
             if (abbreviation == voc1.abbreviation) {
@@ -1290,11 +1309,11 @@ function SelectCodingSystemsCtrl($scope, $modalInstance, $timeout, codingSystems
         });
     };
 
-    $scope.ok = function (newCodingSystems, newTargetDatabases, newShowVocabularies) {
+    $scope.ok = function(newCodingSystems, newTargetDatabases, newShowVocabularies) {
         var targetDatabases = {};
         console.log(newTargetDatabases);
         angular.forEach(newTargetDatabases, function(dbs, voc) {
-            targetDatabases[voc] = dbs
+            var targets = dbs
                 .split(",")
                 .map(function(s) {
                     return s.trim();
@@ -1302,6 +1321,9 @@ function SelectCodingSystemsCtrl($scope, $modalInstance, $timeout, codingSystems
                 .filter(function(s) {
                     return s;
                 });
+            if (targets.length > 0) {
+            	targetDatabases[voc] = targets;
+            }
         });
         $modalInstance.close({
             codingSystems: newCodingSystems.map(getAbbreviation),

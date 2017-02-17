@@ -64,9 +64,17 @@ label {
  font-weight: bold;
 }
 .cui, .code, .vocabulary {
-  background-color: #ECECEC;
   border: 1px solid #adadad;
   border-radius: 3px;
+}
+.vocabulary-shown {
+	background-color: #DCDCDC;
+}
+.vocabulary-hidden {
+	background-color: #DCDCDC;
+}
+.glyphicon-remove {
+	cursor: pointer;
 }
 .concepts-grid .code {
 	display: block;

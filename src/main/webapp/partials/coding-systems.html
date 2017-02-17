@@ -17,37 +17,45 @@
    <label for='selectedVocabulariesList'>Selected
     ({{gridOptions.$gridScope.selectedItems.length}})</label>
    <div id='selectedVocabulariesList'>
-    <span ng-repeat="voc in gridOptions.$gridScope.selectedItems"
-     class="vocabulary noselect" title="{{voc.name}}">
-     {{voc.abbreviation}} <i class="glyphicon glyphicon-remove"
-     ng-click="unselect(voc.abbreviation)"></i>
+    <span
+    	ng-repeat="voc in gridOptions.$gridScope.selectedItems"
+     	class="vocabulary noselect"
+     	ng-class="showVocabularies[voc.abbreviation] ? 'vocabulary-shown' : 'vocabulary-hidden'"
+     	title="{{voc.name}}"
+     	ng-click="toggleShowVocabulary(voc.abbreviation)">
+     	{{voc.abbreviation}}
+     	<i ng-if="!showVocabularies[voc.abbreviation]"
+     	   class="glyphicon glyphicon-eye-close"
+     	   ng-click="unselect(voc.abbreviation)"></i>
+     	<i class="glyphicon glyphicon-remove"
+     	   ng-click="unselect(voc.abbreviation)"></i>
     </span>
    </div>
   </div>
  </div>
+ <ul>
+   <li>Hide and show coding systems by clicking it</li>
+   <li>Remove a coding system by clicking the small cross</li>
+ </ul>
  <div ng-grid="gridOptions" class="grid coding-systems-grid"></div>
  </tab>
  <tab heading="Target databases">
  <table class="coding-systems-options">
   <tr>
    <th>Vocabulary</th>
-   <th>Show</th>
    <th>Target databases (comma-separated)</th>
   <tr>
   <tr ng-repeat="voc in gridOptions.$gridScope.selectedItems">
    <td><span title="{{voc.name}}" ng-bind="voc.abbreviation"></span></td>
-   <td><input type="checkbox" ng-model="showVocabularies[voc.abbreviation]"></input></td>
    <td><input ng-model="targetDatabases[voc.abbreviation]"></input></td>
   </tr>
  </table>
  <ul>
-   <li>Coding systems can be hidden one by one</li>
    <li>Coding systems can be grouped into target databases. This is used to generate warnings about missing codes by databases instead of by coding systems.</li>
  </ul>
  </tab>
  </tabset>
 </div>
-
 <div class="modal-footer">
  <button class="btn btn-primary"
   ng-click="ok(gridOptions.$gridScope.selectedItems, targetDatabases, showVocabularies)">OK</button>

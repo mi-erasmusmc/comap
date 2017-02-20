@@ -203,4 +203,18 @@ public class CodeMapperResource {
             throw e.asWebApplicationException();
         }
 	}
+	
+	@POST
+	@Path("search-uts")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<String> searchConcepts(
+	        @FormParam("query") String query,
+	        @Context User user) {
+	    AuthentificationResource.assertAuthentificated(user);
+	    try {
+	        return CodeMapperApplication.getUtsApi().searchConcepts(query);
+	    } catch (CodeMapperException e) {
+	        throw e.asWebApplicationException();
+	    }
+	}
 }

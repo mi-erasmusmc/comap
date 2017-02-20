@@ -201,22 +201,24 @@ public class UmlsApi  {
 	}
 	
 	public List<UmlsConcept> getCodeCompletions(String str, String codingSystem) throws CodeMapperException {
-		if (str.length() < 2)
+	    System.out.println(String.format("code completions %s %s", str,  codingSystem));
+		if (str.length() <= 2)
 			return new LinkedList<>();
 	    String query =
 	            "SELECT DISTINCT cui, sab, code, str "
 	            + "FROM MRCONSO "
-	            + "WHERE sab LIKE ?"
-	            + "AND code LIKE ?"
+	            + "WHERE ((code like ? AND sab LIKE ?) "
+	            + "OR cui = ?) "
 	            + "AND ts = 'P' "
                 + "AND stt = 'PF' "
                 + "AND ispref = 'Y' "
-                + "AND lat = 'ENG'"
+                + "AND lat = 'ENG' "
                 + "LIMIT 100";
         try (Connection connection = connectionPool.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, codingSystem + "%");
-            statement.setString(2, str + "%");
+            statement.setString(1, str + "%");
+            statement.setString(2, (codingSystem == null ? "" : codingSystem) + "%");
+            statement.setString(3, str);
             ResultSet result = statement.executeQuery();
             Map<String, UmlsConcept> concepts = new TreeMap<>();
             while (result.next()) {
@@ -224,7 +226,11 @@ public class UmlsApi  {
                 String sab = result.getString(2);
                 String code = result.getString(3);
                 String preferredName = result.getString(4);
-                String name = String.format("%s in %s: %s", code, sab, preferredName);
+                String name;
+                if (str.equals(cui))
+                    name = String.format("CUI %s: %s", cui, preferredName);
+                else
+                    name = String.format("%s in %s: %s", code, sab, preferredName);
                 if (!concepts.containsKey(cui))
                     concepts.put(cui, new UmlsConcept(cui, name));
                 UmlsConcept concept = concepts.get(cui);

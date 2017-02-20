@@ -27,6 +27,7 @@ def create_user(db, username, password):
                     [username, sha256(password)])
     print("Created user with ID", db.insert_id())
     db.commit()
+    return db.insert_id()
 
 
 def create_project(db, name):
@@ -35,6 +36,7 @@ def create_project(db, name):
                     [name])
     print("Created project with ID", db.insert_id())
     db.commit()
+    return db.insert_id()
 
 
 def get_user(db, username):
@@ -56,6 +58,15 @@ def get_mapping(db, project_id, name):
                     'AND name = %s',
                     [project_id, name])
         return cur.fetchone()['id']
+
+
+def get_mapping_content(db, mapping_id):
+    with db.cursor() as cur:
+        cur.execute('SELECT * '
+                    'FROM case_definitions '
+                    'WHERE id = %s',
+                    (mapping_id,))
+        return cur.fetchone()
 
 
 def add_user_to_project(db, username, project, role):
@@ -85,6 +96,35 @@ def move_mapping(db, project, mapping, target_project, target_mapping):
         print("Moved mapping %d to project %d" %
               (mapping_id, target_project_id))
         db.commit()
+
+
+def copy_mapping(db, mapping_id, target_project_id):
+    mapping_content = get_mapping_content(db, mapping_id)
+    with db.cursor() as cur:
+        cur.execute('INSERT INTO case_definitions (project_id, name, state) '
+                    'VALUES (%s, %s, %s)'
+                    (target_project_id, m['name'], m['state']))
+        db.commit()
+        return db.insert_id()
+    # TODO copy comments
+
+
+def get_mappings(db, project_id):
+    with db.cursor() as cur:
+        cur.execute('SELECT DISTINCT id FROM case_definitions '
+                    'WHERE project_id = %s ',
+                    (project_id,))
+        return [r['id'] for r in cur.fetchall()]
+
+
+def fork(db, source_project, target_project):
+    source_project_id = get_project(db, source_project)
+    mapping_ids = get_mappings(db, source_project_id)
+    target_project_id = create_project(target_project)
+    print("Created target project", target_project_id)
+    for mapping_id in mapping_ids:
+        target_mapping_id = copy_mapping(db, mapping_id, target_project_id)
+        print("Copied mapping", mapping_id, "to", target_mapping_id)
 
 
 def show(db, users, projects, comments):
@@ -182,6 +222,11 @@ def main():
     parser_show.add_argument("--projects", action='store_true', default=None)
     parser_show.add_argument("--comments", action='store_true', default=None)
     parser_show.set_defaults(func=show)
+
+    parser_fork = subparsers.add_parser('fork')
+    parser_fork.add_argument('--source-project', required=True)
+    parser_fork.add_argument('--target-project', required=True)
+    parser_fork.set_defaults(func=fork)
 
     args = parser.parse_args()
 

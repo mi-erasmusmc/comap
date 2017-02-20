@@ -818,40 +818,43 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 
     /** Generate a list of UMLS concept names with a given prefix. */
     $scope.autocompleteConcepts = function(str) {
-        var completionsPromise = null;
+        var params; 
         if (str.indexOf(':') == -1) {
             if (str.length < 3) {
             	return [];
             }
-            var params = { str: str };
-            completionsPromise = $http.get(urls.autocomplete, { params: params });
+            params = {
+        		str: str
+        	};
         } else {
             var snippets = str.split(':');
             var codingSystem = snippets[0];
             str = snippets.slice(1).join(':');
-            if (str.length < 3) {
+            if (str.length <= 2) {
             	return [];
             }
-            var params = { str: str, codingSystem: codingSystem };
-            completionsPromise = $http.get(urls.autocompleteCode, { params: params });
+            params = {
+        		str: str,
+        		codingSystem: codingSystem
+    		};
         }
-        return completionsPromise.then(function(completions) {
-            if (completions.status == 200) {
-                var currentCuis = $scope.state.mapping.concepts.map(getCui);
-                var res = completions.data
-                    .filter(function(c) {
-                        return currentCuis.indexOf(c.cui) == -1;
-                    })
-                    .sort(function(s1, s2) {
-                        return s1.preferredName.length - s2.preferredName.length
-                            || s1.preferredName.localeCompare(s2.preferredName);
-                    });
-                console.log(res);
-                return res;
-            } else {
-                return null;
-            }
-        });
+    	return $http.get(urls.autocompleteCode, { params: params })
+			.then(function(completions) {
+	    		if (completions.status == 200) {
+	    			var currentCuis = $scope.state.mapping.concepts.map(getCui);
+	    			var res = completions.data
+		    			.filter(function(c) {
+		    				return currentCuis.indexOf(c.cui) == -1;
+		    			})
+		    			.sort(function(s1, s2) {
+		    				return s1.preferredName.length - s2.preferredName.length
+		    				|| s1.preferredName.localeCompare(s2.preferredName);
+		    			});
+	    			return res;
+	    		} else {
+	    			return null;
+	    		}
+	    	});
     };
 
     /**
@@ -865,19 +868,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         }
         var currentCuis = $scope.state.mapping.concepts.map(getCui);
         var filteredBySemanticType = [], filteredByCurrentConcepts = [];
-        indexText($http, dataService.peregrineResource, dataService.stopwords, urls.umlsConcepts, searchQuery)
-            .then(function(item) {
-                return item.concepts
-                    .filter(function(c, ix, a) {
-                        var newInMapping = currentCuis.indexOf(c.cui) == -1;
-                        if (!newInMapping) {
-                            filteredByCurrentConcepts.push(c);
-                        }
-                        return newInMapping;
-                    })
-                    .map(getCui);
-            })
-            .then(function(cuis) {
+        var data = {
+        	query: searchQuery
+        }
+        $http.post(urls.searchUts, data, FORM_ENCODED_POST)
+            .then(function(result1) {
+            	var cuis = result1.data;
                 var data = {
                     cuis: cuis,
                     codingSystems: $scope.state.codingSystems
@@ -917,7 +913,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                                         $scope.setSelectedConcepts(selectedConcepts.map(getCui));
                                         var descr = "Added " + selectedConcepts.length + " concepts by search on \"" + searchQuery + "\"";
                                         $scope.historyStep("Search", searchQuery, selectedConcepts.map(reduceConcept), descr);
-                                        $scope.searchQuery = "";
                                     }
                                 });
                         }
@@ -945,7 +940,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 $scope.setSelectedConcepts([concept.cui]);
                 var descr = "Added concept " + concept.preferredName;
                 $scope.historyStep("Add", null, reduceConcept(concept), descr);
-                $scope.searchQuery = "";
             });
     };
 
@@ -1311,7 +1305,6 @@ function SelectCodingSystemsCtrl($scope, $modalInstance, $timeout, codingSystems
 
     $scope.ok = function(newCodingSystems, newTargetDatabases, newShowVocabularies) {
         var targetDatabases = {};
-        console.log(newTargetDatabases);
         angular.forEach(newTargetDatabases, function(dbs, voc) {
             var targets = dbs
                 .split(",")

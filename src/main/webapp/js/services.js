@@ -49,6 +49,7 @@ function UrlsService() {
     this.config = codeMapperApi + '/config';
     this.autocomplete = codeMapperApi + '/autocomplete';
     this.autocompleteCode = codeMapperApi + '/autocomplete-code';
+    this.searchUts = codeMapperApi + '/search-uts'
     
     var authentificationApi = 'rest/authentification';
     this.login = authentificationApi + '/login';

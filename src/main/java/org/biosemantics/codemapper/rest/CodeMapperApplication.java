@@ -15,6 +15,7 @@ import javax.ws.rs.core.Context;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.biosemantics.codemapper.UmlsApi;
+import org.biosemantics.codemapper.UtsApi;
 import org.biosemantics.codemapper.authentification.AuthentificationApi;
 import org.biosemantics.codemapper.authentification.User;
 import org.biosemantics.codemapper.persistency.PersistencyApi;
@@ -30,7 +31,7 @@ import com.mchange.v2.c3p0.DataSources;
 @ApplicationPath("rest")
 public class CodeMapperApplication extends ResourceConfig {
 
-	private static final String CODE_MAPPER_PROPERTIES = "/code-mapper.properties";
+	public static final String CODE_MAPPER_PROPERTIES = "/code-mapper.properties";
 	
     private static Logger logger = LogManager.getLogger(CodeMapperApplication.class);
 
@@ -39,6 +40,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static PersistencyApi persistencyApi;
 	private static AuthentificationApi authentificationApi;
 	private static DownloadApi downloadApi;
+	private static UtsApi utsApi;
 
 	private DataSource getConnectionPool(String prefix, Properties properties) throws SQLException {
         String uri = properties.getProperty(prefix + "-uri");
@@ -92,6 +94,8 @@ public class CodeMapperApplication extends ResourceConfig {
             authentificationApi = new AuthentificationApi(codeMapperConnectionPool);
             downloadApi = new DownloadApi();
 
+            String utsApiKey = properties.getProperty("uts-api-key");
+            utsApi = new UtsApi(utsApiKey);
 		} catch (SQLException e) {
 		    logger.error("Cannot create pooled data source");
             e.printStackTrace();
@@ -116,5 +120,9 @@ public class CodeMapperApplication extends ResourceConfig {
 
 	public static DownloadApi getDownloadApi() {
 		return downloadApi;
+	}
+	
+	public static UtsApi getUtsApi() {
+	    return utsApi;
 	}
 }

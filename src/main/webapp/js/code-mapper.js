@@ -460,12 +460,21 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         data: "state.mapping.concepts",
         rowHeight: 70,
         headerRowHeight: 35,
-        multiSelect: false,
+        multiSelect: true,
         keepLastSelected: false,
         columnDefs: 'conceptsColumnDefs',
         enableRowSelection: $scope.userCanEdit,
         enableCellSelection: $scope.userCanEdit,
-        filterOptions: { filterText: '' }
+        filterOptions: { filterText: '' },
+        beforeSelectionChange: function(rowItem, event) {
+        	// Single selection mode when no modifier keys are pressed
+        	if (!event.ctrlKey && !event.shiftKey) {
+        		angular.forEach($scope.state.mapping.concepts, function(data, index){
+        			$scope.conceptsGridOptions.selectRow(index, false);
+        		});
+        	}
+            return true;
+        }
     };
 
     $scope.$watch('state.mapping', function(mapping) {

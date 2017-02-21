@@ -618,7 +618,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     $scope.state.targetDatabases = {};
                     $scope.conceptWarnings = getConceptWarnings();
                     $scope.caseDefinition = "";
-                    $rootScope.subtitle = $scope.caseDefinitionName + ' (NEW MAPPING)';
+                    $rootScope.subtitle = $scope.caseDefinitionName + ' (NEVER SAVED)';
                     break;
                 } 
             })

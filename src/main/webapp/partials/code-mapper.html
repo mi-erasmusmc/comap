@@ -68,33 +68,35 @@
           <button class='btn btn-xs btn-default'
                   ng-click='operationSuggestConcepts(selectedConcepts)'
                   ng-disabled='selectedConcepts.length == 0'
-                  title='Suggest related concepts that fill missing codes'>
+                  title='Suggest related concepts that fill unbalanced codes'>
             <i class='glyphicon glyphicon-resize-full'></i>
             Suggest
           </button> 
           
-          <button class="btn btn-xs btn-default" ng-click="operationEditCodes(selectedConcepts)" ng-disabled="selectedConcepts.length == 0" title="Enable/disable codes of selected concepts">
-            <i class='glyphicon glyphicon-edit'></i>
-            Codes
-          </button>
-          
-          <button class="btn btn-xs btn-default" ng-click="operationEditTags(selectedConcepts, state.mapping.concepts)" ng-disabled="selectedConcepts.length == 0" title="Add or remove tags for selected concepts">
+          <button class="btn btn-xs btn-default" ng-click="operationEditTags(selectedConcepts, state.mapping.concepts)" ng-disabled="selectedConcepts.length == 0" title="Edit tags for selected concepts">
             <i class='glyphicon glyphicon-tag'></i>
             Tags
           </button>
+          
+          <button class="btn btn-xs btn-default" ng-click="operationEditCodes(selectedConcepts)" ng-disabled="selectedConcepts.length == 0"
+          	title="Show and disable individual codes of the selected concepts">
+            <i class='glyphicon glyphicon-edit'></i>
+            Codes
+          </button>
         </div>
         
-        <div class="add-concepts col-md-3" ng-if="userCanEdit()">
+        <div class="add-concepts col-md-3" ng-if="userCanEdit()"
+        	title="Search and add concepts. Concepts for codes are shown in dropdown. Use the search button to retrieve all concepts that mention the query text.">
           <label>Search and add concept</label>
           <input type="text" ng-model="searchQuery" 
-            placeholder="Query" title="Search and add new concepts"
+            placeholder="Query"
             typeahead="c.preferredName for c in autocompleteConcepts($viewValue)"
             typeahead-on-select="searchAndAddConceptDirect($item); searchQuery = ''"
             typeahead-wait-ms=250
             typeahead-min-length=3
             typeahead-focus-first=false
             ></input>
-          <button title="Search and add concepts. Codes are completed in dropdown. Use search button to retrieve all concepts that mention the text."
+          <button
             ng-click="searchAndAddConcepts(searchQuery)"
             ng-disabled="!searchQuery" class="btn btn-xs btn-default">
             <i class="glyphicon glyphicon-search"></i>Search
@@ -103,14 +105,14 @@
         
         <div class="on-case-definition col-md-3" ng-if="userCanEdit()">
           <label>Operate on mapping</label>
-          <button title="Add or remove coding systems" ng-click="changeCodingSystems()" class="btn btn-xs btn-default">
+          <button title="Hide, show, add, and remove coding systems" ng-click="changeCodingSystems()" class="btn btn-xs btn-default">
               <i class="glyphicon glyphicon-asterisk"></i>
               Coding systems
           </button>
           <div class="btn-group">
             <button title="Save the mapping online (comments are always save)" ng-click="saveMapping()" ng-disabled="numberUnsafedChanges == 0" class="btn btn-xs btn-default">
               <i class="glyphicon glyphicon-floppy-disk"></i>
-              Save
+              Save<span ng-if="numberUnsafedChanges > 0"> {{numberUnsafedChanges}} unsaved change<span ng-if="numberUnsafedChanges > 1">s</span></span>
             </button>
             <button title="Download the mapping as a Excel document"
                 ng-disabled="numberUnsafedChanges > 0"

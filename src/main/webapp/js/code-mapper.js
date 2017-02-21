@@ -1246,10 +1246,10 @@ function selectCodingSystemsDialog($modal, codingSystems, currentCodingSystems, 
         controller: 'SelectCodingSystemsCtrl',
         size: 'lg',
         resolve: {
-            codingSystems: function() { return codingSystems; },
-            currentCodingSystems: function() { return currentCodingSystems; },
-            targetDatabases: function() { return targetDatabases; },
-            showVocabularies: function() { return showVocabularies; }
+            codingSystems: function() { return angular.copy(codingSystems); },
+            currentCodingSystems: function() { return angular.copy(currentCodingSystems); },
+            targetDatabases: function() { return angular.copy(targetDatabases); },
+            showVocabularies: function() { return angular.copy(showVocabularies); }
         }
     });
     return dialog.result;

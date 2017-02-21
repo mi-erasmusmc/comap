@@ -129,7 +129,7 @@ function everyTags(concepts) {
         concepts.forEach(function(concept) {
             if (res) {
                 res = res.filter(function(t) {
-                    return concept.tags.indexOf(t) != -1;
+                    return angular.isArray(concept.tags) && concept.tags.indexOf(t) != -1;
                 });
             } else {
                 res = [];
@@ -997,7 +997,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             return;
         }
         if (concepts_.length != 1) {
-            error("Suggest concepts must be called with one selected concept");
+            error("Suggest concepts must be called with exactly one selected concept");
             return;
         }
         var concept = concepts_[0];
@@ -1075,6 +1075,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $scope.operationExpandRelatedConcepts = function(concepts, relations, label) {
         if ($scope.state == null || $scope.state.mapping == null) {
             error("CodeMapperCtrl.operationExpandRelatedConcepts called without mapping");
+            return;
+        }
+        if (concepts.length != 1) {
+            error("Suggest concepts must be called with exactly one selected concept");
             return;
         }
         var conceptNames =concepts.length <= 3

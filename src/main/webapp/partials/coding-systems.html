@@ -7,15 +7,15 @@
  <tab heading="Coding systems">
  <div class="row">
   <div class="col-md-2">
-   <label for='vocabulariesFilter'>Filter
-    {{codingSystems.count}} coding systems</label> <i
+   <label for='vocabulariesFilter' title="Filter the long list of coding systems.">Filter {{codingSystems.count}} coding systems*</label> <i
     class="glyphicon glyphicon-filter"></i> <input
     id='vocabulariesFilter' type="text"
     ng-model="gridOptions.filterOptions.filterText" />
   </div>
   <div class="col-md-10">
-   <label for='selectedVocabulariesList'>Selected
-    ({{gridOptions.$gridScope.selectedItems.length}})</label>
+   <label for='selectedVocabulariesList'
+     title="Hide and show coding systems by clicking its abbreviation below. Remove a coding system by clicking the small cross.">
+    {{gridOptions.$gridScope.selectedItems.length}} selected coding system<span ng-if="gridOptions.$gridScope.selectedItems.length != 1">s</span>*</label>
    <div id='selectedVocabulariesList'>
     <span
     	ng-repeat="voc in gridOptions.$gridScope.selectedItems"
@@ -33,10 +33,6 @@
    </div>
   </div>
  </div>
- <ul>
-   <li>Hide and show coding systems by clicking it in the list above</li>
-   <li>Remove a coding system by clicking the small cross</li>
- </ul>
  <div ng-grid="gridOptions" class="grid coding-systems-grid"></div>
  </tab>
  <tab heading="Target databases">

@@ -19,7 +19,6 @@ import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.logging.LoggingFeature;
 
 
 public class UtsApi {
@@ -48,10 +47,6 @@ public class UtsApi {
         logger.setLevel(Level.ALL);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.property(LoggingFeature.LOGGING_FEATURE_VERBOSITY_CLIENT,
-                LoggingFeature.Verbosity.PAYLOAD_ANY);
-        clientConfig.property(LoggingFeature.LOGGING_FEATURE_LOGGER_NAME, Logger.GLOBAL_LOGGER_NAME);
-        clientConfig.property(LoggingFeature.LOGGING_FEATURE_LOGGER_LEVEL, "INFO");
         client = ClientBuilder.newClient(clientConfig);
         loginTarget = client.target(LOGIN_URL);
         restTarget = client.target(REST_URL);

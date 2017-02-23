@@ -60,7 +60,6 @@ public class CodeMapperResource {
     public List<UmlsConcept> getCodeCompletions(@Context User user,
             @QueryParam("str") String str,
             @QueryParam("codingSystem") String codingSystem) {
-        System.out.println(codingSystem + ":" + str);
         AuthentificationResource.assertAuthentificated(user);
         try {
             List<UmlsConcept> res = api.getCodeCompletions(str, codingSystem);

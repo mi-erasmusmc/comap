@@ -66,16 +66,13 @@ public class UtsApi {
                 .post(Entity.form(form));
         if (response.getStatusInfo().getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
             String string = response.readEntity(String.class);
-            System.out.println(string);
             Matcher matcher = TGT_PATTERN.matcher(string);
-            if (matcher.matches()) {
+            if (matcher.matches())
                 this.tgt = matcher.group("key");
-            } else {
+            else
                 logger.log(Level.SEVERE, "Cannot login: Does not match pattern: "+string);
-            }
-        } else {
+        } else
             logger.log(Level.SEVERE, "Cannot login: "+response.getStatusInfo());
-        }
     }
     
     private String getTicket() {

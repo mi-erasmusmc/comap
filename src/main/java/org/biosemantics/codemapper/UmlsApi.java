@@ -201,7 +201,6 @@ public class UmlsApi  {
 	}
 	
 	public List<UmlsConcept> getCodeCompletions(String str, String codingSystem) throws CodeMapperException {
-	    System.out.println(String.format("code completions %s %s", str,  codingSystem));
 		if (str.length() <= 2)
 			return new LinkedList<>();
 	    String query =
@@ -288,10 +287,8 @@ public class UmlsApi  {
 	    } else {
 	        String queryFmt = "SELECT DISTINCT `cui` FROM `MRCONSO` WHERE `code` IN (%s) and SAB = ?";
 	        String query = String.format(queryFmt, Utils.sqlPlaceholders(codes.size()));
-	        System.out.println(query);
 	        try (Connection connection = connectionPool.getConnection();
                     PreparedStatement statement = connection.prepareStatement(query)) {
-	            System.out.println(statement);
 	            int offset = 1;
 	            for (Iterator<String> iter = codes.iterator(); iter.hasNext(); offset++)
 	                statement.setString(offset, iter.next());
@@ -322,12 +319,10 @@ public class UmlsApi  {
             String query = String.format(queryFmt, Utils.sqlPlaceholders(codes.size()));
             try (Connection connection = connectionPool.getConnection();
                     PreparedStatement statement = connection.prepareStatement(query)) {
-                System.out.println(statement);
                 int offset = 1;
                 for (Iterator<String> iter = codes.iterator(); iter.hasNext(); offset++)
                     statement.setString(offset, iter.next());
                 statement.setString(offset++, codingSystem);
-                System.out.println(statement);
                 ResultSet result = statement.executeQuery();
                 List<String> knownCodes = new LinkedList<>();
                 while (result.next()) {

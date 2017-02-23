@@ -1,0 +1,18 @@
+# -*- mode: shell-script -*-
+
+loginurl=https://utslogin.nlm.nih.gov/cas/v1
+resturl=https://uts-ws.nlm.nih.gov/rest
+service=http://umlsks.nlm.nih.gov
+
+apikey=UTS-API-KEY
+
+http --form POST $loginurl/api-key apikey=$apikey\
+    |sed 's!.*/api-key/\([^"]*\)".*!\1!'\
+    |read tgt
+echo $tgt
+
+http --form POST $loginurl/api-key/$tgt service=$service|read st; echo $st
+
+http --verbose $resturl/content/current/CUI/C0018787 ticket==$st
+
+http --verbose $resturl/search/current ticket==$st string==fever

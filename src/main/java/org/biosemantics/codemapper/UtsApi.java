@@ -55,6 +55,7 @@ public class UtsApi {
         client = ClientBuilder.newClient(clientConfig);
         loginTarget = client.target(LOGIN_URL);
         restTarget = client.target(REST_URL);
+        login();
     }
     
     private void login() {
@@ -76,25 +77,28 @@ public class UtsApi {
     }
     
     private String getTicket() {
-        if (tgt == null)
-            login();
-        Form form = new Form()
+        for (int retry=0; retry<2; retry++, login()) {
+            Form form = new Form()
                 .param("service", SERVICE);
-        Response response = loginTarget
-            .path("api-key")
-            .path(tgt)
-            .request()
-            .post(Entity.form(form));
-        switch (response.getStatusInfo().getFamily()) {
-            case SUCCESSFUL:
-                return response.readEntity(String.class);
-            case CLIENT_ERROR:
-                logger.log(Level.INFO, "No TGT/ticket: "+response.getStatusInfo());
-            default:
-                logger.log(Level.INFO, "Error: "+response.getStatusInfo());
+            Response response = loginTarget
+                .path("api-key")
+                .path(tgt)
+                .request()
+                .post(Entity.form(form));
+            switch (response.getStatusInfo().getFamily()) {
+                case SUCCESSFUL:
+                    return response.readEntity(String.class);
+                case CLIENT_ERROR:
+                    logger.log(Level.INFO, String.format("No TGT/ticket (retry %d): %s", retry, response.getStatusInfo()));
+                    break;
+                default:
+                    logger.log(Level.INFO, "Error: "+response.getStatusInfo());
+                    return null;
+            }
         }
         return null;
     }
+    
     
     @XmlRootElement
     public static class SearchResults {
@@ -156,7 +160,6 @@ public class UtsApi {
     
     public static void main(String[] args) throws CodeMapperException {
         UtsApi utsApi = new UtsApi("UTS-API-KEY");
-        utsApi.login();
         System.out.println(utsApi.searchConcepts("GBS"));
     }
 }

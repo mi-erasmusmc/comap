@@ -42,24 +42,36 @@
        </div>
         
         <div class="modify-concepts col-md-4" ng-if="userCanEdit()">
-          <label title="Use control and shift keys to select multiple">
+          <label title="Click a row to select the concept. Use control and shift keys to select multiple concepts.">
             Modify {{selectedConcepts.length}} selected concept<span ng-if="selectedConcepts.length != 1">s</span>*
           </label>
-          <button class='btn btn-xs btn-default' ng-click='operationDeleteConcepts(selectedConcepts)' confirm-click="Delete selected concepts?" ng-disabled="selectedConcepts.length == 0" title='Delete concepts'> 
+          <button class='btn btn-xs btn-default'
+          	ng-click='operationDeleteConcepts(selectedConcepts)'
+          	confirm-click="Delete selected concepts?"
+         	ng-disabled="selectedConcepts.length == 0" title='Delete concepts'> 
             <i class='glyphicon glyphicon-remove-circle'></i>
             Delete*
           </button>
           
           <div class='btn-group'> 
-              <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, ["PAR", "RB"], "broader")' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more general concepts'> 
+              <button class='btn btn-xs btn-default'
+              	ng-click='operationExpandRelatedConcepts(selectedConcepts, ["PAR", "RB"], "broader")'
+              	ng-disabled="selectedConcepts.length == 0"
+              	title='Expand selected concepts to broader categories, i.e. generalize the concepts'> 
                 <i class='glyphicon glyphicon-chevron-up'></i>
                 Broader*
               </button> 
-              <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, ["SIB"], "siblings")' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to siblings'> 
-                <i class='glyphicon glyphicon-resize-horizontal'></i>
-                Siblings*
-              </button> 
-              <button class='btn btn-xs btn-default' ng-click='operationExpandRelatedConcepts(selectedConcepts, ["CHD", "RN"], "narrower")' ng-disabled="selectedConcepts.length == 0" title='Expand the selected concepts to more specific concepts'> 
+<!--               <button class='btn btn-xs btn-default' -->
+<!--               	ng-click='operationExpandRelatedConcepts(selectedConcepts, ["SIB"], "siblings")' -->
+<!--               	ng-disabled="selectedConcepts.length == 0" -->
+<!--               	title='Expand selected concepts to its siblings'>  -->
+<!--                 <i class='glyphicon glyphicon-resize-horizontal'></i> -->
+<!--                 Siblings* -->
+<!--               </button>  -->
+              <button class='btn btn-xs btn-default'
+              	ng-click='operationExpandRelatedConcepts(selectedConcepts, ["CHD", "RN"], "narrower")'
+              	ng-disabled="selectedConcepts.length == 0"
+              	title='Expand selected concepts to its subtypes, i.e. specialize the concepts'> 
                 <i class='glyphicon glyphicon-chevron-down'></i>
                 Narrower*
               </button> 

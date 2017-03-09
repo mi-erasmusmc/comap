@@ -20,6 +20,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.glassfish.jersey.client.ClientConfig;
 
+import jersey.repackaged.com.google.common.base.Objects;
+
 
 public class UtsApi {
     
@@ -114,14 +116,31 @@ public class UtsApi {
         public String rootSource;
         public String ui;
         public String uri;
+        public SearchResult() {}
+        public SearchResult(String ui, String name) {
+            this.ui = ui;
+            this.name = name;
+        }
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (!(obj instanceof SearchResult)) {
+                return false;
+            }
+            SearchResult result = (SearchResult) obj;
+            return Objects.equal(name, result.name) &&
+                    Objects.equal(rootSource, result.rootSource) &&
+                    Objects.equal(ui, result.ui) &&
+                    Objects.equal(uri, result.uri);
+        }
+        
     }
     
     public List<String> searchConcepts(String query) throws CodeMapperException {
-        String ticket = getTicket();
         Set<String> cuis = new HashSet<>();
-        int pageNumber = 1;
-        boolean looping = true;
-        while (looping) {
+        loop:
+        for (int pageNumber = 1; ; pageNumber++) {
+            String ticket = getTicket();
             Response response = restTarget
                     .path("search")
                     .path(UMLS_VERSION)
@@ -130,19 +149,22 @@ public class UtsApi {
                     .queryParam("pageNumber", pageNumber)
                     .request(MediaType.APPLICATION_JSON)
                     .get();
+            response.bufferEntity();
             switch (response.getStatusInfo().getFamily()) {
-                case SUCCESSFUL: {
+                case SUCCESSFUL: { 
                     SearchResults results = response.readEntity(SearchResults.class);
+                    if (results.result.results.isEmpty() ||
+                        results.result.results.size() == 1 &&
+                        results.result.results.get(0).equals(new SearchResult("NONE", "NO RESULTS")))
+                        break loop;
                     for (SearchResult result: results.result.results)
                         cuis.add(result.ui);
                     if (results.result.results.isEmpty())
-                        looping = false;
-                    pageNumber += 1;
+                        break loop;
                     break;
                 }
                 case CLIENT_ERROR:
-                    looping = false;
-                    break;
+                    break loop;
                 default: {
                     logger.log(Level.SEVERE, "Cannot search "+response.getStatusInfo() +"/"+response.getStatusInfo().getFamily());
                     throw CodeMapperException.server("UtsApi: Cannot load results");

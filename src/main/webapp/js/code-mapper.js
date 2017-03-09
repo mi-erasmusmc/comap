@@ -891,6 +891,9 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     .then(function(result) {
                         var concepts = result.data;
                         concepts = concepts
+                        	.filter(function(concept0) {
+                        		return concept0.preferredName != null;
+                        	})
                             .map(function(concept0) {
                                 var concept = patchConcept(concept0, $scope.state.codingSystems, dataService.semanticTypesByType);
                                 concept.origin = {

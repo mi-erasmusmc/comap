@@ -204,14 +204,15 @@ public class UmlsApi  {
 		if (str.length() <= 2)
 			return new LinkedList<>();
 	    String query =
-	            "SELECT DISTINCT cui, sab, code, str "
-	            + "FROM MRCONSO "
-	            + "WHERE ((code like ? AND sab LIKE ?) "
-	            + "OR cui = ?) "
-	            + "AND ts = 'P' "
-                + "AND stt = 'PF' "
-                + "AND ispref = 'Y' "
-                + "AND lat = 'ENG' "
+	            "SELECT DISTINCT m1.cui, m1.sab, m1.code, m2.str "
+	            + "FROM MRCONSO m1 "
+	            + "INNER JOIN MRCONSO m2 "
+	            + "ON m1.cui = m2.cui "
+	            + "WHERE ((m1.code like ? AND m1.sab LIKE ?) OR m1.cui = ?) "
+	            + "AND m2.ts = 'P' "
+                + "AND m2.stt = 'PF' "
+                + "AND m2.ispref = 'Y' "
+                + "AND m2.lat = 'ENG' "
                 + "LIMIT 100";
         try (Connection connection = connectionPool.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {

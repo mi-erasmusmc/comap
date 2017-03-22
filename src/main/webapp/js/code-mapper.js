@@ -1105,46 +1105,50 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 }
             })
             .success(function(relatedConceptsByCuis) {
-                var relatedConcepts = [];
-                angular.forEach(relatedConceptsByCuis, function(relatedConceptsForCuiByRel, forCui) {
-                    
-                    var relatedConceptsForCui = [];
-                    angular.forEach(relatedConceptsForCuiByRel, function(concepts, forRelation) {
-                        relatedConceptsForCui = relatedConceptsForCui.concat(concepts);
-                        console.log("Related concepts", forCui, forRelation, concepts);
-                    });
-                    
-
-                    var relatedConceptsCuis = relatedConcepts.map(getCui);
-                    relatedConceptsForCui = relatedConceptsForCui
-                        .filter(function(c, ix, a) {
-                            return currentCuis.indexOf(c.cui) == -1 // Not yet in mapping
-                                && relatedConceptsCuis.indexOf(c.cui) == -1 // Not a duplication for another CUI
-                                && isFirstOccurrence(c, ix, a) // Not a duplication for this CUI
-                            ;
-                        })
-                        .map(function(concept) {
-                            return patchConcept(concept, $scope.state.codingSystems, dataService.semanticTypesByType);
-                        });
-
-                    var rootConceptCui = concepts[concepts.map(getCui).indexOf(forCui)].origin.root;
-                    var rootConcept = null;
-                    if (rootConceptCui) {
-                        var rootConceptIx = $scope.state.mapping.concepts.map(getCui).indexOf(forCui);
-                        rootConcept = $scope.state.mapping.concepts[rootConceptIx].origin.root.cui;
-                    }
-                    relatedConceptsForCui.forEach(function(c) {
-                        c.origin = {
-                            type: label,
-                            data: {
-                                cui: forCui,
-                                preferredName: concepts.filter(function(c1) { return forCui == c1.cui; })[0].preferredName
-                            },
-                            root: rootConcept ? reduceConcept(rootConcept) : null
-                        };
-                    });
-                    relatedConcepts = relatedConcepts.concat(relatedConceptsForCui);
-                });
+            	
+            	var relatedConcepts = [],
+                    relatedCuis = [],
+                    parentCui = {};
+            	angular.forEach(relatedConceptsByCuis, function(relatedConceptsForCuiByRel, forCui) {
+            		angular.forEach(relatedConceptsForCuiByRel, function(concepts, forRelation) {
+            			angular.forEach(concepts, function(concept) {
+            				if (relatedCuis.indexOf(concept.cui) == -1) {
+            					relatedConcepts.push(concept);
+            					relatedCuis.push(concept.cui);
+            					parentCui[concept.cui] = forCui;
+            				}
+            			});
+            		});
+            	});
+            	
+            	relatedConcepts = relatedConcepts
+	            	.map(function(concept) {
+                        return patchConcept(concept, $scope.state.codingSystems, dataService.semanticTypesByType);
+	            	});
+            	
+            	var conceptsByCui = byKey($scope.state.mapping.concepts, getCui);
+            	angular.forEach(relatedConcepts, function(concept) {
+            		var parent = conceptsByCui[parentCui[concept.cui]],
+            		    root = conceptsByCui[parentCui[concept.cui]].origin.root;
+                    concept.origin = {
+                        type: label,
+                        data: {
+                            cui: parent.cui,
+                            preferredName: parent.preferredName
+                        },
+                        root: root
+                    };
+            	});
+            	
+            	var relatedCuis = relatedConcepts.map(getCui);
+            	var duplicatedCuis = relatedCuis
+	            	.filter(function(cui, ix, arr) {
+	            		return ix != arr.indexOf(cui) 
+	            	});
+            	if (duplicatedCuis.length > 0) {
+            		console.log("Duplicated CUIs!", concepts, relations, label, duplicatedCuis);
+            	}
+            	
                 var title = "Select " + label + " concepts for " + conceptNames;
                 selectConceptsInDialog($modal, relatedConcepts, title, true, null, $scope.state.codingSystems, $scope.state.targetDatabases)
                     .then(function(selectedConcepts) {

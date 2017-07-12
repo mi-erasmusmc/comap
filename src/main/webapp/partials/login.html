@@ -1,8 +1,15 @@
-<form ng-if="!user.authentificated" ng-submit="login(username, password)">
-  <label for="username" auto-focus>Username</label>
-  <input id="username" type="text" ng-model="username" autofocus>
-  <label for="password">Password</label>
-  <input id="password" type="password" ng-model="password">
-  <div ng-bind="error"></div>
-  <button type="submit">Login</button>
-</form>
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <form ng-if="!user.authentificated" ng-submit="login(username, password)">
+                <label for="username" auto-focus>Username</label>
+                <input id="username" type="text" ng-model="username" autofocus>
+                <label for="password">Password</label>
+                <input id="password" type="password" ng-model="password">
+                <div ng-bind="error"></div>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+        <div class="col" ng-include="'partials/info.html'"></div>
+    </div>
+</div>

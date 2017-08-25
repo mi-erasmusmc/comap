@@ -33,6 +33,16 @@ public class CodeMapperApplication extends ResourceConfig {
 
 	public static final String CODE_MAPPER_PROPERTIES = "/code-mapper.properties";
 	
+	public static final Properties properties;
+	
+	static {
+	    properties = new Properties();
+	    try {
+            properties.load(CodeMapperApplication.class.getResourceAsStream(CODE_MAPPER_PROPERTIES));
+        } catch (IOException e) {
+        }
+	}
+	
     private static Logger logger = LogManager.getLogger(CodeMapperApplication.class);
 
 	private static String peregrineResourceUrl;
@@ -68,8 +78,6 @@ public class CodeMapperApplication extends ResourceConfig {
         });
 
 		try {
-			Properties properties = new Properties();
-			properties.load(getClass().getResourceAsStream(CODE_MAPPER_PROPERTIES));
 
 			String availableCodingSystemsStr = properties.getProperty("available-coding-systems");
             List<String> availableCodingSystems = null;

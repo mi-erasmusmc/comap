@@ -1,6 +1,9 @@
 
 var codeMapperApp =
     angular.module("CodeMapperApp", [ "ui.bootstrap", "ngSanitize", "ngGrid", "ngRoute", "blockUI" ])
+		.run(function($rootScope) {
+		    $rootScope.globals = globals;
+		})
     	.factory('config', function() {
     		return {
     			commentsReloadInterval: 5000

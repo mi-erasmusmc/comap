@@ -120,7 +120,7 @@ def get_mappings(db, project_id):
 def fork(db, source_project, target_project):
     source_project_id = get_project(db, source_project)
     mapping_ids = get_mappings(db, source_project_id)
-    target_project_id = create_project(target_project)
+    target_project_id = create_project(db, target_project)
     print("Created target project", target_project_id)
     for mapping_id in mapping_ids:
         target_mapping_id = copy_mapping(db, mapping_id, target_project_id)

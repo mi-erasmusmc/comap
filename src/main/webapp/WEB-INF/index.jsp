@@ -20,6 +20,13 @@
     <script type="text/javascript" src="lib/ng-grid-2.0.14.debug.js"></script>
     <script type="text/javascript" src="lib/ng-grid-flexible-height.js"></script>
     <script type="text/javascript" src="lib/angular-block-ui.min.js"></script>
+    <script type="text/javascript">
+    var globals = {
+    	codemapperUmlsVersion: "${CODEMAPPER_UMLS_VERSION}",
+    	codemapperUrl: "${CODEMAPPER_URL}",
+    	codemapperContactEmail: "${CODEMAPPER_CONTACT_EMAIL}"
+    };
+    </script>
     
     <link type="text/css" rel="stylesheet" href="style.css" />
     <script type="text/javascript" src="js/utils.js"></script>
@@ -44,7 +51,8 @@
       <div class="col-md-4 text-center">
           <span>
               Help? See our <a href="http://onlinelibrary.wiley.com/doi/10.1002/pds.4245/epdf">article</a>, the <a target="_blank" href="https://docs.google.com/presentation/d/1vo94NxADoJAMTQDbzK7QRDy9IvfMHZdBiyzdsqecJA0/edit?usp=sharing">presentation</a>
-          or <a href="mailto:b.becker@erasmusmc.nl?subject=CodeMapper">email</a> me. You can hover buttons with an asterisk(*) using your mouse for instant help. 
+              or <a href="mailto:b.becker@erasmusmc.nl?subject=CodeMapper">email</a> me. You can hover buttons with an asterisk(*) using
+              your mouse for instant help. CodeMapper uses NLM's UMLS version {{globals.codemapperUmlsVersion}}.
         </span>
       </div>
       <div class="col-md-4 text-right">

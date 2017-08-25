@@ -1,31 +1,51 @@
 <div>
-    <h3>
-    CodeMapper: Semi-automatic coding of case definitions
-    </h3>
+	<h3>CodeMapper: Semi-automatic coding of case definitions</h3>
 
-    <p>
-    CodeMapper assists in the creation of code sets from case definitions, for
-    several coding systems simultaneously while keeping a record of the complete
-    mapping process. Its workflow is structured in three steps:
-    </p>
+	<p>CodeMapper assists in the creation of code sets from case
+		definitions, for several coding systems simultaneously while keeping a
+		record of the complete mapping process. Its workflow is structured in
+		three steps:</p>
 
-    <p>
-    CodeMapper is running on <a href="https://euadr.erasmusmc.nl/CodeMapper">https://euadr.erasmusmc.nl/CodeMapper</a>.
-    Please send an email to b.becker@erasmusmc.nl for access.
-    </p>
+	<p>
+		CodeMapper is running on <a href="{{globals.codemapperUrl}}"
+			ng-bind="globals.codemapperUrl"></a>. Please send an email to <a
+			href="mailto:{{globals.codemapperContactEmail}}?subject=CodeMapper"
+			ng-bind="globals.codemapperContactEmail"></a> for access.
+	</p>
 
-    <p>
-    A <a href="https://mieur.sharepoint.com/IPCI/CODEMAPPER/Shared%20Documents/CodeMapper.pptx?d=w209e699b6f8c4340b9dcd98532635787">presentation</a>
-    describes the concepts, and shows the user interface with a walk-through.
-    More details about the background, implementation, and effectiveness of the
-    approach are documented in our article:
-    </p>
+	<p>
+		CodeMapper is open source software (GNU Affero General Public License
+		3+). The source code is available on <a
+			href="https://github.com/benozol/codemapper">github</a>.
+	</p>
 
-    <cite>
-    Becker BFH, Avillach P, Romio S, van Mulligen EM, Weibel D, Sturkenboom
-    MCJM, Kors J: CodeMapper: Semi-automatic coding of case definitions. A
-    contribution from the ADVANCE project. Pharmacoepidemiology and Drug
-    Safety 2017. doi:10.1002/pds.4245
-    (<a href="http://onlinelibrary.wiley.com/doi/10.1002/pds.4245/epdf">link</a>)
-    </cite>
+	<p>
+		A <a
+			href="https://mieur.sharepoint.com/IPCI/CODEMAPPER/Shared%20Documents/CodeMapper.pptx?d=w209e699b6f8c4340b9dcd98532635787">presentation</a>
+		describes the concepts, and shows the user interface with a
+		walk-through. More details about the background, implementation, and
+		effectiveness of the approach are documented in our article:
+	</p>
+
+	<p>
+		Becker BFH, Avillach P, Romio S, van Mulligen EM, Weibel D,
+		Sturkenboom MCJM, Kors J: CodeMapper: Semi-automatic coding of case
+		definitions. A contribution from the ADVANCE project.
+		Pharmacoepidemiology and Drug Safety 2017. doi:10.1002/pds.4245 (<a
+			href="http://onlinelibrary.wiley.com/doi/10.1002/pds.4245/epdf">link</a>)
+	</p>
+
+	<p>CodeMapper uses the Unified Medical Language System (UMLS)
+		issued by the U.S. National Library of Medicine in version
+		{{globals.codemapperUmlsVersion}}.</p>
+
+	<h4>UMLS license</h4>
+
+	<p>Some material in the UMLS Metathesaurus is from copyrighted
+		sources of the respective copyright holders. Users of the UMLS
+		Metathesaurus are solely responsible for compliance with any
+		copyright, patent or trademark restrictions and are referred to the
+		copyright, patent or trademark notices appearing in the original
+		sources, all of which are hereby incorporated by reference.</p>
+
 </div>

@@ -1,23 +1,33 @@
 # ADVANCE Code Mapper
 
+CodeMapper assists in the creation of code sets from case definitions, for several coding systems simultaneously while keeping a record of the complete mapping process. Its workflow is structured in three steps:
+
+An instance of CodeMapper is available at <https://euadr.erasmusmc.nl/CodeMapper>.
+
+A [presentation](https://docs.google.com/presentation/d/1vo94NxADoJAMTQDbzK7QRDy9IvfMHZdBiyzdsqecJA0/edit?usp=sharing) describes the concepts, and shows the user interface with a walk-through. More details about the background, implementation, and effectiveness of the approach are documented in our article:
+
+Becker BFH, Avillach P, Romio S, van Mulligen EM, Weibel D, Sturkenboom MCJM, Kors J: CodeMapper: Semi-automatic coding of case definitions. A contribution from the ADVANCE project. Pharmacoepidemiology and Drug Safety 2017. doi:10.1002/pds.4245 ([link](http://onlinelibrary.wiley.com/doi/10.1002/pds.4245/epdf))
+
+## Installation
+
 Using servlet 3.0.1 -- requires Tomcat7
 
-## Build
+### Build
 
-- maven2
+- maven3
 - `mvn package`
 
-# Database
-## Migration
+## Database
+### Migration
 
     mysqldump --user=root --host=127.0.0.1 --port=3307 --default-character-set=utf8 "code-mapper" -p > code-mapper.sql
     mysql -u root -h 127.0.0.1 -P 3308 -p < code-mapper.sql
     
-## Database UMLS-ext
+### Database UMLS-ext
 
 The database `UMLS-ext` contains data complementary to the UMLS.
 
-### Table `ctv3rctmap_uk` for mapping Read-CTv3 to Read-v2
+#### Table `ctv3rctmap_uk` for mapping Read-CTv3 to Read-v2
 
 In `nhs_datamigration_22.0.0_20161001000001/Mapping Tables/Updated/Clinically Assured`
 
@@ -30,7 +40,7 @@ In `nhs_datamigration_22.0.0_20161001000001/Mapping Tables/Updated/Clinically As
         --ignore-lines=1 --lines-terminated-by='\r\n' \
         --local "$database" "$file"
 
-### Table `Corev2` for Read-v2 labels
+#### Table `Corev2` for Read-v2 labels
 
 NHS-READv2-20.0.0/V2/Unified/Corev2.all
 

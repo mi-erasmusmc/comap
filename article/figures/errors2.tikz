@@ -1,0 +1,27 @@
+% -*- mode: LaTeX -*-
+\usetikzlibrary{arrows,calc,shapes.geometric,shapes.arrows,positioning,fit,backgrounds,patterns}
+
+\begin{tikzpicture}[
+  every node/.style={
+    font=\sffamily,
+    align=center,
+    anchor=base
+  },
+  code/.style={},
+  link/.style={-latex, gray},
+  concept/.style={
+    draw,
+    circle,
+    align=center,
+    anchor=base
+  },
+  set/.style={
+    draw,rounded corners
+  }
+]
+
+\begin{tikzpicture}
+  \begin{scope}[code]
+  \node [anchor=base] (k) at (0,0) {k};
+  \end{scope}
+\end{tikzpicture}

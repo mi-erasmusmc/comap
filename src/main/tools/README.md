@@ -81,16 +81,3 @@ files into one XLS file, in long-form, adding a column to indicate the event.
 
 The script `validate.py` validates the database storage of mappings against a
 JSON schema (in `state-schema.yaml`).
-
-
-### Manage
-
-The script `manage.py` is used to administrating the CodeMapper database.
-Operations are
-
-- Create users
-- Create projects
-- Assign users to projects
-- Move mappings
-
-Use `./manage.py --help` for a full description of functionality and options.

@@ -17,7 +17,8 @@ our article:
 ## Installation
 
 The installation of CodeMapper requires two Java web applications which can be deployed on
-a java web application server like Tomcat (version 7 is required by CodeMapper).
+a java web application server like Tomcat (version 7 is required by CodeMapper). Note that
+the use of Peregrine requires at least 5GB RAM.
 
 ### Peregrine
 

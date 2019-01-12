@@ -41,24 +41,21 @@
   
   <body ng-keydown="onKeydown($event)" tabindex="0">
     <div class="row">
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div ng-controller="LoggedInCtrl" ng-if="user">
           Welcome, <span ng-bind="user.username" class="username"></span>
           <a href="#/overview"><button title="Go to overview" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-list"></span> All mappings</button></a>
           <button ng-click="logout()" class="btn btn-default btn-xs"><i class="glyphicon glyphicon-log-out"></i> Logout</button>
         </div>
       </div>
-      <div class="col-md-4 text-center">
-          <span>
-              Need help? See our <a
-              href="http://onlinelibrary.wiley.com/doi/10.1002/pds.4245/epdf">article</a>,
-              the <a target="_blank"
-              href="https://docs.google.com/presentation/d/1vo94NxADoJAMTQDbzK7QRDy9IvfMHZdBiyzdsqecJA0/edit?usp=sharing">presentation</a>
-              or <a href="mailto:{{globals.codemapperContactEmail}}?subject=CodeMapper">email</a> me.
-              You can hover buttons with an asterisk(*) using your mouse for instant help.
+      <div class="col-md-5 text-center">
+        <span>
+          Help? See our <a target="_blank" href="https://onlinelibrary.wiley.com/doi/full/10.1002/pds.4245">publication</a>, the <a target="_blank" href="https://github.com/mi-erasmusmc/comap">source code</a>,
+          <%--Help? See the <a target="_blank" href="https://docs.google.com/presentation/d/1vo94NxADoJAMTQDbzK7QRDy9IvfMHZdBiyzdsqecJA0/edit?usp=sharing">presentation</a>--%>
+          or <a href="mailto:b.becker@erasmusmc.nl?subject=CodeMapper">email</a> me. You can hover buttons with an asterisk(*) using your mouse for instant help. CodeMapper is power by the UMLS Metathesaurus 2016AA.
         </span>
       </div>
-      <div class="col-md-4 text-right">
+      <div class="col-md-3 text-right">
       </div>
     </div>
     <div class="row">
@@ -76,5 +73,23 @@
       </div>
     </div>
     <div ng-view></div>
+    <div class="row footer">
+        <p>The research leading to this tool has received support from the Innovative
+        Medicines Initiative Joint Undertaking under ADVANCE grant agreement No 115557,
+        resources of which are composed of financial contribution from the European
+        Union's Seventh Framework Programme (FP7/2007-2013) and EFPIA companies’ in kind
+        contribution.<p>
+        <p>Anyone using the tool for research purposes and publications/presentations
+        should cite:
+            <cite>
+                Becker BFH, Avillach P, Romio S, van Mulligen EM, Weibel D, Sturkenboom
+                MCJM, Kors JA; ADVANCE consortium. CodeMapper: semiautomatic coding of
+                case definitions. A contribution from the ADVANCE project.
+                Pharmacoepidemiol Drug Saf.2017 Aug;26(8):998-1005.
+                <a href="doi:10.1002/pds.4245">doi:10.1002/pds.4245</a>
+                (<a href="https://onlinelibrary.wiley.com/doi/pdf/10.1002/pds.4245">pdf</a>)
+            </cite>
+        </p>
+    </div>
   </body>
 </html>

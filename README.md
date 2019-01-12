@@ -78,7 +78,7 @@ databases can be created using the script
 The database `UMLS-ext` contains data complementary to the UMLS, such as the mapping from
 Read CTv3 (`RCD`) to Read-v2 (`RCD2`). The original mapping files
 (`nhs_datamigration_22.0.0_20161001000001`) are distributed by the Health and Social Care
-Information Centre.
+Information Centre at [Digital NHS TRUD](https://isd.digital.nhs.uk/).
 
 - Table `ctv3rctmap_uk` for mapping Read-CTv3 to Read-v2 from file
   `nhs_datamigration_22.0.0_20161001000001/Mapping Tables/Updated/Clinically Assured`

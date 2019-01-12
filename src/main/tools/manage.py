@@ -48,6 +48,18 @@ def create_user(db, username, password):
     return db.insert_id()
 
 
+def set_password(db, username, password):
+    password = password or read_password()
+    print(password, type(password))
+    print("Update password of {} ot {}? (y/*) > ".format(username, password), end='', flush=True)
+    if sys.stdin.readline().strip() != 'y':
+        return
+    with db.cursor() as cur:
+        cur.execute("UPDATE users SET password = %s WHERE username = %s",
+                    [sha256(password), username])
+    db.commit()
+
+
 def create_project(db, name):
     with db.cursor() as cur:
         cur.execute("INSERT INTO projects (name) VALUES (%s)",
@@ -217,6 +229,11 @@ def main():
     parser_create_user.add_argument('--username', required=True)
     parser_create_user.add_argument('--password')
     parser_create_user.set_defaults(func=create_user)
+
+    parser_create_user = subparsers.add_parser('set-password')
+    parser_create_user.add_argument('--username', required=True)
+    parser_create_user.add_argument('--password')
+    parser_create_user.set_defaults(func=set_password)
 
     parser_create_project = subparsers.add_parser('create-project')
     parser_create_project.add_argument('--name', required=True)

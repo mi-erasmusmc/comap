@@ -55,7 +55,12 @@ Building CodeMapper requires `maven3`. Then just run
     
 and the war-file will be build in directory `target`.
 
+#### Requirements
+
 The CodeMapper web application uses Java servlet version 3.0.1, which requires Tomcat7.
+
+CodeMapper requires to run tomcat using Java 8, otherwise it will fail to authenticate
+with the UMLS API due to unsupported certificate protocols.
 
 #### Databases
 

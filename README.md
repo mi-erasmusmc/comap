@@ -120,3 +120,17 @@ Use `./manage.py --help` for a full description of functionality and options.
 
 Several other scripts are available for post-processing mappings. Please refer to the
 [src/main/tools/README.md](src/main/tools/README.md) for details.
+
+
+## Debug web API
+
+Using `httpie`:
+
+```
+NAME="..."
+PASSWORD="..."
+POST="--session /tmp/session --form POST"
+HEADER="Content-Type:application/x-www-form-urlencoded"
+eval http $POST http://advance/CodeMapper/rest/authentification/login $HEADER username==$NAME password==$PASSWORD
+eval http $POST http://advance/CodeMapper/rest/code-mapper/related-concepts $HEADER cuis==C0087031 codingSystems==ICD9CM relations==CHD relations==RN
+```

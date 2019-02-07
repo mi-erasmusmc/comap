@@ -1,0 +1,18 @@
+LOAD DATABASE
+FROM mysql://root:${sourcepass}@127.0.0.1/${source}
+INTO postgresql://codemapper:${targetpass}@127.0.0.1/${target}
+CAST type char when (or (= precision 1) (= precision 8)) to char keep typemod,
+     type char to varchar
+     
+ WITH include drop, create tables, create indexes, reset sequences,
+   workers = 8, concurrency = 1, multiple readers per thread, rows per range = 50000,
+   alter schema '${sourceschema}' rename to 'public';
+
+  SET PostgreSQL PARAMETERS
+  maintenance_work_mem to '128MB',
+  work_mem to '12MB'
+
+  SET MySQL PARAMETERS
+  net_read_timeout  = '120',
+  net_write_timeout = '120'
+;

@@ -84,7 +84,7 @@ public class Icd10AnyCodingSystem implements ExtCodingSystem {
     
     @Override
     public List<String> getKnownCodes(List<String> codes) throws CodeMapperException {
-        String queryFmt = "SELECT DISTINCT `code` FROM `MRCONSO` WHERE `code` IN (%s) and SAB in (%s)";
+        String queryFmt = "SELECT DISTINCT code FROM mrconso WHERE code IN (%s) and SAB in (%s)";
         Collection<String> sabs = getReferenceCodingSystems();
         String query = String.format(queryFmt, Utils.sqlPlaceholders(codes.size()), Utils.sqlPlaceholders(sabs.size()));
         System.out.println(query);
@@ -114,7 +114,7 @@ public class Icd10AnyCodingSystem implements ExtCodingSystem {
         if (codes == null || codes.isEmpty())
             return new LinkedList<>();
         Collection<String> sabs = getReferenceCodingSystems();
-        String queryFmt = "SELECT DISTINCT `cui` FROM `MRCONSO` WHERE `code` IN (%s) and `sab` IN (%s)";
+        String queryFmt = "SELECT DISTINCT cui FROM mrconso WHERE code IN (%s) AND sab IN (%s)";
         String query = String.format(queryFmt, Utils.sqlPlaceholders(codes.size()), Utils.sqlPlaceholders(sabs.size()));
         try (Connection connection = connectionPool.getConnection();
                 PreparedStatement statement = connection.prepareStatement(query)) {

@@ -92,7 +92,7 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 	
 	@Override
     public List<String> getKnownCodes(List<String> codes) throws CodeMapperException {
-	    String queryFormat = "SELECT DISTINCT `V2_CONCEPTID` FROM `RCD_V3_to_V2` "
+	    String queryFormat = "SELECT DISTINCT v2_conceptid FROM rcd_v3_to_v2 "
 	            + "WHERE CAST(V2_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%s)";
         String query = String.format(queryFormat, Utils.sqlPlaceholders(codes.size()));
         try (Connection connection = umlsExtConnectionPool.getConnection();

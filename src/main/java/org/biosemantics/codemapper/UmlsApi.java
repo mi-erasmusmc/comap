@@ -304,7 +304,7 @@ public class UmlsApi  {
 	        ExtCodingSystem extCodingSystem = extCodingSystems.get(codingSystem);
 	        return extCodingSystem.getCuisForCodes(codes);
 	    } else {
-	        String queryFmt = "SELECT DISTINCT `cui` FROM `MRCONSO` WHERE `code` IN (%s) and SAB = ?";
+	        String queryFmt = "SELECT DISTINCT cui FROM mrconso WHERE code IN (%s) and SAB = ?";
 	        String query = String.format(queryFmt, Utils.sqlPlaceholders(codes.size()));
 	        try (Connection connection = connectionPool.getConnection();
                     PreparedStatement statement = connection.prepareStatement(query)) {
@@ -333,8 +333,8 @@ public class UmlsApi  {
             ExtCodingSystem extCodingSystem = extCodingSystems.get(codingSystem);
             return extCodingSystem.getKnownCodes(codes);
         } else {
-            String queryFmt = "SELECT DISTINCT `code` FROM `MRCONSO` "
-                    + "WHERE `code` IN (%s) and SAB = ? /* here */";
+            String queryFmt = "SELECT DISTINCT code FROM mrconso "
+                    + "WHERE code IN (%s) and SAB = ?";
             String query = String.format(queryFmt, Utils.sqlPlaceholders(codes.size()));
             try (Connection connection = connectionPool.getConnection();
                     PreparedStatement statement = connection.prepareStatement(query)) {

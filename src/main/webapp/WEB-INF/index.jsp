@@ -73,23 +73,5 @@
       </div>
     </div>
     <div ng-view></div>
-    <div class="row footer">
-        <p>The research leading to this tool has received support from the Innovative
-        Medicines Initiative Joint Undertaking under ADVANCE grant agreement No 115557,
-        resources of which are composed of financial contribution from the European
-        Union's Seventh Framework Programme (FP7/2007-2013) and EFPIA companies’ in kind
-        contribution.<p>
-        <p>Anyone using the tool for research purposes and publications/presentations
-        should cite:
-            <cite>
-                Becker BFH, Avillach P, Romio S, van Mulligen EM, Weibel D, Sturkenboom
-                MCJM, Kors JA; ADVANCE consortium. CodeMapper: semiautomatic coding of
-                case definitions. A contribution from the ADVANCE project.
-                Pharmacoepidemiol Drug Saf.2017 Aug;26(8):998-1005.
-                <a href="doi:10.1002/pds.4245">doi:10.1002/pds.4245</a>
-                (<a href="https://onlinelibrary.wiley.com/doi/pdf/10.1002/pds.4245">pdf</a>)
-            </cite>
-        </p>
-    </div>
   </body>
 </html>

@@ -494,7 +494,7 @@ public class UmlsApi  {
 			return new TreeMap<>();
 		else {
 			String queryFmt =
-					"SELECT DISTINCT cui1, rel, cui2 FROM MRREL "
+					"SELECT DISTINCT cui1, rel, cui2 FROM mrrel "
 					+ "WHERE cui1 in (%s) "
 					+ "AND rel in (%s) "
 					+ "AND cui1 != cui2";
@@ -509,6 +509,7 @@ public class UmlsApi  {
 					statement.setString(offset, cuis.get(ix));
 				for (int ix = 0; ix < relations.size(); ix++, offset++)
 					statement.setString(offset, relations.get(ix));
+//				System.out.println(statement);
 
 				ResultSet sqlResults = statement.executeQuery();
 

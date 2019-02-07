@@ -50,27 +50,30 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
 	public final String FAMILY = "Read thesaurus, version 2";
 
     public final String QUERY_3to2_FMT =
-            "SELECT DISTINCT CTV3_CONCEPTID, V2_CONCEPTID FROM %s "
-            // Make CTV3_CONCEPTID case sensitive!
-            + "WHERE CAST(CTV3_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%%s) "
+            "SELECT DISTINCT CTV3_CONCEPTID, V2_CONCEPTID FROM %s WHERE "
+//            // Make CTV3_CONCEPTID case sensitive!
+//            + "CAST(CTV3_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%%s) "
+    		+ "CTV3_CONCEPTID in (%%s)"
             + "AND MAPTYP != 'N' "
             + "AND MAPSTATUS = 1 "
             + "AND ISASSURED = 1 "
             + "AND V2_CONCEPTID NOT IN ('_DRUG', '_NONE')";
 
     public final String QUERY_2to3_FMT =
-            "SELECT DISTINCT V2_CONCEPTID, CTV3_CONCEPTID FROM %s "
-            // Make CTV3_CONCEPTID case sensitive!
-            + "WHERE CAST(V2_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%%s) "
-            + "AND MAPTYP != 'N' "
+            "SELECT DISTINCT V2_CONCEPTID, CTV3_CONCEPTID FROM %s WHERE "
+//            // Make CTV3_CONCEPTID case sensitive!
+//            + "CAST(V2_CONCEPTID AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%%s) "
+			+ "CTV3_CONCEPTID in (%%s)"
+			+ "MAPTYP != 'N' "
             + "AND MAPSTATUS = 1 "
             + "AND ISASSURED = 1 "
             + "AND V2_CONCEPTID NOT IN ('_DRUG', '_NONE')";
 
     private static final String QUERY_V2_LABELS =
             "SELECT DISTINCT CODE, DESCRIPTION FROM Corev2 "
-            // Make CTV3_CONCEPTID case sensitive!
-            + "WHERE CAST(CODE AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%s)";
+//            // Make CTV3_CONCEPTID case sensitive!
+//            + "WHERE CAST(CODE AS CHAR CHARACTER SET latin1) COLLATE latin1_general_cs IN (%s)";
+    		+ "WHERE CODE IN (%s)";
 
 	private DataSource umlsExtConnectionPool;
     private String ctv3rctTableName;

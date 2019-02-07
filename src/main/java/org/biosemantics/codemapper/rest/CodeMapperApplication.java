@@ -81,7 +81,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	public CodeMapperApplication(@Context ServletContext context) throws IOException {
 		
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
+			Class.forName("org.postgresql.Driver");
 		} catch (LinkageError | ClassNotFoundException e) {
 			logger.error("Can't load MYSQL JDBC driver");
 		}

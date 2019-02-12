@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <title ng-bind="'CodeMapper &ndash; '+subtitle"></title>
-    
+    <base target="_blank" />
     <link rel="shortcut icon" href="favicon.png">
-    
+
     <link type="text/css" rel="stylesheet" href="lib/bootstrap-theme.min.css">
     <link type="text/css" rel="stylesheet" href="lib/bootstrap.min.css" />
     <link type="text/css" rel="stylesheet" href="lib/ng-grid.css" />
@@ -27,7 +27,7 @@
     	codemapperContactEmail: "${CODEMAPPER_CONTACT_EMAIL}"
     };
     </script>
-    
+
     <link type="text/css" rel="stylesheet" href="style.css" />
     <script type="text/javascript" src="js/utils.js"></script>
     <script type="text/javascript" src="js/state.js"></script>
@@ -38,7 +38,7 @@
     <script type="text/javascript" src="js/authentification.js"></script>
     <script type="text/javascript" src="js/app.js"></script>
   </head>
-  
+
   <body ng-keydown="onKeydown($event)" tabindex="0">
     <div class="row">
       <div class="col-md-3">
@@ -59,19 +59,22 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-md-4">
-        <h4 class="subsubtitle" ng-bind="subsubtitle"></h4>
-        <h2 class="subtitle" ng-bind="subtitle"></h2>
+      <div class="col-md-6">
+        <h3 class="subsubtitle" ng-if="subsubtitle" ng-bind="subsubtitle"></h3>
+        <h2 class="subtitle" ng-if="subtitle" ng-bind="subtitle"></h2>
       </div>
-      <div class="col-md-4 text-center">
-        <a title="Go to overview" href="#/overview"><img class='comap-logo' src="images/logo.png" height="70px"></img></a>
-      </div>
-      <div class="col-md-4 text-right">
-        <img class='erasmus-logo' src="images/erasmus_mc.jpg" height="40px" />
-        <br/>
-        <img class='advance-logo' src="images/logo-advance.png" height="23px" />
+      <div class="col-md-6 text-right">
+          <a title="Go to overview" class="text-right" href="#/overview">
+              <img class='comap-logo' src="images/logo.png" height="70px"></img>
+          </a>
       </div>
     </div>
     <div ng-view></div>
+    <div class="container">
+        <div class="text-center">
+            <img class='erasmus-logo' src="images/erasmus_mc.jpg" height="40px" />
+            <img class='advance-logo' src="images/logo-advance.png" height="23px" />
+        </div>
+    </div>
   </body>
 </html>

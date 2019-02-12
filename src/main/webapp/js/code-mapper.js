@@ -391,11 +391,11 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     };
 
     $scope.$on('$locationChangeStart', function(ev) {
-        if ($scope.numberUnsafedChanges > 0) {
-            var really = confirm("Your unsafed changes are lost when navigating away. Really?");
-            if (!really) {
-                ev.preventDefault();
-            }
+        if ($scope.numberUnsafedChanges > 0 && !confirm("Your unsafed changes are lost when navigating away. Really?")) {
+            ev.preventDefault();
+        } else {
+            $rootScope.subtitle = null;
+            $rootScope.subsubtitle = null;
         }
     });
 

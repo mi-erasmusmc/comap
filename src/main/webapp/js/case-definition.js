@@ -1,18 +1,18 @@
 /*******************************************************************************
  * Copyright 2017 Erasmus Medical Center, Department of Medical Informatics.
- * 
+ *
  * This program shall be referenced as “Codemapper”.
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
@@ -71,13 +71,13 @@ function CaseDefinitionCtrl($scope, $timeout, $http, $compile, urls, dataService
                 });
             });
     };
-    
+
     $scope.resetIndexing = function() {
         console.log("resetIndexing", $scope.$id);
         $scope.text = angular.copy($scope.state.indexing.caseDefinition);
         $scope.state.indexing = null;
     };
-    
+
     $scope.$watch('state.indexing', function(indexing) {
         $timeout(function() {
             if (angular.isObject(indexing)) {
@@ -104,7 +104,7 @@ function indexText($http, peregrineResource, stopwords, umlsConceptsResource, te
                 alert(msg);
             }
         })
-        .then(function(result) { 
+        .then(function(result) {
             var spans = result.data.spans
                 .filter(function(span) {
                     var isStopword = FILTER_BY_STOPWORDS && stopwords.indexOf(span.text.toUpperCase()) != -1;
@@ -185,7 +185,7 @@ function ConceptInCaseDefDirective() {
                             var types = c.semanticTypes.map(function(type) {
                                 return dataService.semanticTypesByType[type].description;
                             }).join(", ");
-                            return (c.preferredName || c.cui) + " (" + types + ")"; 
+                            return (c.preferredName || c.cui) + " (" + types + ")";
                         }).join(", ");
                     } else {
                         return null;
@@ -200,7 +200,7 @@ function ConceptInCaseDefDirective() {
 function highlight(dataService, text, spans, concepts) {
     var conceptsByCui = byKey(concepts, getCui);
     var spansByStart = group(spans, function(span) { return span.start; });
-    
+
     var result = "";
     var ends = [];
     var here = 0;
@@ -257,7 +257,7 @@ function highlight(dataService, text, spans, concepts) {
         }
         here += 1;
     });
-    while (ends.length > 0) {  
+    while (ends.length > 0) {
         result += "</concept-in-case-def>";
         ends.shift();
     }

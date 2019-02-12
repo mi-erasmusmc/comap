@@ -1,13 +1,48 @@
 @CHARSET "UTF-8";
 
+@font-face {
+    font-family: "Montserrat";
+    src: url(fonts/Montserrat-Regular.woff2);
+}
+
+@font-face {
+    font-family: "Montserrat";
+    src: url(fonts/Montserrat-Bold.woff2);
+    font-weight: bold;
+}
 .flag {
   padding: 1em;
 }
 html, body {
-	height: 100%;
+  font-family: Montserrat;
+  height: 100%;
 	padding: 0;
 	margin: 0;
 }
+a {
+    color: #104987;
+}
+a:hover {
+    text-decoration: underline;
+}
+h1 {
+    color: #A1C517;
+    font-weight: bold;
+    font-size: 30px;
+    line-height: 1.2;
+}
+h2 {
+    color: #104987;
+    font-weight: medium;
+    font-size: 20px;
+    line-height: 1.2;
+}
+h3 {
+    color: #104987;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
 .concepts-grid, .history-grid, .semantic-types-grid, .coding-systems-grid  {
 	margin-top: 1em;
 	height: 600px;
@@ -276,9 +311,9 @@ hr {
 div.alert {
  padding: 5px 30px 5px 5px;
 }
-img.comap-logo {
-  margin: 1em 0em 1em 0em;
-}
+/* img.comap-logo { */
+/*   margin: 1em 0em 1em 0em; */
+/* } */
 img.advance-logo {
   margin-bottom: 0.5em;
 }

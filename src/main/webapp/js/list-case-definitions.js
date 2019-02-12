@@ -26,7 +26,7 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
     $scope.usersInProjects = {};
     $scope.newNames = {};
     $rootScope.subtitle = "Overview";
-    
+
     $http.get(urls.projectPermissions)
         .error(function(err) {
             var msg = "Couldn't load projects from url " + urls.projects;

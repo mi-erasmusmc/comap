@@ -17,7 +17,19 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import pymysql
+DBDRIVER = 'postgres'
+
+if DBDRIVER == 'postgres':
+    import psycopg2
+    import psycopg2.extras
+    # import psycopg2.extras
+    def connect(**kwargs):
+        dsn="dbname={dbname} user={user} password={password} port={port} host={host}".format(**kwargs)
+        return psycopg2.connect(dsn, cursor_factory=psycopg2.extras.DictCursor)
+else:
+    import pymysql
+    def connect(**kwargs):
+        return pymysql.connect(cursorclass=pymysql.cursors.DictCursor, **kwargs)
 import hashlib
 import argparse
 import sys
@@ -43,9 +55,10 @@ def create_user(db, username, password):
     with db.cursor() as cur:
         cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)",
                     [username, sha256(password)])
-    print("Created user with ID", db.insert_id())
+        insert_id = cur.fetchone()[0]
+        print("Created user with ID", insert_id)
     db.commit()
-    return db.insert_id()
+    return insert_id
 
 
 def set_password(db, username, password):
@@ -62,22 +75,22 @@ def set_password(db, username, password):
 
 def create_project(db, name):
     with db.cursor() as cur:
-        cur.execute("INSERT INTO projects (name) VALUES (%s)",
-                    [name])
-    print("Created project with ID", db.insert_id())
+        cur.execute("INSERT INTO projects (name) VALUES (%s)", (name,))
+        insert_id = cur.fetchone()[0]
+        print("Created project with ID", insert_id)
     db.commit()
-    return db.insert_id()
+    return insert_id
 
 
 def get_user(db, username):
     with db.cursor() as cur:
-        cur.execute("SELECT id FROM users WHERE username = %s", username)
+        cur.execute("SELECT id FROM users WHERE username = %s", (username,))
         return cur.fetchone()['id']
 
 
 def get_project(db, name):
     with db.cursor() as cur:
-        cur.execute("SELECT id FROM projects where name = %s", [name])
+        cur.execute("SELECT id FROM projects where name = %s", (name,))
         return cur.fetchone()['id']
 
 
@@ -86,7 +99,7 @@ def get_mapping(db, project_id, name):
         cur.execute('SELECT id FROM case_definitions '
                     'WHERE project_id = %s '
                     'AND name = %s',
-                    [project_id, name])
+                    (project_id, name))
         return cur.fetchone()['id']
 
 
@@ -105,10 +118,12 @@ def add_user_to_project(db, username, project, role):
     with db.cursor() as cur:
         cur.execute('INSERT INTO users_projects (user_id, project_id, role) '
                     'VALUES (%s, %s, %s) '
-                    'ON DUPLICATE KEY UPDATE role = %s',
-                    [user_id, project_id, role, role])
-        print("Added user %d to project %d with ID %d" %
-              (user_id, project_id, db.insert_id()))
+                    'ON CONFLICT (user_id, project_id) DO UPDATE '
+                    'SET role = %s',
+                    (user_id, project_id, role, role))
+        # insert_id = cur.fetchone()[0]
+        print("Added user %d to project %d" %
+              (user_id, project_id))
     db.commit()
 
 
@@ -122,7 +137,7 @@ def move_mapping(db, project, mapping, target_project, target_mapping):
         cur.execute('UPDATE case_definitions '
                     'SET project_id = %s '
                     'WHERE id = %s',
-                    [target_project_id, mapping_id])
+                    (target_project_id, mapping_id))
         print("Moved mapping %d to project %d" %
               (mapping_id, target_project_id))
         db.commit()
@@ -134,8 +149,9 @@ def copy_mapping(db, mapping_id, target_project_id):
         cur.execute('INSERT INTO case_definitions (project_id, name, state) '
                     'VALUES (%s, %s, %s)'
                     (target_project_id, m['name'], m['state']))
-        db.commit()
-        return db.insert_id()
+        insert_id = cur.fetchone()[0]
+    db.commit()
+    return insert_id
     # TODO copy comments
 
 
@@ -194,7 +210,7 @@ def show(db, users, projects, comments):
             print("\nUsers: %s" % ", ".join('%s (%s)' % (up['username'], up['role']) for up in ups_in_project))
             print("\nCase definitions\n")
             with db.cursor() as cur:
-                cur.execute('SELECT * FROM case_definitions WHERE project_id = %s', [project['id']])
+                cur.execute('SELECT * FROM case_definitions WHERE project_id = %s', (project['id'],))
                 for cd in cur.fetchall():
                     print(" - %s" % cd['name'])
 
@@ -265,10 +281,14 @@ def main():
 
     args = parser.parse_args()
 
-    db_args = [args.db_host, args.db_user, args.db_password, args.db_name]
-    if args.db_port:
-        db_args += [args.db_port]
-    db = pymysql.connect(*db_args, cursorclass=pymysql.cursors.DictCursor)
+    db_kwargs = {
+        'host': args.db_host,
+        'user': args.db_user,
+        'password': args.db_password,
+        'dbname': args.db_name,
+        'port': args.db_port
+    }
+    db = connect(**db_kwargs)
     try:
         kwargs = {
             key: value
@@ -278,8 +298,6 @@ def main():
         args.func(db, **kwargs)
     finally:
         db.close()
-    
-
 
 if __name__ == "__main__":
     main()

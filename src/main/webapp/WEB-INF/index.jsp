@@ -37,26 +37,31 @@
     <script type="text/javascript" src="js/code-mapper.js"></script>
     <script type="text/javascript" src="js/authentification.js"></script>
     <script type="text/javascript" src="js/app.js"></script>
+    <script src="js/iframeResizer.contentWindow.js"></script>
   </head>
 
   <body ng-keydown="onKeydown($event)" tabindex="0">
     <div class="row">
-      <div class="col-md-3">
-        <div ng-controller="LoggedInCtrl" ng-if="user">
-          Welcome, <span ng-bind="user.username" class="username"></span>
-          <a href="#/overview"><button title="Go to overview" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-list"></span> All mappings</button></a>
-          <button ng-click="logout()" class="btn btn-default btn-xs"><i class="glyphicon glyphicon-log-out"></i> Logout</button>
+        <!-- <div class="col-md-3"> -->
+        <!-- </div> -->
+      <!-- <div class="col-md-5 text-center"> -->
+      <!-- <span> -->
+      <!-- Help? See our <a target="_blank" href="https://onlinelibrary.wiley.com/doi/full/10.1002/pds.4245">publication</a>, the <a target="_blank" href="https://github.com/mi-erasmusmc/comap">source code</a>, -->
+      <!-- Help? See the <a target="_blank" href="https://docs.google.com/presentation/d/1vo94NxADoJAMTQDbzK7QRDy9IvfMHZdBiyzdsqecJA0/edit?usp=sharing">presentation</a> -->
+      <!-- or <a href="mailto:b.becker@erasmusmc.nl?subject=CodeMapper">email</a> me. You can hover buttons with an asterisk(*) using your mouse for instant help. CodeMapper is power by the UMLS Metathesaurus 2016AA. -->
+      <!-- </span> -->
+      <!-- </div> -->
+        <div class="col-md-6">
+            <a href="#/overview" ng-if="user">
+                <button title="See all case definitions" class="btn btn-default btn-xs">
+                    <span class="glyphicon glyphicon-list"></span> List of case definitions
+                </button>
+            </a>
         </div>
-      </div>
-      <div class="col-md-5 text-center">
-        <span>
-          Help? See our <a target="_blank" href="https://onlinelibrary.wiley.com/doi/full/10.1002/pds.4245">publication</a>, the <a target="_blank" href="https://github.com/mi-erasmusmc/comap">source code</a>,
-          <%--Help? See the <a target="_blank" href="https://docs.google.com/presentation/d/1vo94NxADoJAMTQDbzK7QRDy9IvfMHZdBiyzdsqecJA0/edit?usp=sharing">presentation</a>--%>
-          or <a href="mailto:b.becker@erasmusmc.nl?subject=CodeMapper">email</a> me. You can hover buttons with an asterisk(*) using your mouse for instant help. CodeMapper is power by the UMLS Metathesaurus 2016AA.
-        </span>
-      </div>
-      <div class="col-md-3 text-right">
-      </div>
+        <div class="col-md-6 text-right">
+            Welcome, <span ng-bind="user.username" class="username"></span>
+            <button ng-click="logout()" class="btn btn-default btn-xs"><i class="glyphicon glyphicon-log-out"></i> Logout</button>
+        </div>
     </div>
     <div class="row">
       <div class="col-md-6">
@@ -64,9 +69,12 @@
         <h2 class="subtitle" ng-if="subtitle" ng-bind="subtitle"></h2>
       </div>
       <div class="col-md-6 text-right">
-          <a title="Go to overview" class="text-right" href="#/overview">
-              <img class='comap-logo' src="images/logo.png" height="70px"></img>
-          </a>
+          <div ng-controller="LoggedInCtrl" ng-if="user"></div>
+          <div>
+              <a title="See all case definitions" class="text-right" href="#/overview">
+                  <img class='comap-logo' src="images/logo.png" height="70px"></img>
+              </a>
+          </div>
       </div>
     </div>
     <div ng-view></div>

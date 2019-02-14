@@ -19,6 +19,11 @@ html, body {
 	padding: 0;
 	margin: 0;
 }
+p body {
+    color: #5E7682;
+    font-size: 13px;
+    font-height: 1.5;
+}
 a {
     color: #104987;
 }

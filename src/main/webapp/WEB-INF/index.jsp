@@ -59,8 +59,10 @@
             </a>
         </div>
         <div class="col-md-6 text-right">
-            Welcome, <span ng-bind="user.username" class="username"></span>
-            <button ng-click="logout()" class="btn btn-default btn-xs"><i class="glyphicon glyphicon-log-out"></i> Logout</button>
+            <div ng-controller="LoggedInCtrl" ng-if="user">
+                Welcome, <span ng-bind="user.username" class="username"></span>
+                <button ng-click="logout()" class="btn btn-default btn-xs"><i class="glyphicon glyphicon-log-out"></i> Logout</button>
+            </div>
         </div>
     </div>
     <div class="row">
@@ -69,7 +71,6 @@
         <h2 class="subtitle" ng-if="subtitle" ng-bind="subtitle"></h2>
       </div>
       <div class="col-md-6 text-right">
-          <div ng-controller="LoggedInCtrl" ng-if="user"></div>
           <div>
               <a title="See all case definitions" class="text-right" href="#/overview">
                   <img class='comap-logo' src="images/logo.png" height="70px"></img>

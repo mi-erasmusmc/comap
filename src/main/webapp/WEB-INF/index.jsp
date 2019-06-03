@@ -10,6 +10,13 @@
     <link type="text/css" rel="stylesheet" href="lib/bootstrap.min.css" />
     <link type="text/css" rel="stylesheet" href="lib/ng-grid.css" />
     <link type="text/css" rel="stylesheet" href="lib/angular-block-ui.min.css" />
+    
+    <!--start wordpress iframe helper-->
+    <script>
+    var onload_resize_delay = "3000";
+    </script>
+    <script src="https://vac4euorgdev.wpengine.com/wp-content/plugins/advanced-iframe/js/ai_external.js"></script>
+    <!--end wordpress iframe helper-->
 
     <script type="text/javascript" src="lib/jquery.min.js"></script>
     <script type="text/javascript" src="lib/angular.js"></script>
@@ -37,7 +44,6 @@
     <script type="text/javascript" src="js/code-mapper.js"></script>
     <script type="text/javascript" src="js/authentification.js"></script>
     <script type="text/javascript" src="js/app.js"></script>
-    <script src="js/iframeResizer.contentWindow.js"></script>
   </head>
 
   <body ng-keydown="onKeydown($event)" tabindex="0">
@@ -71,6 +77,7 @@
         <h2 class="subtitle" ng-if="subtitle" ng-bind="subtitle"></h2>
       </div>
       <div class="col-md-6 text-right">
+          <div ng-controller="LoggedInCtrl" ng-if="user"></div>
           <div>
               <a title="See all case definitions" class="text-right" href="#/overview">
                   <img class='comap-logo' src="images/logo.png" height="70px"></img>

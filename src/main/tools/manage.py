@@ -46,6 +46,14 @@ def read_password():
     return password[:-1]
 
 
+def last_insert_id(cur):
+    if DBDRIVER == 'postgres':
+        cur.execute('SELECT LASTVAL()')
+        return cur.fetchone()['lastval']
+    else:
+        return cur.fetchone()[0]
+
+
 def create_user(db, username, password):
     password = password or read_password()
     print(password, type(password))
@@ -55,8 +63,8 @@ def create_user(db, username, password):
     with db.cursor() as cur:
         cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)",
                     [username, sha256(password)])
-        insert_id = cur.fetchone()[0]
-        print("Created user with ID", insert_id)
+        insert_id = last_insert_id(cur)
+        print("Created user", insert_id)
     db.commit()
     return insert_id
 
@@ -72,11 +80,10 @@ def set_password(db, username, password):
                     [sha256(password), username])
     db.commit()
 
-
 def create_project(db, name):
     with db.cursor() as cur:
         cur.execute("INSERT INTO projects (name) VALUES (%s)", (name,))
-        insert_id = cur.fetchone()[0]
+        insert_id = last_insert_id(cur)
         print("Created project with ID", insert_id)
     db.commit()
     return insert_id

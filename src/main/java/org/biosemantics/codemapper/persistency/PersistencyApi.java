@@ -168,10 +168,11 @@ public class PersistencyApi {
 	public void setCaseDefinition(String project, String caseDefinitionName, String stateJson) throws CodeMapperException {
 		String query =
 				"INSERT INTO case_definitions (project_id, name, state) "
-						+ "SELECT projects.id, ?, ? "
-						+ "FROM projects "
-						+ "WHERE projects.name = ? "
-						+ "ON DUPLICATE KEY UPDATE state = ?";
+				+ "SELECT projects.id, ?, ? "
+				+ "FROM projects "
+				+ "WHERE projects.name = ? "
+//				+ "ON DUPLICATE KEY UPDATE state = ?"; // MySQL
+		        + "ON CONFLICT (project_id, name) DO UPDATE SET state = ?"; // Postgres 
         try (Connection connection = connectionPool.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
 			statement.setString(1, caseDefinitionName);

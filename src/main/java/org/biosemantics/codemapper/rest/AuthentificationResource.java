@@ -20,7 +20,6 @@ package org.biosemantics.codemapper.rest;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -44,13 +43,6 @@ public class AuthentificationResource {
 			throw new UnauthorizedException();
 	}
 
-	@GET
-	@Path("user")
-	@Produces(MediaType.APPLICATION_JSON)
-	public User getUser(@Context HttpServletRequest request) {
-		return api.getUser(request);
-	}
-
 	@POST
 	@Path("login")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -66,7 +58,8 @@ public class AuthentificationResource {
 	@POST
 	@Path("logout")
 	@Produces(MediaType.APPLICATION_JSON)
-	public void logout(@Context HttpServletRequest request) {
+	public void logout(@Context HttpServletRequest request, @Context User user) {
+		assertAuthentificated(user);
 		api.logout(request);
 	}
 	
@@ -74,9 +67,10 @@ public class AuthentificationResource {
 	@Path("change-password")
 	@Produces(MediaType.APPLICATION_JSON)
 	public ChangePasswordResult changePassword(@Context HttpServletRequest request, @FormParam("oldPassword") String oldPassword,
-			@FormParam("newPassword") String newPassword) {
+			@FormParam("newPassword") String newPassword, @Context User user) {
+		assertAuthentificated(user);
 		try {
-			return api.changePassword(getUser(request), oldPassword, newPassword);
+			return api.changePassword(user, oldPassword, newPassword);
 		} catch (CodeMapperException e) {
 			e.printStackTrace();
 			throw new InternalServerErrorException(e);

@@ -80,9 +80,7 @@ public class CodeMapperResource {
             @QueryParam("codingSystem") String codingSystem) {
         AuthentificationResource.assertAuthentificated(user);
         try {
-            List<UmlsConcept> res = api.getCodeCompletions(str, codingSystem);
-            System.out.println(res);
-            return res;
+            return api.getCodeCompletions(str, codingSystem);
         } catch (CodeMapperException e) {
             throw e.asWebApplicationException();
         }

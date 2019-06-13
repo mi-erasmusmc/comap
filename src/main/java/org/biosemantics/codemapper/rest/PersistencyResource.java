@@ -57,7 +57,7 @@ public class PersistencyResource {
 	/** Test if user has any of the projectPermissions in a project. */
 	public static void assertProjectRoles(User user, String project, ProjectPermission... projectPermissions) {
 		AuthentificationResource.assertAuthentificated(user);
-		Set<ProjectPermission> perms = user.getProjectPermissions().get(project);
+		Set<ProjectPermission> perms = user.getPermissions().get(project);
 		if (perms != null && !Collections.disjoint(perms, Arrays.asList(projectPermissions)))
 			return;
 		throw new UnauthorizedException();

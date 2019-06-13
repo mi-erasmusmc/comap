@@ -34,6 +34,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.biosemantics.codemapper.UmlsApi;
 import org.biosemantics.codemapper.UtsApi;
+import org.biosemantics.codemapper.authentification.AdministratorApi;
 import org.biosemantics.codemapper.authentification.AuthentificationApi;
 import org.biosemantics.codemapper.authentification.User;
 import org.biosemantics.codemapper.persistency.PersistencyApi;
@@ -69,6 +70,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static AuthentificationApi authentificationApi;
 	private static DownloadApi downloadApi;
 	private static UtsApi utsApi;
+	private static AdministratorApi administratorApi;
 
 	private DataSource getConnectionPool(String prefix, Properties properties) throws SQLException {
         String uri = properties.getProperty(prefix + "-uri");
@@ -118,6 +120,7 @@ public class CodeMapperApplication extends ResourceConfig {
             DataSource codeMapperConnectionPool = getConnectionPool("code-mapper-db", properties);
             persistencyApi = new PersistencyApi(codeMapperConnectionPool);
             authentificationApi = new AuthentificationApi(codeMapperConnectionPool);
+            administratorApi = new AdministratorApi(codeMapperConnectionPool);
             downloadApi = new DownloadApi();
 
             String utsApiKey = properties.getProperty("uts-api-key");
@@ -150,5 +153,9 @@ public class CodeMapperApplication extends ResourceConfig {
 	
 	public static UtsApi getUtsApi() {
 	    return utsApi;
+	}
+
+	public static AdministratorApi getAdministratorApi() {
+		return administratorApi;
 	}
 }

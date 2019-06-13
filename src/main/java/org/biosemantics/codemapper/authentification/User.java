@@ -26,13 +26,23 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class User {
 	private String username;
-	private Map<String, Set<ProjectPermission>> projectPermissions;
-	public User() {
-		this(null, null);
+	private Map<String, Set<ProjectPermission>> permissions;
+	private boolean isAdmin;
+	private String email;
+	public String getEmail() {
+		return email;
 	}
-	public User(String username, Map<String, Set<ProjectPermission>> projectPermissions) {
+	public void setEmail(String email) {
+		this.email = email;
+	}
+	public User() {
+		this(null, null, false, null);
+	}
+	public User(String username, Map<String, Set<ProjectPermission>> permissions, boolean isAdmin, String email) {
 		this.username = username;
-		this.projectPermissions = projectPermissions;
+		this.permissions = permissions;
+		this.isAdmin = isAdmin;
+		this.email = email;
 	}
 	@Override
 	public String toString() {
@@ -44,10 +54,16 @@ public class User {
 	public void setUsername(String username) {
 		this.username = username;
 	}
-	public Map<String, Set<ProjectPermission>> getProjectPermissions() {
-		return projectPermissions;
+	public Map<String, Set<ProjectPermission>> getPermissions() {
+		return permissions;
 	}
-	public void setProjectPermissions(Map<String, Set<ProjectPermission>> projectPermissions) {
-		this.projectPermissions = projectPermissions;
+	public void setPermissions(Map<String, Set<ProjectPermission>> permissions) {
+		this.permissions = permissions;
+	}
+	public boolean isAdmin() {
+		return isAdmin;
+	}
+	public void setAdmin(boolean isAdmin) {
+		this.isAdmin = isAdmin;
 	}
 }

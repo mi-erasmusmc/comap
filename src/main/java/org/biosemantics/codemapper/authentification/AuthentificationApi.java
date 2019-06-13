@@ -25,8 +25,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Map;
-import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
@@ -35,7 +33,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.biosemantics.codemapper.CodeMapperException;
-import org.biosemantics.codemapper.rest.CodeMapperApplication;
 
 public class AuthentificationApi {
 
@@ -120,9 +117,7 @@ public class AuthentificationApi {
 				boolean isAdmin = result.getBoolean(2);
 				String email = result.getString(3);
 				if (passwordHash.equals(hash(password))) {
-					Map<String, Set<ProjectPermission>> projectPermissions =
-					        CodeMapperApplication.getPersistencyApi().getProjectPermissions(username);
-					User user = new User(username, projectPermissions, isAdmin, email);
+					User user = new User(username, isAdmin, email);
 					request.getSession().setAttribute(SESSION_ATTRIBUTE_USER, user);
 					return LoginResult.createSuccess(user);
 				} else

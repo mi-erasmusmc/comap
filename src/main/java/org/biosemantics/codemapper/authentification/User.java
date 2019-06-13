@@ -18,15 +18,11 @@
  ******************************************************************************/
 package org.biosemantics.codemapper.authentification;
 
-import java.util.Map;
-import java.util.Set;
-
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class User {
 	private String username;
-	private Map<String, Set<ProjectPermission>> permissions;
 	private boolean isAdmin;
 	private String email;
 	public String getEmail() {
@@ -36,11 +32,10 @@ public class User {
 		this.email = email;
 	}
 	public User() {
-		this(null, null, false, null);
+		this(null, false, null);
 	}
-	public User(String username, Map<String, Set<ProjectPermission>> permissions, boolean isAdmin, String email) {
+	public User(String username, boolean isAdmin, String email) {
 		this.username = username;
-		this.permissions = permissions;
 		this.isAdmin = isAdmin;
 		this.email = email;
 	}
@@ -53,12 +48,6 @@ public class User {
 	}
 	public void setUsername(String username) {
 		this.username = username;
-	}
-	public Map<String, Set<ProjectPermission>> getPermissions() {
-		return permissions;
-	}
-	public void setPermissions(Map<String, Set<ProjectPermission>> permissions) {
-		this.permissions = permissions;
 	}
 	public boolean isAdmin() {
 		return isAdmin;

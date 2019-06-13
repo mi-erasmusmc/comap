@@ -114,6 +114,31 @@ public class PersistencyApi {
 		}
 	}
 
+	public Set<ProjectPermission> getProjectPermissions(String username, String project) throws CodeMapperException {
+		String query =
+				"SELECT users_projects.role "
+				+ "FROM users "
+				+ "INNER JOIN users_projects ON users_projects.user_id = users.id "
+				+ "INNER JOIN projects ON projects.id = users_projects.project_id "
+				+ "WHERE users.username = ? "
+				+ "AND projects.name = ?";
+		try (Connection connection = connectionPool.getConnection();
+		     PreparedStatement statement = connection.prepareStatement(query)) {
+			statement.setString(1, username);
+			statement.setString(2, project);
+			ResultSet result = statement.executeQuery();
+			Set<ProjectPermission> permissions = new HashSet<>();
+			while (result.next()) {
+				String role0 = result.getString("role");
+				ProjectPermission role = ProjectPermission.fromString(role0);
+				permissions.add(role);
+			}
+			return permissions;
+		} catch (SQLException e) {
+			throw CodeMapperException.server("Cannot execute query to get projects", e);
+		}	
+	}
+
 	public Map<String, Set<ProjectPermission>> getUsersOfProject(String project) throws CodeMapperException {
 		String query =
 				"SELECT users.username as username, users_projects.role as role "

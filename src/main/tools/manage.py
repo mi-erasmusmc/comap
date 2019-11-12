@@ -33,6 +33,7 @@ else:
 import hashlib
 import argparse
 import sys
+import os
 from itertools import groupby
 
 
@@ -54,19 +55,18 @@ def last_insert_id(cur):
         return cur.fetchone()[0]
 
 
-def create_user(db, username, password):
+def create_user(db, username, password, email):
     password = password or read_password()
-    print(password, type(password))
-    print("Create user {}? (y/*) > ".format(username), end='', flush=True)
+    print("Create user {}/{}? (y/*) > ".format(username, email), end='', flush=True)
     if sys.stdin.readline().strip() != 'y':
         return
     with db.cursor() as cur:
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)",
-                    [username, sha256(password)])
+        cur.execute("INSERT INTO users (username, password, email) VALUES (%s, %s, %s)",
+                    [username, sha256(password), email])
         insert_id = last_insert_id(cur)
         print("Created user", insert_id)
-    db.commit()
-    return insert_id
+        db.commit()
+        return insert_id
 
 
 def set_password(db, username, password):
@@ -238,19 +238,38 @@ def show(db, users, projects, comments):
         print("* {user} on {cd_name} ({timestamp}, {cui})".format(**comment))
         print(comment['content'])
 
+def create_many_users(db, password, csv_file):
+    import pandas as pd
+    df = pd.read_csv(csv_file)
+    for _, r in df.iterrows():
+        if pd.isna(r.Login):
+            print('Ignore {}, no login given'.format(r.Name))
+        else:
+            try:
+                project = "EMA-Valproate-Retinoids"
+                print("Add user --{}-- to project --{}--".format(r.Login, project), end=' (y/*) > ', flush=True)
+                if sys.stdin.readline().strip() != 'y':
+                    return
+                add_user_to_project(db, username=r.Login, project=project, role='E')
+        #     try:
+        #         create_user(db, r.Login, password, r.Email)
+            except psycopg2.Error as e:
+                print(e.pgerror)
+                db.rollback()
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--db-name', required=True)
-    parser.add_argument('--db-user', required=True)
-    parser.add_argument('--db-host', required=True)
-    parser.add_argument('--db-port', type=int)
-    parser.add_argument('--db-password', required=True)
+    parser = argparse.ArgumentParser(description='The CodeMapper management utility.', epilog='The database access is read from environment variables COMAP_DB_NAME, COMAP_DB_USER, COMAP_DB_HOST, COMAP_DB_PORT, COMAP_DB_PASSWORD if not given by the above command arguments.')
+    parser.add_argument('--db-name', default=os.environ.get('COMAP_DB_NAME', None))
+    parser.add_argument('--db-user', default=os.environ.get('COMAP_DB_USER', None))
+    parser.add_argument('--db-host', default=os.environ.get('COMAP_DB_HOST', None))
+    parser.add_argument('--db-port', type=int, default=os.environ.get('COMAP_DB_PORT', None))
+    parser.add_argument('--db-password', default=os.environ.get('COMAP_DB_PASSWORD', None))
     subparsers = parser.add_subparsers()
 
     parser_create_user = subparsers.add_parser('create-user')
     parser_create_user.add_argument('--username', required=True)
     parser_create_user.add_argument('--password')
+    parser_create_user.add_argument('--email', required=True)
     parser_create_user.set_defaults(func=create_user)
 
     parser_create_user = subparsers.add_parser('set-password')
@@ -285,6 +304,11 @@ def main():
     parser_fork.add_argument('--source-project', required=True)
     parser_fork.add_argument('--target-project', required=True)
     parser_fork.set_defaults(func=fork)
+
+    parser_create_many_users = subparsers.add_parser('create-many-users')
+    parser_create_many_users.add_argument('--password', required=True)
+    parser_create_many_users.add_argument('--csv-file', required=True)
+    parser_create_many_users.set_defaults(func=create_many_users)
 
     args = parser.parse_args()
 

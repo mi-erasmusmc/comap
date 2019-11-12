@@ -1,9 +1,50 @@
-# CodeMapper tools
+# CodeMapper management
+
+The Python script  [manage.py](manage.py) is used for managing a running CodeMapper instance. It
+allows for
+
+- creating users,
+- creating projects,
+- assigning users to projects, and
+- copying and moving mappings.
+
+## Requirement
+
+- Python3
+- the `psycopg2` Python library: https://pypi.org/project/psycopg2/
+
+## Usage
+
+Use `./manage.py --help` for a full description of functionality and options.
+
+Before using the script, setup your database connection in environment variables
+
+```shell
+export COMAP_DB_NAME=???
+export COMAP_DB_USER=???
+export COMAP_DB_PASSWORD=???
+export COMAP_DB_HOST=???
+export COMAP_DB_PORT=???
+```
+
+Example commands:
+
+- Creating user `c.mapper`:
+  ```shell
+  ./manage.py create-user --username 'c.mapper' --password 'muchsecret'  --email 'c.mapper@email.com'
+  ```
+- Creating project `My-project`:
+  ```shell
+  ./manage.py create-project --name 'My-project'
+  ```
+- Assigning the new user to the new project in role editor:
+  ```
+  ./manage.py add-user-to-project --username 'c.mapper' --project 'My-project' --role E
+  ```
+# CodeMapper post-processing
 
 The [pandas](http://pandas.pydata.org/) library is required for the Python
-tools. `pandas` can be installed with the following command:
-
-    pip3 install --user pandas
+tools. 
     
 The examples below require that mappings have been downloaded from CodeMapper as
 XLS files in a dedicated directory (`mappings/`), and the name of each file is

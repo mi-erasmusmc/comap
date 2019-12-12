@@ -55,10 +55,10 @@ def last_insert_id(cur):
         return cur.fetchone()[0]
 
 
-def create_user(db, username, password, email):
+def create_user(db, username, password, email, ask):
     password = password or read_password()
     print("Create user {}/{}? (y/*) > ".format(username, email), end='', flush=True)
-    if sys.stdin.readline().strip() != 'y':
+    if ask and sys.stdin.readline().strip() != 'y':
         return
     with db.cursor() as cur:
         cur.execute("INSERT INTO users (username, password, email) VALUES (%s, %s, %s)",

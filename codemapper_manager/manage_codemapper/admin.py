@@ -1,17 +1,29 @@
 import secrets
 import string
 from django.contrib import admin
+from django import forms
 
 import codemapper
 from .models import User, Project, Member, Mapping
 
 
 class MappingInline(admin.TabularInline):
+
     model = Mapping
     extra = 0
 
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return ["name"]
+        else:
+            return []
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
 
 class MemberInline(admin.TabularInline):
+
     model = Member
     extra = 3
 
@@ -26,6 +38,9 @@ class MemberAdmin(admin.ModelAdmin):
 
 
 class MappingAdmin(admin.ModelAdmin):
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
@@ -44,18 +59,39 @@ class ProjectAdmin(admin.ModelAdmin):
         else:
             return []
 
+# class MyPasswordInput(forms.PasswordInput):
+#     def to_python(self, value):
+#         print('Password:', value)
+#         return codemapper.sha256(value)
+
+class UserForm(forms.ModelForm):
+
+    def clean_password(self):
+        value = self.cleaned_data['password']
+        print('Password:', value)
+        return codemapper.sha256(value)
+
+    # class Meta:
+    #     model = User
+    #     widgets = {
+    #       'password': forms.PasswordInput
+    #     }
+    #     fields = '__all__'
+
 
 class UserAdmin(admin.ModelAdmin):
 
-    def reset_password(self, request, queryset):
-        plain, password = self.generate_password()
-        rows_updated = queryset.update(password=password)
-        self.message_user(request, "Password was reset for {} user(s) to: {}".format(rows_updated, plain))
+    form = UserForm
 
     def generate_password(self):
         alphabet = string.ascii_letters + string.digits
         plain = ''.join(secrets.choice(alphabet) for i in range(20))
         return plain, codemapper.sha256(plain)
+
+    def reset_password(self, request, queryset):
+        plain, password = self.generate_password()
+        rows_updated = queryset.update(password=password)
+        self.message_user(request, "Password was reset for {} user(s) to: {}".format(rows_updated, plain))
 
     reset_password.short_description = "Reset password of selected users"
 
@@ -65,6 +101,12 @@ class UserAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         if obj:
             return ["username", "password"]
+        else:
+            return []
+
+    def get_exclude(self, request, obj=None):
+        if obj:
+            return ["password"]
         else:
             return []
 

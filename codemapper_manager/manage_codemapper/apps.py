@@ -1,6 +1,7 @@
-from django.apps import AppConfig
+from django import apps
 
 
-class ManageCodemapperConfig(AppConfig):
+class ManageCodemapperConfig(apps.AppConfig):
     name = 'manage_codemapper'
+    label = 'codemapper'
     verbose_name = 'CodeMapper'

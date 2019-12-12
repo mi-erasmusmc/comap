@@ -39,7 +39,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'manage_codemapper',
+    'manage_codemapper.apps.ManageCodemapperConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

@@ -1,14 +1,21 @@
-import secrets
 import string
-from django.shortcuts import get_object_or_404
-from django.contrib import admin, messages
-from django import http, forms, urls
+import secrets
 
-import codemapper
+from django import http, forms, urls
+from django.contrib import admin, messages
+import django.contrib.auth.admin as auth_admin
+import django.contrib.auth.models as auth_models
+from django.shortcuts import get_object_or_404
+
 from .models import User, Project, Member, Mapping
+import codemapper
 
 
 class MyAdminSite(admin.AdminSite):
+
+    site_header = "CodeMapper administation"
+    site_title = "CodeMapper administration"
+    index_title = "Welcome to the CodeMapper administration"
 
     def generate_password(self):
         # The XKCD style
@@ -33,10 +40,7 @@ class MyAdminSite(admin.AdminSite):
         return res
 
 admin_site = MyAdminSite()
-admin_site.site_header = "CodeMapper administation"
-# admin_site.site_title = ""
-admin_site.index_title = "Welcome to the CodeMapper administration"
-
+admin_site.register(auth_models.User, auth_admin.UserAdmin)
 
 class MappingInline(admin.TabularInline):
 

@@ -1,0 +1,9 @@
+{% extends 'admin/change_form.html' %}
+{% debug %}
+
+{% block object-tools %}
+<form action="{% url 'admin:reset_password' original.pk %}" method="post">
+    {% csrf_token %}
+    <input type="submit" class="default" value="Reset password" name="reset_password"></button>
+</form>
+{% endblock %}

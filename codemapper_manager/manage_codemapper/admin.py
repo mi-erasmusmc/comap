@@ -13,7 +13,7 @@ import codemapper
 
 class MyAdminSite(admin.AdminSite):
 
-    site_header = "CodeMapper administation"
+    site_header = "CodeMapper administration"
     site_title = "CodeMapper administration"
     index_title = "Welcome to the CodeMapper administration"
 

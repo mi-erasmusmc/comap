@@ -19,7 +19,7 @@ class MyAdminSite(admin.AdminSite):
 
     def generate_password(self):
         # The XKCD style
-        with open('/usr/share/dict/words') as f:
+        with open('/usr/share/dict/words', encoding='utf-8') as f:
             words = [word.strip() for word in f if word.strip().isalpha()]
         return ' '.join(secrets.choice(words) for i in range(4))
 

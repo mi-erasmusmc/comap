@@ -5,11 +5,10 @@ from django import http, forms, urls
 from django.contrib import admin, messages
 import django.contrib.auth.admin as auth_admin
 import django.contrib.auth.models as auth_models
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 
 from .models import User, Project, Member, Mapping
 import codemapper
-
 
 class MyAdminSite(admin.AdminSite):
 
@@ -32,15 +31,22 @@ class MyAdminSite(admin.AdminSite):
             messages.add_message(request, messages.INFO, "Password of user {} was changed to: {}".format(user.username, password))
             return http.HttpResponseRedirect(urls.reverse("admin:{}_{}_change".format(user._meta.app_label, user._meta.model_name), args=(user_id,)))
 
+    def help_view(self, request):
+        context = {'site_header': self.site_header}
+        return render(request, 'admin/help.html', context)
+
     def get_urls(self):
         res = super(MyAdminSite, self).get_urls()
         res += [
-            urls.path(r'reset_password/<user_id>', self.admin_view(self.reset_password), name='reset_password')
+            urls.path(r'reset_password/<user_id>', self.admin_view(self.reset_password), name='reset_password'),
+            urls.path(r'help', self.help_view, name='help'),
         ]
         return res
 
+
 admin_site = MyAdminSite()
 admin_site.register(auth_models.User, auth_admin.UserAdmin)
+
 
 class MappingInline(admin.TabularInline):
 

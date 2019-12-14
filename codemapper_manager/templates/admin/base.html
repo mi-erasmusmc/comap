@@ -1,0 +1,5 @@
+{% extends "admin/base.html" %}
+{% block userlinks %}
+<a href="{% url 'admin:help' %}">&rarr; Help &larr;</a>
+{{ block.super }}
+{% endblock %}

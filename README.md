@@ -108,6 +108,8 @@ Information Centre at [Digital NHS TRUD](https://isd.digital.nhs.uk/).
 
 ## Management
 
+CodeMapper includes a Django web application to administer CodeMapper projects and users (see folder `codemapper_manager/`).
+
 The Python script [src/main/tools/manage.py](src/main/tools/manage.py) is used for
 managing a running CodeMapper instance. It allows to 
 

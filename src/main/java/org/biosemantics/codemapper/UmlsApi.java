@@ -219,19 +219,14 @@ public class UmlsApi  {
 	}
 	
 	public List<UmlsConcept> getCodeCompletions(String str, String codingSystem) throws CodeMapperException {
-		if (str.length() <= 2)
+    if (str.isEmpty())
 			return new LinkedList<>();
-	    String query =
-	            "SELECT DISTINCT m1.cui, m1.sab, m1.code, m2.str "
-	            + "FROM MRCONSO m1 "
-	            + "INNER JOIN MRCONSO m2 "
-	            + "ON m1.cui = m2.cui "
-	            + "WHERE ((m1.code like ? AND m1.sab LIKE ?) OR m1.cui = ?) "
-	            + "AND m2.ts = 'P' "
-                + "AND m2.stt = 'PF' "
-                + "AND m2.ispref = 'Y' "
-                + "AND m2.lat = 'ENG' "
-                + "LIMIT 100";
+		String query =
+          "SELECT DISTINCT cui, sab, code, str " +
+          "FROM mrconso WHERE " +
+          "((code like ? AND sab LIKE ?) OR cui = ?) " +
+          "AND ts = 'P' AND stt = 'PF' AND ispref = 'Y' AND lat = 'ENG' " +
+          "LIMIT 20";
         try (Connection connection = connectionPool.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, str + "%");
@@ -243,12 +238,12 @@ public class UmlsApi  {
                 String cui = result.getString(1);
                 String sab = result.getString(2);
                 String code = result.getString(3);
-                String preferredName = result.getString(4);
+                String str1 = result.getString(4);
                 String name;
                 if (str.equals(cui))
-                    name = String.format("CUI %s: %s", cui, preferredName);
+                    name = String.format("CUI %s: %s", cui, str1);
                 else
-                    name = String.format("%s in %s: %s", code, sab, preferredName);
+                    name = String.format("%s in %s: %s", code, sab, str1);
                 if (!concepts.containsKey(cui))
                     concepts.put(cui, new UmlsConcept(cui, name));
                 UmlsConcept concept = concepts.get(cui);

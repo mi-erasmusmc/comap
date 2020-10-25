@@ -847,7 +847,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $scope.autocompleteConcepts = function(str) {
         var params; 
         if (str.indexOf(':') == -1) {
-            if (str.length < 3) {
+            if (!str) {
             	return [];
             }
             params = {
@@ -857,7 +857,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             var snippets = str.split(':');
             var codingSystem = snippets[0];
             str = snippets.slice(1).join(':');
-            if (str.length <= 2) {
+            if (!str) {
             	return [];
             }
             params = {
@@ -874,8 +874,16 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 		    				return currentCuis.indexOf(c.cui) == -1;
 		    			})
 		    			.sort(function(s1, s2) {
-		    				return s1.preferredName.length - s2.preferredName.length
-		    				|| s1.preferredName.localeCompare(s2.preferredName);
+                  var sc1 = s1.sourceConcepts[0];
+                  var sc2 = s2.sourceConcepts[0];
+                  if (sc1 && sc2) {
+                      var n1 = Number(sc1.id);
+                      var n2 = Number(sc2.id);
+                      if (n1 && n2) {
+                          return n2 - n1;
+                      }
+                  }
+                  return s1.preferredName.localeCompare(s2.preferredName);
 		    			});
 	    			return res;
 	    		} else {

@@ -32,6 +32,7 @@ import java.util.Map;
 import javax.ws.rs.WebApplicationException;
 
 import org.apache.poi.ss.usermodel.Hyperlink;
+import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.Comment;
@@ -207,7 +208,7 @@ public class DownloadApi {
 	private void info(JSONObject state, String name, String url, HSSFSheet sheet) {
 		int rowIx = 0;
 
-		Hyperlink hyperlink = sheet.getWorkbook().getCreationHelper().createHyperlink(Hyperlink.LINK_URL);
+		Hyperlink hyperlink = sheet.getWorkbook().getCreationHelper().createHyperlink(HyperlinkType.URL);
 		hyperlink.setAddress(url);
 		
 		setRow(sheet.createRow(rowIx++), "Case definition:", name);

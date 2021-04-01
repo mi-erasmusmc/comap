@@ -42,9 +42,6 @@ import jersey.repackaged.com.google.common.base.Objects;
 
 
 public class UtsApi {
-    
-    private static final String UMLS_VERSION = "2014AB";
-
 
     private static Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
     
@@ -153,15 +150,15 @@ public class UtsApi {
         }
         
     }
-    
-    public List<String> searchConcepts(String query) throws CodeMapperException {
+
+    public List<String> searchConcepts(String query, String umlsVersion) throws CodeMapperException {
         Set<String> cuis = new HashSet<>();
         loop:
         for (int pageNumber = 1; ; pageNumber++) {
             String ticket = getTicket();
             Response response = restTarget
                     .path("search")
-                    .path(UMLS_VERSION)
+                    .path(umlsVersion)
                     .queryParam("ticket", ticket)
                     .queryParam("string", query)
                     .queryParam("pageNumber", pageNumber)
@@ -195,6 +192,6 @@ public class UtsApi {
     
     public static void main(String[] args) throws CodeMapperException {
         UtsApi utsApi = new UtsApi("UTS-API-KEY");
-        System.out.println(utsApi.searchConcepts("GBS"));
+        System.out.println(utsApi.searchConcepts("GBS", "UMLS2020AB"));
     }
 }

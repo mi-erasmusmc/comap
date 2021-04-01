@@ -229,7 +229,7 @@ public class CodeMapperResource {
 	        @Context User user) {
 	    AuthentificationResource.assertAuthentificated(user);
 	    try {
-	        return CodeMapperApplication.getUtsApi().searchConcepts(query);
+	        return CodeMapperApplication.getUtsApi().searchConcepts(query, CodeMapperApplication.getUmlsVersion());
 	    } catch (CodeMapperException e) {
 	        throw e.asWebApplicationException();
 	    }

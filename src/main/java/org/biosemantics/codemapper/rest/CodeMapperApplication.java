@@ -64,6 +64,7 @@ public class CodeMapperApplication extends ResourceConfig {
     private static Logger logger = LogManager.getLogger(CodeMapperApplication.class);
 
 	private static String peregrineResourceUrl;
+	private static String umlsVersion;
 	private static UmlsApi umlsApi;
 	private static PersistencyApi persistencyApi;
 	private static AuthentificationApi authentificationApi;
@@ -106,6 +107,7 @@ public class CodeMapperApplication extends ResourceConfig {
 					properties.getProperty("coding-systems-with-definition").split(",\\s*"));
 
 			peregrineResourceUrl = properties.getProperty("peregrine-resource-url");
+			umlsVersion = properties.getProperty("codemapper-umls-version");
 
 			DataSource umlsConnectionPool = getConnectionPool("umls-db", properties);
 			umlsApi = new UmlsApi(umlsConnectionPool, availableCodingSystems, codingSystemsWithDefinition);
@@ -130,6 +132,10 @@ public class CodeMapperApplication extends ResourceConfig {
 
 	public static String getPeregrineResourceUrl() {
 		return peregrineResourceUrl;
+	}
+
+	public static String getUmlsVersion() {
+		return umlsVersion;
 	}
 
 	public static UmlsApi getUmlsApi() {

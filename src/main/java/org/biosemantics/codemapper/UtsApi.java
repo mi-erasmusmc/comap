@@ -67,10 +67,10 @@ public class UtsApi {
         client = ClientBuilder.newClient(clientConfig);
         loginTarget = client.target(LOGIN_URL);
         restTarget = client.target(REST_URL);
-        login();
+        setTGT();
     }
     
-    private void login() {
+    private void setTGT() {
         Form form = new Form()
                 .param("apikey", apiKey);
         Response response = loginTarget
@@ -89,7 +89,7 @@ public class UtsApi {
     }
     
     private String getTicket() {
-        for (int retry=0; retry<2; retry++, login()) {
+        for (int retry=0; retry<2; retry++, setTGT()) {
             Form form = new Form()
                 .param("service", SERVICE);
             Response response = loginTarget

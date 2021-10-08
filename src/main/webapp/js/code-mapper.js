@@ -1063,7 +1063,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 if (status == 401) {
                     alert("Your session has timed out :( You have to re-login!");
                 } else {
-                    var msg = "ERROR: Couldn't lookup related concepts at " + urls.relatedConcepts;
+                    var msg = "ERROR: Couldn't lookup related concepts at " + urls.suggestConcepts;
                     alert(msg);
                     console.log(msg, err);
                 }

@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,7 +47,15 @@ import org.apache.poi.ss.usermodel.Hyperlink;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.biosemantics.codemapper.ClientState;
 import org.biosemantics.codemapper.ClientState.Concept;
+import org.biosemantics.codemapper.ClientState.Origin;
+import org.biosemantics.codemapper.ClientState.OriginAdd;
+import org.biosemantics.codemapper.ClientState.OriginBroader;
+import org.biosemantics.codemapper.ClientState.OriginNarrower;
+import org.biosemantics.codemapper.ClientState.OriginSearch;
+import org.biosemantics.codemapper.ClientState.OriginSpans;
+import org.biosemantics.codemapper.ClientState.OriginSuggested;
 import org.biosemantics.codemapper.Comment;
+import org.biosemantics.codemapper.SourceConcept;
 
 /** Export a case definition to an Excel spreadsheet. */
 public class WriteXlsApi {
@@ -54,19 +63,19 @@ public class WriteXlsApi {
 	private static final String NO_CODE = "-";
 	private static Logger logger = LogManager.getLogger(WriteXlsApi.class);
 
-	public void writeXls(OutputStream output, ClientState.State state, List<Comment> comments, String name, String url) {
+	public void writeXls(OutputStream output, ClientState.State state, Map<String, Map<String, Collection<SourceConcept>>> descendants, List<Comment> comments, String name, String url) {
 		try (HSSFWorkbook workbook = new HSSFWorkbook()) {
-			writeXls(workbook, state, comments, name, url);
+			writeXls(workbook, state, descendants, comments, name, url);
 			workbook.write(output);
 		} catch (IOException e) {
 			logger.error("Cannot create workbook", e);
 		}
 	}
 
-	public void writeXls(HSSFWorkbook workbook, ClientState.State state, List<Comment> comments, String name, String url) 
+	public void writeXls(HSSFWorkbook workbook, ClientState.State state, Map<String, Map<String, Collection<SourceConcept>>> descendants, List<Comment> comments, String name, String url) 
 			throws IOException, WebApplicationException {
 		setInfoSheet(workbook.createSheet("Info"), name, url);
-		setCodesSheet(workbook.createSheet("Codes"), state.codingSystems, state.mapping.concepts);
+		setCodesSheet(workbook.createSheet("Codes"), state.codingSystems, state.mapping.concepts, descendants);
 		setHistorySheet(workbook.createSheet("History"), state.mapping.history);
 		setCommentsSheet(workbook.createSheet("Comments"), state.mapping.concepts, comments);
 		setCaseDefinitionSheet(workbook.createSheet("Case definition"), state.indexing.caseDefinition);
@@ -217,11 +226,11 @@ public class WriteXlsApi {
 		}
 	}
 
-	private void setCodesSheet(HSSFSheet sheet, String[] codingSystems, ClientState.Concept[] concepts) {
+	private void setCodesSheet(HSSFSheet sheet, String[] codingSystems, ClientState.Concept[] concepts, Map<String, Map<String, Collection<SourceConcept>>> descendants) {
 		int rowIx = 0;
 
 		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Coding system", "Code", "Code name", "Concept",
-				"Concept name", "Tags");// , "Origin", "Root concept");
+				"Concept name", "Tags", "Origin");// , "Origin", "Root concept");
 		bold(header, sheet);
 
 		for (String codingSystem : codingSystems) {
@@ -235,9 +244,20 @@ public class WriteXlsApi {
 					if (!printedCodes.contains(sourceConcept.id)) {
 						setRow(sheet.createRow(rowIx++),
 								codingSystem, sourceConcept.id, sourceConcept.preferredTerm,
-								concept.cui, concept.preferredName, tags);
+								concept.cui, concept.preferredName, tags, origin(concept.origin));
 						printedCodes.add(sourceConcept.id);
 						printedCode = true;
+					}
+					if (descendants.get(codingSystem) != null && descendants.get(codingSystem).get(sourceConcept.id) != null) {
+						for (SourceConcept c : descendants.get(codingSystem).get(sourceConcept.id)) {
+							if (!printedCodes.contains(c.getId())) {
+								setRow(sheet.createRow(rowIx++), 
+										codingSystem, c.getId(), c.getPreferredTerm(), null, null,
+										tags, "DESC (" + sourceConcept.id + ")");
+								printedCodes.add(c.getId());
+								printedCode = true;
+							}
+						}
 					}
 				}
 				if (!printedCode) {
@@ -247,6 +267,23 @@ public class WriteXlsApi {
 			}
 		}
 		sheet.setAutoFilter(new CellRangeAddress(0, rowIx - 1, 0, header.size() - 1));
+	}
+
+	private String origin(Origin<?> origin) {
+		if (origin instanceof OriginBroader)
+			return "BROADER (" + ((OriginBroader) origin).data.cui + ")"; 
+		if (origin instanceof OriginNarrower)
+			return "NARROWER (" + ((OriginNarrower) origin).data.cui + ")"; 
+		if (origin instanceof OriginSuggested)
+			return "SUGGESTED (" + ((OriginSuggested) origin).data.cui + ")"; 
+		if (origin instanceof OriginAdd)
+			return "ADD (" + ((OriginAdd) origin).data + ")"; 
+		if (origin instanceof OriginSearch)
+			return "SEARCH (" + ((OriginSearch) origin).data + ")"; 
+		if (origin instanceof OriginSpans)
+			return "CASEDEF";
+		logger.error("Unknown origin" + origin.getClass().getCanonicalName());
+		return null;
 	}
 
 	private String formatTags(String[] tagsArray) {

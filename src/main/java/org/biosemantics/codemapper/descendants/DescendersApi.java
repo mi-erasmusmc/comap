@@ -5,10 +5,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.biosemantics.codemapper.ClientState;
 import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.SourceConcept;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 public class DescendersApi {
 
@@ -37,20 +36,16 @@ public class DescendersApi {
 				throws CodeMapperException;
 	}
 
-	public static Map<String, SpecificDescender> specificDescenders(SpecificDescender... descenders) {
-		Map<String, SpecificDescender> descendersMap = new HashMap<>();
-		for (SpecificDescender descender : descenders) {
-			descendersMap.put(descender.getCodingSystem(), descender);
-		}
-		return descendersMap;
-	}
-
 	Map<String, SpecificDescender> specificDescenders;
 	GeneralDescender generalDescender;
 
-	public DescendersApi(Map<String, SpecificDescender> specificDescenders, GeneralDescender generalDescender) {
-		this.specificDescenders = specificDescenders;
+	public DescendersApi(GeneralDescender generalDescender) {
+		this.specificDescenders = new HashMap<>();
 		this.generalDescender = generalDescender;
+	}
+	
+	public void addSpecificDescender(SpecificDescender specificDescender) {
+		this.specificDescenders.put(specificDescender.getCodingSystem(), specificDescender);
 	}
 
 	public Map<String, Collection<SourceConcept>> getDescendants(String codingSystem, Collection<String> codes)
@@ -62,23 +57,17 @@ public class DescendersApi {
 		}
 	}
 	
-	public Map<String, Map<String, Collection<SourceConcept>>> getDescendants(JSONObject state) 
+	public Map<String, Map<String, Collection<SourceConcept>>> getDescendants(String[] codingSystems, ClientState.Concept[] concepts) 
 			throws CodeMapperException {
 		Map<String, Map<String, Collection<SourceConcept>>> result = new HashMap<>();
-		JSONArray codingSystems = state.getJSONArray("codingSystems");
-		for (int codingSystemIx = 0; codingSystemIx < codingSystems.length(); codingSystemIx++) {
-			String codingSystem = codingSystems.getString(codingSystemIx);
-			Collection<String> codes0 = new HashSet<>();
-			JSONArray concepts = state.getJSONObject("mapping").getJSONArray("concepts");
-            for (int conceptIx = 0; conceptIx < concepts.length(); conceptIx++) {
-                JSONObject concept = concepts.getJSONObject(conceptIx);
-                JSONArray codes = concept.getJSONObject("codes").getJSONArray(codingSystem);
-                for (int codeIx = 0; codeIx < codes.length(); codeIx++) {
-                    JSONObject code = codes.getJSONObject(codeIx);
-                    codes0.add(code.getString("id"));
+		for (String codingSystem : codingSystems) {
+			Collection<String> codes = new HashSet<>();
+			for (ClientState.Concept concept : concepts) {
+				for (ClientState.SourceConcept sourceConcept : concept.codes.get(codingSystem)) {
+                    codes.add(sourceConcept.id);
                 }
             }
-			result.put(codingSystem, getDescendants(codingSystem, codes0));
+			result.put(codingSystem, getDescendants(codingSystem, codes));
 		}
 		return result;
 	}

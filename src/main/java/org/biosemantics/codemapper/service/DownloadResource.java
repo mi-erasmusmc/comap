@@ -20,7 +20,9 @@ package org.biosemantics.codemapper.service;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -37,8 +39,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.Comment;
+import org.biosemantics.codemapper.SourceConcept;
 import org.biosemantics.codemapper.authentification.ProjectPermission;
 import org.biosemantics.codemapper.authentification.User;
+import org.biosemantics.codemapper.descendants.DescendersApi;
 import org.biosemantics.codemapper.persistency.PersistencyApi;
 import org.biosemantics.codemapper.rest.CodeMapperApplication;
 import org.biosemantics.codemapper.rest.PersistencyResource;
@@ -61,14 +65,17 @@ public class DownloadResource {
 			final String jsonState = persistencyApi.getCaseDefinition(project, caseDefinition);
 			if (jsonState == null)
 				throw new WebApplicationException(404);
+			final JSONObject state = new JSONObject(jsonState);
+			final Map<String, Map<String, Collection<SourceConcept>>> descendants =
+					CodeMapperApplication.getDescendantsApi().getDescendants(state);
 			final List<Comment> comments = persistencyApi.getComments(project, caseDefinition);
 			String filename = String.format("%s - %s.xls", project, caseDefinition);
 			String contentDisposition = String.format("attachment; filename=\"%s\"", filename);
 			return Response.ok(new StreamingOutput() {
 					@Override
 					public void write(OutputStream output) throws IOException, WebApplicationException {
-						JSONObject state = new JSONObject(jsonState);
-						CodeMapperApplication.getDownloadApi().caseDefinitionToXls(state, comments, caseDefinition, url, output);
+						CodeMapperApplication.getDownloadApi().caseDefinitionToXls(
+								state, descendants, comments, caseDefinition, url, output);
 					}
 				}).header("Content-Disposition", contentDisposition).build();
 		} catch(CodeMapperException e) {

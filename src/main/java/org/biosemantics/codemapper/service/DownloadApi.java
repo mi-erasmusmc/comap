@@ -23,11 +23,14 @@ import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.WebApplicationException;
 
@@ -36,6 +39,7 @@ import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.Comment;
+import org.biosemantics.codemapper.SourceConcept;
 import org.biosemantics.codemapper.rest.CodeMapperApplication;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,21 +66,20 @@ public class DownloadApi {
 		return state;
 	}
 	
-	
-	public void caseDefinitionToXls(JSONObject state, List<Comment> comments, String name, String url, OutputStream output) {
+	public void caseDefinitionToXls(JSONObject state, Map<String, Map<String, Collection<SourceConcept>>> descendants, List<Comment> comments, String name, String url, OutputStream output) {
 
 		try (HSSFWorkbook workbook = new HSSFWorkbook()) {
-			caseDefinitionToXls(state, comments, name, url, workbook);
+			caseDefinitionToXls(state, descendants, comments, name, url, workbook);
 			workbook.write(output);
 		} catch (IOException e) {
 			logger.error("Cannot create workbook", e);
 		}
 	}
 	
-	public void caseDefinitionToXls(JSONObject state, List<Comment> comments, String name, String url, HSSFWorkbook workbook) throws IOException, WebApplicationException {
+	public void caseDefinitionToXls(JSONObject state, Map<String, Map<String, Collection<SourceConcept>>> descendants, List<Comment> comments, String name, String url, HSSFWorkbook workbook) throws IOException, WebApplicationException {
 
 		info(state, name, url, workbook.createSheet("Info"));
-		codes(state, workbook.createSheet("Codes"));
+		codes(state, descendants, workbook.createSheet("Codes"));
 		history(state, workbook.createSheet("History"));
 		comments(state, comments, workbook.createSheet("Comments"));
 		caseDefinition(state, workbook.createSheet("Case definition"));
@@ -232,16 +235,17 @@ public class DownloadApi {
 	}
 
 
-	private void codes(JSONObject state, HSSFSheet sheet) {
+	private void codes(JSONObject state, Map<String, Map<String, Collection<SourceConcept>>> descendants, HSSFSheet sheet) {
 		int rowIx = 0;
 		
-		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Coding system", "Code", "Code name", "Concept", "Concept name", "Tags");//, "Origin", "Root concept");
+		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Coding system", "Code", "Code name", "Concept", "Concept name", "Tags", "Origin");//, "Origin", "Root concept");
 		bold(header, sheet);
 		
 		JSONArray codingSystems = state.getJSONArray("codingSystems");
 		for (int codingSystemIx = 0; codingSystemIx < codingSystems.length(); codingSystemIx++) {
 			String codingSystem = codingSystems.getString(codingSystemIx);
-		
+			
+			Set<String> printedCodes = new HashSet<String>();
 			JSONArray concepts = state.getJSONObject("mapping").getJSONArray("concepts");
             for (int conceptIx = 0; conceptIx < concepts.length(); conceptIx++) {
                 JSONObject concept = concepts.getJSONObject(conceptIx);
@@ -254,6 +258,28 @@ public class DownloadApi {
                 else
                     for (int codeIx = 0; codeIx < codes.length(); codeIx++) {
                         JSONObject code = codes.getJSONObject(codeIx);
+                        String codeId = code.getString("id");
+                        String codeName = code.getString("preferredTerm");
+                        setRow(sheet.createRow(rowIx++), codingSystem, codeId, codeName, cui, conceptName, tags);
+                        printedCodes.add(codeId);
+                        
+                        if (descendants.get(codingSystem) == null || descendants.get(codingSystem).get(codeId) == null) {
+                        	System.out.println("No descendants for " + codingSystem);
+                        } else {
+                        	System.out.println("Descendants for " + codingSystem);
+                        	System.out.println("" + descendants.get(codingSystem).get(codeId).size());
+                        	System.out.println("" + descendants.get(codingSystem).get(codeId).size());
+                        	for (SourceConcept c : descendants.get(codingSystem).get(codeId)) {
+//                        		if (printedCodes.contains(codeName)) {
+                        		System.out.println("  descendant " + c);
+
+                        			setRow(sheet.createRow(rowIx++), 
+                        					codingSystem, c.getId(), c.getPreferredTerm(), cui, conceptName, tags, "DESC");
+                        			printedCodes.add(c.getId());
+//                        		}
+                        	}
+                        }
+                        	
 //					String origin;
 //					switch (concept.getJSONObject("origin").getString("type")) {
 //					case "spans":
@@ -278,9 +304,6 @@ public class DownloadApi {
 //					String root = "";
 //					if (!concept.getJSONObject("origin").isNull("root"))
 //						root = concept.getJSONObject("origin").getJSONObject("root").getString("cui");
-                        String codeId = code.getString("id");
-                        String codeName = code.getString("preferredTerm");
-                        setRow(sheet.createRow(rowIx++), codingSystem, codeId, codeName, cui, conceptName, tags);
                     }
 			}
 		}

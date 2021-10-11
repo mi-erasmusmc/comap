@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.servlet.ServletContext;
@@ -36,6 +37,11 @@ import org.biosemantics.codemapper.UmlsApi;
 import org.biosemantics.codemapper.UtsApi;
 import org.biosemantics.codemapper.authentification.AuthentificationApi;
 import org.biosemantics.codemapper.authentification.User;
+import org.biosemantics.codemapper.descendants.DescendersApi;
+import org.biosemantics.codemapper.descendants.DescendersApi.GeneralDescender;
+import org.biosemantics.codemapper.descendants.DescendersApi.SpecificDescender;
+import org.biosemantics.codemapper.descendants.SnowstormDescender;
+import org.biosemantics.codemapper.descendants.UmlsDescender;
 import org.biosemantics.codemapper.persistency.PersistencyApi;
 import org.biosemantics.codemapper.service.DownloadApi;
 import org.biosemantics.codemapper.service.DownloadResource;
@@ -70,6 +76,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static AuthentificationApi authentificationApi;
 	private static DownloadApi downloadApi;
 	private static UtsApi utsApi;
+	private static DescendersApi descendersApi;
 
 	private DataSource getConnectionPool(String prefix, Properties properties) throws SQLException {
         String uri = properties.getProperty(prefix + "-uri");
@@ -124,6 +131,13 @@ public class CodeMapperApplication extends ResourceConfig {
 
             String utsApiKey = properties.getProperty("uts-api-key");
             utsApi = new UtsApi(utsApiKey);
+
+            GeneralDescender umlsDescender = new UmlsDescender(umlsConnectionPool);
+            String snowstormBaseUri = properties.getProperty("snowstorm-base-uri");
+            String snostormBranch = properties.getProperty("snowstorm-branch");
+            SpecificDescender snowstormDescenders = new SnowstormDescender(snowstormBaseUri, snostormBranch);
+            Map<String, SpecificDescender> specificDescenders = DescendersApi.specificDescenders(snowstormDescenders);
+            descendersApi = new DescendersApi(specificDescenders, umlsDescender);
 		} catch (SQLException e) {
 		    logger.error("Cannot create pooled data source");
             e.printStackTrace();
@@ -156,5 +170,9 @@ public class CodeMapperApplication extends ResourceConfig {
 	
 	public static UtsApi getUtsApi() {
 	    return utsApi;
+	}
+
+	public static DescendersApi getDescendantsApi() {
+	    return descendersApi;
 	}
 }

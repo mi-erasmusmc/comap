@@ -20,8 +20,25 @@
     <jersey.config.test.container.port>8080</jersey.config.test.container.port>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-</properties>
-  
+  </properties>
+
+  <profiles>
+    <profile>
+      <id>dev</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <code-mapper.properties>code-mapper-dev.properties</code-mapper.properties>
+      </properties>
+    </profile>
+    <profile>
+      <id>production</id>
+      <properties>
+        <code-mapper.properties>code-mapper-production.properties</code-mapper.properties>
+      </properties>
+    </profile>
+  </profiles>
 
   <build>
     <finalName>${project.name}</finalName>
@@ -43,6 +60,24 @@
       </resource>
     </resources>
     <plugins>
+      <plugin>
+        <groupId>com.coderplus.maven.plugins</groupId>
+        <artifactId>copy-rename-maven-plugin</artifactId>
+        <version>1.0.1</version>
+        <executions>
+          <execution>
+            <id>copy-file</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <sourceFile>${code-mapper.properties}</sourceFile>
+              <destinationFile>src/main/resources/code-mapper.properties</destinationFile>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -77,7 +112,7 @@
           <scanIntervalSeconds>10</scanIntervalSeconds>
           <webApp>
             <contextPath>/CodeMapper</contextPath>
-          </webApp>	 
+          </webApp>
           <httpConnector>
             <port>8080</port>
           </httpConnector>

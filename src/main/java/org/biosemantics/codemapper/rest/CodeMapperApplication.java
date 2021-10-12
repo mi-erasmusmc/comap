@@ -48,6 +48,10 @@ import com.mchange.v2.c3p0.DataSources;
 
 @ApplicationPath("rest")
 public class CodeMapperApplication extends ResourceConfig {
+	
+    private static Logger logger = LogManager.getLogger(CodeMapperApplication.class);
+
+	private static final String CODE_MAPPER_PROPERTIES = "/code-mapper.properties";
 
 	private static final String UTS_API_KEY = "uts-api-key";
 	private static final String CODE_MAPPER_DB = "code-mapper-db";
@@ -61,20 +65,17 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static final String DB_PASSWORD_SUFFIX = "-password";
 	private static final String DB_USERNAME_SUFFIX = "-username";
 	private static final String DB_URI_SUFFIX = "-uri";
-
-	public static final String CODE_MAPPER_PROPERTIES = "/code-mapper.properties";
 	
-	public static final Properties properties;
+	public static final Properties properties = new Properties();
 	
 	static {
-	    properties = new Properties();
 	    try {
-            properties.load(CodeMapperApplication.class.getResourceAsStream(CODE_MAPPER_PROPERTIES));
-        } catch (IOException e) {
-        }
+	    	properties.load(CodeMapperApplication.class.getResourceAsStream(CODE_MAPPER_PROPERTIES));	
+	    } catch (IOException e) {
+	    	logger.error("Cannot load " + CODE_MAPPER_PROPERTIES);
+	    	e.printStackTrace();
+	    }
 	}
-	
-    private static Logger logger = LogManager.getLogger(CodeMapperApplication.class);
 
 	private static String peregrineResourceUrl;
 	private static String umlsVersion;

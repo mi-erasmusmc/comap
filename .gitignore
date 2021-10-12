@@ -1,5 +1,5 @@
 target
-/src/main/resources/__pycache__/
+__pycache__
 build
 evaluation-ng
 **/#*#
@@ -11,4 +11,5 @@ WebContent
 /.project
 /.settings
 .redo
-/application-note/CodeMapper ISPE abstract v2.docx
+/code-mapper-production.properties
+/code-mapper-dev.properties

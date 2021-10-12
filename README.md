@@ -52,8 +52,17 @@ creation of the databases accordingly.
 Building CodeMapper requires `maven3`. Then just run
 
     mvn package
-    
+
 and the war-file will be build in directory `target`.
+
+All properties required to initialise database connections and external APIs are
+read from a properties file, which is selected using a maven profile
+
+- profile `dev`: `src/main/resources/code-mapper-dev.properties` (default)
+- profile `production`: `src/main/resources/code-mapper-production.properties`
+
+The properties files can be derived from file
+`src/main/resources/code-mapper-TEMPLATE.properties`.
 
 #### Requirements
 

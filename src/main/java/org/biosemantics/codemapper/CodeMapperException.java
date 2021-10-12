@@ -46,6 +46,10 @@ public class CodeMapperException extends Exception {
 		return new CodeMapperException(Family.CLIENT_ERROR, msg);
 	}
 
+	public static CodeMapperException user(String msg, Exception e) {
+		return new CodeMapperException(Family.CLIENT_ERROR, msg, e);
+	}
+
 	public static CodeMapperException server(String msg, Exception e) {
 		return new CodeMapperException(Family.SERVER_ERROR, msg, e);
 	}
@@ -57,12 +61,12 @@ public class CodeMapperException extends Exception {
 	public WebApplicationException asWebApplicationException() {
 		switch (errorFamily) {
 			case CLIENT_ERROR:
-				printStackTrace();
 				System.out.println(this);
+				getCause().printStackTrace();
 				return new BadRequestException(getMessage());
 			case SERVER_ERROR:
-				this.printStackTrace();
 				System.out.println(this);
+				getCause().printStackTrace();
 				return new InternalServerErrorException();
 			default:
 				return null;

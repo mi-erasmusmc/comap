@@ -36,7 +36,7 @@ runtime from the other webapps by using the following command:
     JETTY_VERSION=7.6.9.v20130131
     UMLS_VERSION=2014AB
     PEREGRINE_VERSION=2.0.2
-    java -Xmx5000m -jar jetty-runner-${JETTY_VERSION}.jar --port 8081 --log yyyy_mm_dd-requests.log --out yyyy_mm_dd-output.log --path UMLS${UMLS_VERSION}_ADVANCE UMLS${UMLS_VERSION}_ADVANCE\#\#${PEREGRINE_VERSION}.war 
+    java -Xmx5000m -jar jetty-runner-${JETTY_VERSION}.jar --port 8081 --log yyyy_mm_dd-requests.log --out yyyy_mm_dd-output.log --path UMLS${UMLS_VERSION}_ADVANCE UMLS${UMLS_VERSION}_ADVANCE\#\#${PEREGRINE_VERSION}.war
 
 ### CodeMapper
 
@@ -106,12 +106,17 @@ Information Centre at [Digital NHS TRUD](https://isd.digital.nhs.uk/).
           --fields-enclosed-by='"' --fields-terminated-by=',' --lines-terminated-by='\r\n' \
           --local "$database" Corev2.all
 
+## External services
+
+Access to the external service Snowstorm and UTS are configured through the
+`.properties` file.
+
 ## Management
 
 CodeMapper includes a Django web application to administer CodeMapper projects and users (see folder `codemapper_manager/`).
 
 The Python script [src/main/tools/manage.py](src/main/tools/manage.py) is used for
-managing a running CodeMapper instance. It allows to 
+managing a running CodeMapper instance. It allows to
 
 - Create users
 - Create projects

@@ -215,13 +215,18 @@ public class WriteXlsApi {
 	}
 
 	private void setCaseDefinitionSheet(HSSFSheet sheet, JSONObject state) {
-		int rowIx = 0;
 		String text = state.getJSONObject("indexing").getString("caseDefinition");
-		HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
-//		style.setWrapText(true);
-		HSSFRow row = sheet.createRow(rowIx++);
-		setRow(row, text).get(0).setCellStyle(style);
-		row.setHeight((short) -1);
+		sheet.setColumnWidth(0, 255 * 256);
+		int rowIx = 0;
+		for (String line : text.split("\\r?\\n")) {
+			if (line.length() > 32767) {
+				line = line.substring(0, 32766) + "…";
+			}
+			List<HSSFCell> row = setRow(sheet.createRow(rowIx++), line);
+			HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
+			style.setWrapText(true);
+			row.get(0).setCellStyle(style);
+		}
 	}
 
 	private void setCodesSheet(HSSFSheet sheet, JSONObject state) {

@@ -37,7 +37,7 @@ import org.biosemantics.codemapper.UtsApi;
 import org.biosemantics.codemapper.authentification.AuthentificationApi;
 import org.biosemantics.codemapper.authentification.User;
 import org.biosemantics.codemapper.persistency.PersistencyApi;
-import org.biosemantics.codemapper.service.DownloadApi;
+import org.biosemantics.codemapper.service.WriteXlsApi;
 import org.biosemantics.codemapper.service.DownloadResource;
 import org.biosemantics.codemapper.umls_ext.Icd10AnyCodingSystem;
 import org.biosemantics.codemapper.umls_ext.Rcd2CodingSystem;
@@ -68,7 +68,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static UmlsApi umlsApi;
 	private static PersistencyApi persistencyApi;
 	private static AuthentificationApi authentificationApi;
-	private static DownloadApi downloadApi;
+	private static WriteXlsApi writeXlsApi;
 	private static UtsApi utsApi;
 
 	private DataSource getConnectionPool(String prefix, Properties properties) throws SQLException {
@@ -120,7 +120,7 @@ public class CodeMapperApplication extends ResourceConfig {
             DataSource codeMapperConnectionPool = getConnectionPool("code-mapper-db", properties);
             persistencyApi = new PersistencyApi(codeMapperConnectionPool);
             authentificationApi = new AuthentificationApi(codeMapperConnectionPool);
-            downloadApi = new DownloadApi();
+            writeXlsApi = new WriteXlsApi();
 
             String utsApiKey = properties.getProperty("uts-api-key");
             utsApi = new UtsApi(utsApiKey);
@@ -150,8 +150,8 @@ public class CodeMapperApplication extends ResourceConfig {
 		return authentificationApi;
 	}
 
-	public static DownloadApi getDownloadApi() {
-		return downloadApi;
+	public static WriteXlsApi getWriteXlsApi() {
+		return writeXlsApi;
 	}
 	
 	public static UtsApi getUtsApi() {

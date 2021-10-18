@@ -48,12 +48,13 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class DownloadApi {
-	
-    private static final String NO_CODE = "-";
-    private static Logger logger = LogManager.getLogger(DownloadApi.class);
-	
-	public JSONObject getCaseDefinition(String project, String caseDefinition) throws CodeMapperException {
+/** Export a casedefinition to an Excel spreadsheet. */
+public class WriteXlsApi {
+
+	private static final String NO_CODE = "-";
+	private static Logger logger = LogManager.getLogger(WriteXlsApi.class);
+
+	public JSONObject writeXls(String project, String caseDefinition) throws CodeMapperException {
 
 		String jsonState = CodeMapperApplication.getPersistencyApi().getCaseDefinition(project, caseDefinition);
 		if (jsonState == null)
@@ -61,29 +62,26 @@ public class DownloadApi {
 		JSONObject state = new JSONObject(jsonState);
 		return state;
 	}
-	
-	
-	public void caseDefinitionToXls(JSONObject state, List<Comment> comments, String name, String url, OutputStream output) {
 
+	public void writeXls(JSONObject state, List<Comment> comments, String name, String url, OutputStream output) {
 		try (HSSFWorkbook workbook = new HSSFWorkbook()) {
-			caseDefinitionToXls(state, comments, name, url, workbook);
+			writeXls(workbook, state, comments, name, url);
 			workbook.write(output);
 		} catch (IOException e) {
 			logger.error("Cannot create workbook", e);
 		}
 	}
-	
-	public void caseDefinitionToXls(JSONObject state, List<Comment> comments, String name, String url, HSSFWorkbook workbook) throws IOException, WebApplicationException {
 
-		info(state, name, url, workbook.createSheet("Info"));
-		codes(state, workbook.createSheet("Codes"));
-		history(state, workbook.createSheet("History"));
-		comments(state, comments, workbook.createSheet("Comments"));
-		caseDefinition(state, workbook.createSheet("Case definition"));
+	public void writeXls(HSSFWorkbook workbook, JSONObject state, List<Comment> comments, String name, String url) 
+			throws IOException, WebApplicationException {
+		setInfoSheet(workbook.createSheet("Info"), state, name, url);
+		setCodesSheet(workbook.createSheet("Codes"), state);
+		setHistorySheet(workbook.createSheet("History"), state);
+		setCommentsSheet(workbook.createSheet("Comments"), state, comments);
+		setCaseDefinitionSheet(workbook.createSheet("Case definition"), state);
 	}
-	
-	public void bold(List<HSSFCell> row, HSSFSheet sheet) {
 
+	public void bold(List<HSSFCell> row, HSSFSheet sheet) {
 		HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
 		HSSFFont font = sheet.getWorkbook().createFont();
 		font.setBold(true);
@@ -92,23 +90,22 @@ public class DownloadApi {
 			cell.setCellStyle(style);
 	}
 
+	private void setCommentsSheet(HSSFSheet sheet, JSONObject state, List<Comment> comments) {
 
-	private void comments(JSONObject state, List<Comment> comments, HSSFSheet sheet) {
-		
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
-		
+
 		int rowIx = 0;
-		
+
 		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Date", "User", "Concept", "CUI", "Message");
 		bold(header, sheet);
-		
+
 		Map<String, String> conceptNames = new HashMap<>();
 		JSONArray concepts = state.getJSONObject("mapping").getJSONArray("concepts");
 		for (int conceptIx = 0; conceptIx < concepts.length(); conceptIx++) {
 			JSONObject concept = concepts.getJSONObject(conceptIx);
 			conceptNames.put(concept.getString("cui"), concept.getString("preferredName"));
 		}
-		
+
 		for (Comment comment : comments) {
 			String dateString = comment.getTimestamp();
 			Date date = null;
@@ -119,29 +116,29 @@ public class DownloadApi {
 			}
 			String concept = conceptNames.get(comment.getCui());
 			if (concept != null) {
-    			List<HSSFCell> row = setRow(sheet.createRow(rowIx++), dateString, comment.getAuthor(), concept, comment.getCui(), comment.getContent());
-    			if (date != null) {
-    				row.get(0).setCellValue(date);
-    				HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
-    				short format = sheet.getWorkbook().getCreationHelper().createDataFormat().getFormat("m/d/yy hh:mm");
-    				style.setDataFormat(format);
-    				row.get(0).setCellStyle(style);		
-    			}
+				List<HSSFCell> row = setRow(sheet.createRow(rowIx++), dateString, comment.getAuthor(), concept,
+						comment.getCui(), comment.getContent());
+				if (date != null) {
+					row.get(0).setCellValue(date);
+					HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
+					short format = sheet.getWorkbook().getCreationHelper().createDataFormat().getFormat("m/d/yy hh:mm");
+					style.setDataFormat(format);
+					row.get(0).setCellStyle(style);
+				}
 			}
 		}
-		
-		sheet.setAutoFilter(new CellRangeAddress(0, rowIx-1, 0, header.size()-1));
+
+		sheet.setAutoFilter(new CellRangeAddress(0, rowIx - 1, 0, header.size() - 1));
 	}
 
-
-	private void history(JSONObject state, HSSFSheet sheet) {
+	private void setHistorySheet(HSSFSheet sheet, JSONObject state) {
 		int rowIx = 0;
-		
+
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-		
+
 		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Date", "User", "Operation", "Argument", "Result");
 		bold(header, sheet);
-		
+
 		JSONArray steps = state.getJSONObject("mapping").optJSONArray("history");
 		for (int stepIx = 0; stepIx < steps.length(); stepIx++) {
 			JSONObject step = steps.getJSONObject(stepIx);
@@ -165,34 +162,32 @@ public class DownloadApi {
 				row.get(0).setCellStyle(style);
 			}
 		}
-		sheet.setAutoFilter(new CellRangeAddress(0, rowIx-1, 0, header.size()-1));
+		sheet.setAutoFilter(new CellRangeAddress(0, rowIx - 1, 0, header.size() - 1));
 	}
-	
-	
-    private static String historyDatumToString(Object data) {
-        if (data.equals(JSONObject.NULL))
-            return "";
-        if (data instanceof JSONObject) {
-            JSONObject concept = (JSONObject) data;
-            return concept.getString("preferredName");
-        }
-        if (data instanceof String)
-            return (String) data;
-        if (data instanceof JSONArray) {
-            StringBuffer sb = new StringBuffer();
-            JSONArray array = (JSONArray) data;
-            for (int ix = 0; ix < array.length(); ix++) {
-                JSONObject concept = array.getJSONObject(ix);
-                if (ix != 0)
-                    sb.append(", ");
-                sb.append(concept.isNull("preferredName") ? "?" : concept.getString("preferredName"));
-            }
-            return sb.toString();
-        }
-        logger.error(String.format("Cannot convert history datum %s of class %s", data, data.getClass()));
-        return null;
-    }
 
+	private static String historyDatumToString(Object data) {
+		if (data.equals(JSONObject.NULL))
+			return "";
+		if (data instanceof JSONObject) {
+			JSONObject concept = (JSONObject) data;
+			return concept.getString("preferredName");
+		}
+		if (data instanceof String)
+			return (String) data;
+		if (data instanceof JSONArray) {
+			StringBuffer sb = new StringBuffer();
+			JSONArray array = (JSONArray) data;
+			for (int ix = 0; ix < array.length(); ix++) {
+				JSONObject concept = array.getJSONObject(ix);
+				if (ix != 0)
+					sb.append(", ");
+				sb.append(concept.isNull("preferredName") ? "?" : concept.getString("preferredName"));
+			}
+			return sb.toString();
+		}
+		logger.error(String.format("Cannot convert history datum %s of class %s", data, data.getClass()));
+		return null;
+	}
 
 	private List<HSSFCell> setRow(HSSFRow row, String... cells) {
 		List<HSSFCell> result = new LinkedList<>();
@@ -204,99 +199,72 @@ public class DownloadApi {
 		return result;
 	}
 
-
-	private void info(JSONObject state, String name, String url, HSSFSheet sheet) {
+	private void setInfoSheet(HSSFSheet sheet, JSONObject state, String name, String url) {
 		int rowIx = 0;
 
 		Hyperlink hyperlink = sheet.getWorkbook().getCreationHelper().createHyperlink(HyperlinkType.URL);
 		hyperlink.setAddress(url);
-		
+
 		setRow(sheet.createRow(rowIx++), "Case definition:", name);
-		setRow(sheet.createRow(rowIx++), "URL:", url)
-			.get(1).setHyperlink(hyperlink);
+		setRow(sheet.createRow(rowIx++), "URL:", url).get(1).setHyperlink(hyperlink);
 		rowIx++;
 		setRow(sheet.createRow(rowIx++), "Case definition created with ADVANCE Code Mapper");
-		setRow(sheet.createRow(rowIx++), "Concepts, history, comments and original wording of the case definitions are in separate sheets.");
-		
+		setRow(sheet.createRow(rowIx++),
+				"Concepts, history, comments and original wording of the case definitions are in separate sheets.");
+
 	}
-	
-	private void caseDefinition(JSONObject state, HSSFSheet sheet) {
+
+	private void setCaseDefinitionSheet(HSSFSheet sheet, JSONObject state) {
 		int rowIx = 0;
 		String text = state.getJSONObject("indexing").getString("caseDefinition");
 		HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
 //		style.setWrapText(true);
 		HSSFRow row = sheet.createRow(rowIx++);
-		setRow(row, text)
-		.get(0).setCellStyle(style);
-		row.setHeight((short)-1);
+		setRow(row, text).get(0).setCellStyle(style);
+		row.setHeight((short) -1);
 	}
 
-
-	private void codes(JSONObject state, HSSFSheet sheet) {
+	private void setCodesSheet(HSSFSheet sheet, JSONObject state) {
 		int rowIx = 0;
-		
-		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Coding system", "Code", "Code name", "Concept", "Concept name", "Tags");//, "Origin", "Root concept");
+
+		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Coding system", "Code", "Code name", "Concept",
+				"Concept name", "Tags");// , "Origin", "Root concept");
 		bold(header, sheet);
-		
+
 		JSONArray codingSystems = state.getJSONArray("codingSystems");
 		for (int codingSystemIx = 0; codingSystemIx < codingSystems.length(); codingSystemIx++) {
 			String codingSystem = codingSystems.getString(codingSystemIx);
-		
+
 			JSONArray concepts = state.getJSONObject("mapping").getJSONArray("concepts");
-            for (int conceptIx = 0; conceptIx < concepts.length(); conceptIx++) {
-                JSONObject concept = concepts.getJSONObject(conceptIx);
-                String tags = formatTags(concept.optJSONArray("tags"));
-                JSONArray codes = concept.getJSONObject("codes").getJSONArray(codingSystem);
-                String cui = concept.getString("cui");
-                String conceptName = concept.getString("preferredName");
-                if (codes.length() == 0)
-                    setRow(sheet.createRow(rowIx++), codingSystem, NO_CODE, null, cui, conceptName, tags);
-                else
-                    for (int codeIx = 0; codeIx < codes.length(); codeIx++) {
-                        JSONObject code = codes.getJSONObject(codeIx);
-//					String origin;
-//					switch (concept.getJSONObject("origin").getString("type")) {
-//					case "spans":
-//						origin = "\"" + concept.getJSONObject("origin").getJSONObject("data").getString("text") + "\"";
-//						break;
-//					case "hyponym":
-//						origin = "< " + concept.getJSONObject("origin").getJSONObject("data").getString("cui");
-//						break;
-//					case "hypernym":
-//						origin = "> " + concept.getJSONObject("origin").getJSONObject("data").getString("cui");
-//						break;
-//					case "search":
-//						origin = "? " + concept.getJSONObject("origin").getString("data");
-//						break;
-//					case "add":
-//						origin = "+";
-//						break;
-//					default:
-//						origin = "";
-//						break;
-//					}
-//					String root = "";
-//					if (!concept.getJSONObject("origin").isNull("root"))
-//						root = concept.getJSONObject("origin").getJSONObject("root").getString("cui");
-                        String codeId = code.getString("id");
-                        String codeName = code.getString("preferredTerm");
-                        setRow(sheet.createRow(rowIx++), codingSystem, codeId, codeName, cui, conceptName, tags);
-                    }
+			for (int conceptIx = 0; conceptIx < concepts.length(); conceptIx++) {
+				JSONObject concept = concepts.getJSONObject(conceptIx);
+				String tags = formatTags(concept.optJSONArray("tags"));
+				JSONArray codes = concept.getJSONObject("codes").getJSONArray(codingSystem);
+				String cui = concept.getString("cui");
+				String conceptName = concept.getString("preferredName");
+				if (codes.length() == 0)
+					setRow(sheet.createRow(rowIx++), codingSystem, NO_CODE, null, cui, conceptName, tags);
+				else
+					for (int codeIx = 0; codeIx < codes.length(); codeIx++) {
+						JSONObject code = codes.getJSONObject(codeIx);
+						String codeId = code.getString("id");
+						String codeName = code.getString("preferredTerm");
+						setRow(sheet.createRow(rowIx++), codingSystem, codeId, codeName, cui, conceptName, tags);
+					}
 			}
 		}
-		sheet.setAutoFilter(new CellRangeAddress(0, rowIx-1, 0, header.size()-1));
+		sheet.setAutoFilter(new CellRangeAddress(0, rowIx - 1, 0, header.size() - 1));
 	}
 
-
-    private String formatTags(JSONArray tagsArray) {
-        if (tagsArray == null)
-            return null;
-        StringBuilder sb = new StringBuilder();
-        for (int tagIx = 0; tagIx < tagsArray.length(); tagIx++) {
-            if (sb.length() > 0)
-                sb.append(", ");
-            sb.append(tagsArray.get(tagIx));
-        }
-        return sb.toString();
-    }
+	private String formatTags(JSONArray tagsArray) {
+		if (tagsArray == null)
+			return null;
+		StringBuilder sb = new StringBuilder();
+		for (int tagIx = 0; tagIx < tagsArray.length(); tagIx++) {
+			if (sb.length() > 0)
+				sb.append(", ");
+			sb.append(tagsArray.get(tagIx));
+		}
+		return sb.toString();
+	}
 }

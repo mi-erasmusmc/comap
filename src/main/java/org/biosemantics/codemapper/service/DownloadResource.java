@@ -68,7 +68,7 @@ public class DownloadResource {
 					@Override
 					public void write(OutputStream output) throws IOException, WebApplicationException {
 						JSONObject state = new JSONObject(jsonState);
-						CodeMapperApplication.getDownloadApi().caseDefinitionToXls(state, comments, caseDefinition, url, output);
+						CodeMapperApplication.getWriteXlsApi().writeXls(state, comments, caseDefinition, url, output);
 					}
 				}).header("Content-Disposition", contentDisposition).build();
 		} catch(CodeMapperException e) {

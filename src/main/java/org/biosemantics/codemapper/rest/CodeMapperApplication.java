@@ -49,6 +49,19 @@ import com.mchange.v2.c3p0.DataSources;
 @ApplicationPath("rest")
 public class CodeMapperApplication extends ResourceConfig {
 
+	private static final String UTS_API_KEY = "uts-api-key";
+	private static final String CODE_MAPPER_DB = "code-mapper-db";
+	private static final String UMLS_EXT_DB_CTV3RCT_TABLE = "umls-ext-db-ctv3rct-table";
+	private static final String UMLS_EXT_DB = "umls-ext-db";
+	private static final String UMLS_DB = "umls-db";
+	private static final String CODEMAPPER_UMLS_VERSION = "codemapper-umls-version";
+	private static final String PEREGRINE_RESOURCE_URL = "peregrine-resource-url";
+	private static final String CODING_SYSTEMS_WITH_DEFINITION = "coding-systems-with-definition";
+	private static final String AVAILABLE_CODING_SYSTEMS = "available-coding-systems";
+	private static final String DB_PASSWORD_SUFFIX = "-password";
+	private static final String DB_USERNAME_SUFFIX = "-username";
+	private static final String DB_URI_SUFFIX = "-uri";
+
 	public static final String CODE_MAPPER_PROPERTIES = "/code-mapper.properties";
 	
 	public static final Properties properties;
@@ -71,20 +84,24 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static WriteXlsApi writeXlsApi;
 	private static UtsApi utsApi;
 
-	private DataSource getConnectionPool(String prefix, Properties properties) throws SQLException {
-        String uri = properties.getProperty(prefix + "-uri");
-        String username = properties.getProperty(prefix + "-username");
-        String password = properties.getProperty(prefix + "-password");
+	public static DataSource getConnectionPool(String prefix, Properties properties) throws SQLException {
+        String uri = properties.getProperty(prefix + DB_URI_SUFFIX);
+        String username = properties.getProperty(prefix + DB_USERNAME_SUFFIX);
+        String password = properties.getProperty(prefix + DB_PASSWORD_SUFFIX);
         logger.info("Get connection pool " + prefix);
         return DataSources.unpooledDataSource(uri, username, password);
 	}
 
-	public CodeMapperApplication(@Context ServletContext context) throws IOException {
+	public CodeMapperApplication(@Context ServletContext context) {
 		
+		// Try loading the database driver. Necessary, otherwise database connections
+		// will fail with exception java.sql.SQLException: No suitable driver
 		try {
 			Class.forName("org.postgresql.Driver");
 		} catch (LinkageError | ClassNotFoundException e) {
 			logger.error("Can't load MYSQL JDBC driver");
+			e.printStackTrace();
+			return;
 		}
 
 		packages(getClass().getPackage().getName(), DownloadResource.class.getPackage().getName());
@@ -95,39 +112,40 @@ public class CodeMapperApplication extends ResourceConfig {
                 bindFactory(UserFactory.class).to(User.class);
             }
         });
-
+		DataSource umlsConnectionPool,  umlsExtConnectionPool, codeMapperConnectionPool;
 		try {
-
-			String availableCodingSystemsStr = properties.getProperty("available-coding-systems");
-            List<String> availableCodingSystems = null;
-            if (availableCodingSystemsStr != null)
-                availableCodingSystems = Arrays.asList(availableCodingSystemsStr.split(",\\s*"));
-
-			List<String> codingSystemsWithDefinition = Arrays.asList(
-					properties.getProperty("coding-systems-with-definition").split(",\\s*"));
-
-			peregrineResourceUrl = properties.getProperty("peregrine-resource-url");
-			umlsVersion = properties.getProperty("codemapper-umls-version");
-
-			DataSource umlsConnectionPool = getConnectionPool("umls-db", properties);
-			umlsApi = new UmlsApi(umlsConnectionPool, availableCodingSystems, codingSystemsWithDefinition);
-
-            DataSource umlsExtConnectionPool = getConnectionPool("umls-ext-db", properties);
-            String ctv3rctTableName = properties.getProperty("umls-ext-db-ctv3rct-table");
-            umlsApi.registerCodingSystemsExtension(new Rcd2CodingSystem(umlsExtConnectionPool, ctv3rctTableName));
-            umlsApi.registerCodingSystemsExtension(new Icd10AnyCodingSystem(umlsConnectionPool));
-
-            DataSource codeMapperConnectionPool = getConnectionPool("code-mapper-db", properties);
-            persistencyApi = new PersistencyApi(codeMapperConnectionPool);
-            authentificationApi = new AuthentificationApi(codeMapperConnectionPool);
-            writeXlsApi = new WriteXlsApi();
-
-            String utsApiKey = properties.getProperty("uts-api-key");
-            utsApi = new UtsApi(utsApiKey);
+			umlsConnectionPool = getConnectionPool(UMLS_DB, properties);
+            umlsExtConnectionPool = getConnectionPool(UMLS_EXT_DB, properties);
+            codeMapperConnectionPool = getConnectionPool(CODE_MAPPER_DB, properties);
 		} catch (SQLException e) {
 		    logger.error("Cannot create pooled data source");
             e.printStackTrace();
+            return;
         }
+
+		String availableCodingSystemsStr = properties.getProperty(AVAILABLE_CODING_SYSTEMS);
+		List<String> availableCodingSystems = null;
+		if (availableCodingSystemsStr != null)
+			availableCodingSystems = Arrays.asList(availableCodingSystemsStr.split(",\\s*"));
+
+		List<String> codingSystemsWithDefinition = Arrays
+				.asList(properties.getProperty(CODING_SYSTEMS_WITH_DEFINITION).split(",\\s*"));
+
+		peregrineResourceUrl = properties.getProperty(PEREGRINE_RESOURCE_URL);
+		umlsVersion = properties.getProperty(CODEMAPPER_UMLS_VERSION);
+
+		umlsApi = new UmlsApi(umlsConnectionPool, availableCodingSystems, codingSystemsWithDefinition);
+
+		String ctv3rctTableName = properties.getProperty(UMLS_EXT_DB_CTV3RCT_TABLE);
+		umlsApi.registerCodingSystemsExtension(new Rcd2CodingSystem(umlsExtConnectionPool, ctv3rctTableName));
+		umlsApi.registerCodingSystemsExtension(new Icd10AnyCodingSystem(umlsConnectionPool));
+
+		persistencyApi = new PersistencyApi(codeMapperConnectionPool);
+		authentificationApi = new AuthentificationApi(codeMapperConnectionPool);
+		writeXlsApi = new WriteXlsApi();
+
+		String utsApiKey = properties.getProperty(UTS_API_KEY);
+		utsApi = new UtsApi(utsApiKey);
 	}
 
 	public static String getPeregrineResourceUrl() {

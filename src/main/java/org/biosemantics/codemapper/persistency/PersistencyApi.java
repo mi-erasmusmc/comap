@@ -186,14 +186,14 @@ public class PersistencyApi {
 	}
 
 	public List<Comment> getComments(String project, String caseDefinition) throws CodeMapperException {
-		String query =
-				"SELECT users.username AS author, timestamp, cui, content "
+		String query = 
+				"SELECT users.username AS author, DATE_TRUNC ('second', timestamp) as timestamp, cui, content, timestamp as full_timestamp "
 				+ "FROM comments "
 				+ "INNER JOIN users ON comments.author = users.id "
 				+ "INNER JOIN case_definitions on comments.case_definition_id = case_definitions.id "
 				+ "INNER JOIN projects ON projects.id = case_definitions.project_id "
 				+ "WHERE projects.name = ? AND case_definitions.name = ? "
-				+ "ORDER BY timestamp";
+				+ "ORDER BY full_timestamp";
         try (Connection connection = connectionPool.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
 			statement.setString(1, project);

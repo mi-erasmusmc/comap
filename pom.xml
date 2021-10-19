@@ -30,18 +30,27 @@
       </activation>
       <properties>
         <code-mapper.properties>code-mapper-dev.properties</code-mapper.properties>
+        <final.name>codemapper-dev</final.name>
+      </properties>
+    </profile>
+    <profile>
+      <id>testing</id>
+      <properties>
+        <code-mapper.properties>code-mapper-production.properties</code-mapper.properties>
+        <final.name>codemapper-testing</final.name>
       </properties>
     </profile>
     <profile>
       <id>production</id>
       <properties>
         <code-mapper.properties>code-mapper-production.properties</code-mapper.properties>
+        <final.name>codemapper</final.name>
       </properties>
     </profile>
   </profiles>
 
   <build>
-    <finalName>${project.name}</finalName>
+    <finalName>${final.name}</finalName>
     <resources>
       <resource>
         <directory>src/main/resources</directory>
@@ -60,6 +69,14 @@
       </resource>
     </resources>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.2.0</version>
+        <configuration>
+          <propertiesEncoding>UTF-8</propertiesEncoding>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>com.coderplus.maven.plugins</groupId>
         <artifactId>copy-rename-maven-plugin</artifactId>
@@ -124,6 +141,13 @@
           <version>3.3.1</version>
           <configuration>
               <webResources>
+                <resource>
+                  <filtering>true</filtering>
+                  <directory>src/main/webapp</directory>
+                  <includes>
+                    <include>META-INF/context.xml</include>
+                  </includes>
+                </resource>
                   <resource>
                       <directory>${project.build.sourceDirectory}</directory>
                       <targetPath>WEB-INF/classes</targetPath>

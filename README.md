@@ -56,13 +56,16 @@ Building CodeMapper requires `maven3`. Then just run
 and the war-file will be build in directory `target`.
 
 All properties required to initialise database connections and external APIs are
-read from a properties file, which is selected using a maven profile
+read from a properties file.
 
-- profile `dev`: `src/main/resources/code-mapper-dev.properties` (default)
-- profile `production`: `src/main/resources/code-mapper-production.properties`
+There are three profiles, which determine the final name of the `.war` file and
+the properties file:
 
-The properties files can be derived from file
-`src/main/resources/code-mapper-TEMPLATE.properties`.
+| Profile       | Final name         | Properties                       |   |
+|---------------|--------------------|----------------------------------|---|
+| dev (default) | codemappper-dev    | codemapper-dev.properties        |   |
+| testing       | codemapper-testing | codemapper-production.properties |   |
+| production    | codemapper         | codemapper-production.properties |   |
 
 #### Requirements
 

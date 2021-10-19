@@ -18,13 +18,15 @@
  ******************************************************************************/
 package org.biosemantics.codemapper.authentification;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class User {
+public class User implements Serializable {
+	private static final long serialVersionUID = 457068490529031472L;
 	private String username;
 	private Map<String, Set<ProjectPermission>> projectPermissions;
 	public User() {

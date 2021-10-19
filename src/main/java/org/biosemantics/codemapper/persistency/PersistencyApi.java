@@ -34,10 +34,13 @@ import java.util.Set;
 
 import javax.sql.DataSource;
 
+import org.biosemantics.codemapper.ClientState;
 import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.Comment;
 import org.biosemantics.codemapper.authentification.ProjectPermission;
 import org.biosemantics.codemapper.authentification.User;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 public class PersistencyApi {
 
@@ -166,15 +169,22 @@ public class PersistencyApi {
 	}
 
 	public void setCaseDefinition(String project, String caseDefinitionName, String stateJson) throws CodeMapperException {
+		try {
+			new ClientState().ofJson(stateJson);
+		} catch (JsonProcessingException e) {
+			throw CodeMapperException.user("Invalid state", e);
+		}
 		String query =
 				"INSERT INTO case_definitions (project_id, name, state) "
 				+ "SELECT projects.id, ?, ? "
 				+ "FROM projects "
 				+ "WHERE projects.name = ? "
+		        + "ON CONFLICT (project_id, name) DO UPDATE SET state = ?"; // Postgres
 //				+ "ON DUPLICATE KEY UPDATE state = ?"; // MySQL
-		        + "ON CONFLICT (project_id, name) DO UPDATE SET state = ?"; // Postgres 
+		
         try (Connection connection = connectionPool.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
+        	
 			statement.setString(1, caseDefinitionName);
 			statement.setString(2, stateJson);
 			statement.setString(3, project);

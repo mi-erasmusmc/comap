@@ -67,6 +67,10 @@ the properties file:
 | testing       | codemapper-testing | codemapper-production.properties |   |
 | production    | codemapper         | codemapper-production.properties |   |
 
+While running, CodeMapper is configured to print debugging information to
+`${sys:catalina.base}/logs/code-mapper.log`, i.e.,
+`/var/log/tomcat*/code-mapper.log`.
+
 #### Requirements
 
 The CodeMapper web application uses Java servlet version 3.0.1, which requires Tomcat7.

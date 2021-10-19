@@ -177,7 +177,6 @@ public class Rcd2CodingSystem implements ExtCodingSystem {
                      int offset = 1;
                      for (Iterator<String> iter = codes.iterator(); iter.hasNext(); offset++)
                          statement.setString(offset, iter.next());
-                     System.out.println(statement);
                      ResultSet result = statement.executeQuery();
                      while (result.next()) {
                          String code = result.getString(1);

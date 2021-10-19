@@ -28,6 +28,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.authentification.AuthentificationApi;
 import org.biosemantics.codemapper.authentification.User;
@@ -36,6 +38,8 @@ import org.biosemantics.codemapper.authentification.AuthentificationApi.LoginRes
 
 @Path("authentification")
 public class AuthentificationResource {
+	
+    private static Logger logger = LogManager.getLogger(AuthentificationResource.class);
 	
 	AuthentificationApi api = CodeMapperApplication.getAuthentificationApi();
 	
@@ -55,6 +59,7 @@ public class AuthentificationResource {
 	@Path("login")
 	@Produces(MediaType.APPLICATION_JSON)
 	public LoginResult login(@FormParam("username") String username, @FormParam("password") String password, @Context HttpServletRequest request) {
+		logger.info("Try log in " + username);
 		try {
 			return api.login(username, password, request);
 		} catch (CodeMapperException e) {

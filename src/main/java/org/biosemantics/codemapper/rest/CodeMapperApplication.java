@@ -74,17 +74,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static final String UMLS_EXT_DB = "umls-ext-db";
 	private static final String UTS_API_KEY = "uts-api-key";
 
-	public static final Properties properties = new Properties();
-
-	static {
-	    try {
-	    	properties.load(CodeMapperApplication.class.getResourceAsStream(CODE_MAPPER_PROPERTIES));
-	    } catch (IOException e) {
-	    	logger.error("Cannot load " + CODE_MAPPER_PROPERTIES);
-	    	e.printStackTrace();
-	    }
-	}
-
+	private static Properties properties;
 	private static String peregrineResourceUrl;
 	private static String umlsVersion;
 	private static UmlsApi umlsApi;
@@ -94,16 +84,19 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static UtsApi utsApi;
 	private static DescendersApi descendersApi;
 
-	public static DataSource getConnectionPool(String prefix, Properties properties) throws SQLException {
-        String uri = properties.getProperty(prefix + DB_URI_SUFFIX);
-        String username = properties.getProperty(prefix + DB_USERNAME_SUFFIX);
-        String password = properties.getProperty(prefix + DB_PASSWORD_SUFFIX);
-        logger.info("Get connection pool " + prefix);
-        return DataSources.unpooledDataSource(uri, username, password);
+	static {
+		properties = new Properties();
+	    try {
+	    	properties.load(CodeMapperApplication.class.getResourceAsStream(CODE_MAPPER_PROPERTIES));
+	    } catch (IOException e) {
+	    	logger.error("Cannot load " + CODE_MAPPER_PROPERTIES);
+	    	e.printStackTrace();
+	    }
 	}
 
 	public CodeMapperApplication(@Context ServletContext context) {
-
+		initialize();
+		
 		// Try loading the database driver. Necessary, otherwise database connections
 		// will fail with exception java.sql.SQLException: No suitable driver
 		try {
@@ -116,17 +109,20 @@ public class CodeMapperApplication extends ResourceConfig {
 
 		packages(getClass().getPackage().getName(), DownloadResource.class.getPackage().getName());
 		register(new AbstractBinder() {
-            @Override
-            protected void configure() {
-                bindFactory(HttpSessionFactory.class).to(HttpSession.class);
-                bindFactory(UserFactory.class).to(User.class);
-            }
-        });
+			@Override
+			protected void configure() {
+				bindFactory(HttpSessionFactory.class).to(HttpSession.class);
+				bindFactory(UserFactory.class).to(User.class);
+			}
+		});
+	}
+
+	public static void initialize() {
 		DataSource umlsConnectionPool,  umlsExtConnectionPool, codeMapperConnectionPool;
 		try {
-			umlsConnectionPool = getConnectionPool(UMLS_DB, properties);
-            umlsExtConnectionPool = getConnectionPool(UMLS_EXT_DB, properties);
-            codeMapperConnectionPool = getConnectionPool(CODE_MAPPER_DB, properties);
+			umlsConnectionPool = getConnectionPool(UMLS_DB);
+            umlsExtConnectionPool = getConnectionPool(UMLS_EXT_DB);
+            codeMapperConnectionPool = getConnectionPool(CODE_MAPPER_DB);
 		} catch (SQLException e) {
 		    logger.error("Cannot create pooled data source");
             e.printStackTrace();
@@ -168,6 +164,18 @@ public class CodeMapperApplication extends ResourceConfig {
         	descendersApi.addSpecificDescender(
         			new SnowstormDescender(snowstormBaseUri, snowstormBranch));
         }
+	}
+
+	public static DataSource getConnectionPool(String prefix) throws SQLException {
+        String uri = properties.getProperty(prefix + DB_URI_SUFFIX);
+        String username = properties.getProperty(prefix + DB_USERNAME_SUFFIX);
+        String password = properties.getProperty(prefix + DB_PASSWORD_SUFFIX);
+        logger.info("Get connection pool " + prefix);
+        return DataSources.unpooledDataSource(uri, username, password);
+	}
+	
+	public static String getProp(String str) {
+		return properties.getProperty(str);
 	}
 
 	public static String getPeregrineResourceUrl() {

@@ -40,10 +40,10 @@ public class IndexServlet extends HttpServlet {
     {
         req.setCharacterEncoding("UTF-8");
         ServletContext context = getServletContext();
-        context.setAttribute("CODEMAPPER_UMLS_VERSION", CodeMapperApplication.properties.getProperty("codemapper-umls-version"));
-        context.setAttribute("CODEMAPPER_CONTACT_EMAIL", CodeMapperApplication.properties.getProperty("codemapper-contact-email"));
-        context.setAttribute("CODEMAPPER_URL", CodeMapperApplication.properties.getProperty("codemapper-url"));
-        context.setAttribute("PROJECT_VERSION", CodeMapperApplication.properties.getProperty("project.version"));
+        context.setAttribute("CODEMAPPER_UMLS_VERSION", CodeMapperApplication.getProp("codemapper-umls-version"));
+        context.setAttribute("CODEMAPPER_CONTACT_EMAIL", CodeMapperApplication.getProp("codemapper-contact-email"));
+        context.setAttribute("CODEMAPPER_URL", CodeMapperApplication.getProp("codemapper-url"));
+        context.setAttribute("PROJECT_VERSION", CodeMapperApplication.getProp("project.version"));
         context
             .getRequestDispatcher("/WEB-INF/index.jsp")
             .forward(req, res);

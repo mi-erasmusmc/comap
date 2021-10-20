@@ -185,7 +185,9 @@ public class UtsApi {
     }
     
     public static void main(String[] args) throws CodeMapperException {
-        UtsApi utsApi = new UtsApi("UTS-API-KEY");
-        System.out.println(utsApi.searchConcepts("GBS", "UMLS2020AB"));
+    	Configurator.setAllLevels(logger.getName(), Level.DEBUG);
+    	CodeMapperApplication.initialize();
+		UtsApi utsApi = CodeMapperApplication.getUtsApi();
+        System.out.println(utsApi.searchConcepts("pertussis", CodeMapperApplication.getUmlsVersion()));
     }
 }

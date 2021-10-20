@@ -31,13 +31,15 @@
       <properties>
         <code-mapper.properties>code-mapper-dev.properties</code-mapper.properties>
         <final.name>codemapper-dev</final.name>
+        <logging.level>trace</logging.level>
       </properties>
     </profile>
     <profile>
       <id>testing</id>
       <properties>
-        <code-mapper.properties>code-mapper-production.properties</code-mapper.properties>
+        <code-mapper.properties>code-mapper-testing.properties</code-mapper.properties>
         <final.name>codemapper-testing</final.name>
+        <logging.level>debug</logging.level>
       </properties>
     </profile>
     <profile>
@@ -45,6 +47,7 @@
       <properties>
         <code-mapper.properties>code-mapper-production.properties</code-mapper.properties>
         <final.name>codemapper</final.name>
+        <logging.level>info</logging.level>
       </properties>
     </profile>
   </profiles>

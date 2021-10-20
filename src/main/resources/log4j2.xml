@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
   <Appenders>
-    <File name="File" fileName="${sys:catalina.base}/logs/code-mapper.log" append="true">
+    <File name="File" fileName="${sys:catalina.base}/logs/${final.name}.log" append="true">
       <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss} %-5level %logger{1} - %msg%n"/>
     </File>
     <Console name="Console" target="SYSTEM_OUT">
@@ -9,7 +9,7 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="org.biosemantics.codemapper" level="DEBUG" additivity="false">
+    <Logger name="org.biosemantics.codemapper" level="${logging.level}" additivity="false">
       <AppenderRef ref="File"/>
     </Logger>
     <Root level="WARN">

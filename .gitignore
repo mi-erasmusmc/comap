@@ -13,3 +13,4 @@ WebContent
 .redo
 /code-mapper-production.properties
 /code-mapper-dev.properties
+/src/main/resources/code-mapper.properties

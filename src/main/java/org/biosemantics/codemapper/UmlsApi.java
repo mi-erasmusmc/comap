@@ -274,7 +274,7 @@ public class UmlsApi  {
 				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
 					statement.setString(offset, iter.next());
 
-                logger.debug(statement);
+                logger.trace(statement);
 				ResultSet result = statement.executeQuery();
 
 				Map<String, List<String>> semanticTypes = new TreeMap<>();
@@ -387,7 +387,7 @@ public class UmlsApi  {
 				for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
 					statement.setString(offset, iter.next());
 
-                logger.debug(statement);
+                logger.trace(statement);
 				ResultSet result = statement.executeQuery();
 
 				Map<String, List<SourceConcept>> sourceConcepts = new TreeMap<>();
@@ -569,7 +569,7 @@ public class UmlsApi  {
 				for (int ix = 0; ix < cuis.size(); ix++, offset++)
 					statement.setString(offset, cuis.get(ix));
 
-				logger.debug(statement);
+				logger.trace(statement);
 				ResultSet result = statement.executeQuery();
 
 				Map<String, Set<String>> related = new TreeMap<>();
@@ -619,7 +619,7 @@ public class UmlsApi  {
 				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
 					statement.setString(offset, iter.next());
 
-				logger.debug(statement);
+				logger.trace(statement);
 				ResultSet result = statement.executeQuery();
 
 				Map<String, Map<String, String>> definitionsByVocabularies = new TreeMap<>();
@@ -768,8 +768,8 @@ public class UmlsApi  {
                     }
             if (!resultCuis.isEmpty()) {
                 Map<String, UmlsConcept> concepts = getConcepts(resultCuis, codingSystems);
-                for (UmlsConcept concept: concepts.values())
-                    System.out.println(String.format(" - %s: %s", concept, paths.get(concept.getCui())));
+//                for (UmlsConcept concept: concepts.values())
+//                    System.out.println(String.format(" - %s: %s", concept, paths.get(concept.getCui())));
                 return new LinkedList<>(concepts.values());
             } else
                 cuis = new LinkedList<>(newCuis);

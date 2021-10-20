@@ -18,12 +18,8 @@
  ******************************************************************************/
 package org.biosemantics.codemapper;
 
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,8 +30,14 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.biosemantics.codemapper.rest.CodeMapperApplication;
 import org.glassfish.jersey.client.ClientConfig;
 
 import jersey.repackaged.com.google.common.base.Objects;
@@ -43,8 +45,7 @@ import jersey.repackaged.com.google.common.base.Objects;
 
 public class UtsApi {
 
-    private static Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-    
+    private static Logger logger = LogManager.getLogger(UtsApi.class);
     
     private static String LOGIN_URL = "https://utslogin.nlm.nih.gov/cas/v1";
     private static String REST_URL = "https://uts-ws.nlm.nih.gov/rest";
@@ -61,7 +62,6 @@ public class UtsApi {
     
     public UtsApi(String apiKey) {
         this.apiKey = apiKey;
-        logger.setLevel(Level.ALL);
 
         ClientConfig clientConfig = new ClientConfig();
         client = ClientBuilder.newClient(clientConfig);
@@ -80,12 +80,15 @@ public class UtsApi {
         if (response.getStatusInfo().getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
             String string = response.readEntity(String.class);
             Matcher matcher = TGT_PATTERN.matcher(string);
-            if (matcher.matches())
+            if (matcher.matches()) {
+                logger.debug("Received TGT");
                 this.tgt = matcher.group("key");
-            else
-                logger.log(Level.SEVERE, "Cannot login: Does not match pattern: "+string);
-        } else
-            logger.log(Level.SEVERE, "Cannot login: "+response.getStatusInfo());
+            } else {
+                logger.error("Cannot login: Does not match pattern: " + string);
+            }
+        } else {
+            logger.error("Cannot login: " + response.getStatusInfo());
+        }
     }
     
     private String getTicket() {
@@ -99,12 +102,13 @@ public class UtsApi {
                 .post(Entity.form(form));
             switch (response.getStatusInfo().getFamily()) {
                 case SUCCESSFUL:
+                	logger.debug("Retrieved ticket");
                     return response.readEntity(String.class);
                 case CLIENT_ERROR:
-                    logger.log(Level.INFO, String.format("No TGT/ticket (retry %d): %s", retry, response.getStatusInfo()));
+                    logger.error(String.format("No TGT/ticket (retry %d): %s", retry, response.getStatusInfo()));
                     break;
                 default:
-                    logger.log(Level.INFO, "Error: "+response.getStatusInfo());
+                    logger.error("Error: " + response.getStatusInfo());
                     return null;
             }
         }
@@ -152,42 +156,39 @@ public class UtsApi {
     }
 
     public List<String> searchConcepts(String query, String umlsVersion) throws CodeMapperException {
-        Set<String> cuis = new HashSet<>();
-        loop:
-        for (int pageNumber = 1; ; pageNumber++) {
+        List<String> cuis = new LinkedList<>();
+        for (int pageNumber = 1;; pageNumber++) {
+        	logger.debug("Search concepts page " + pageNumber);
             String ticket = getTicket();
-            Response response = restTarget
+            WebTarget target = 
+            		restTarget
                     .path("search")
                     .path(umlsVersion)
                     .queryParam("ticket", ticket)
                     .queryParam("string", query)
-                    .queryParam("pageNumber", pageNumber)
-                    .request(MediaType.APPLICATION_JSON)
-                    .get();
+//                    .queryParam("pageSize", 100)
+                    .queryParam("pageNumber", pageNumber);
+            Response response = target.request(MediaType.APPLICATION_JSON).get();
             response.bufferEntity();
-            switch (response.getStatusInfo().getFamily()) {
-                case SUCCESSFUL: { 
-                    SearchResults results = response.readEntity(SearchResults.class);
-                    if (results.result.results.isEmpty() ||
-                        results.result.results.size() == 1 &&
-                        results.result.results.get(0).equals(new SearchResult("NONE", "NO RESULTS")))
-                        break loop;
-                    for (SearchResult result: results.result.results)
-                        cuis.add(result.ui);
-                    if (results.result.results.isEmpty())
-                        break loop;
-                    break;
-                }
-                case CLIENT_ERROR:
-                    break loop;
-                default: {
-                    logger.log(Level.SEVERE, "Cannot search "+response.getStatusInfo() +"/"+response.getStatusInfo().getFamily());
-                    throw CodeMapperException.server("UtsApi: Cannot load results");
-                }
+            if (response.getStatusInfo().getFamily() == Status.Family.SUCCESSFUL) {
+            	SearchResults results = response.readEntity(SearchResults.class);
+            	if (results.result.results.isEmpty() 
+            			|| (results.result.results.size() == 1 
+            			    && results.result.results.get(0).ui.equals("NONE")
+            			    && results.result.results.get(0).name.equals("NO RESULTS")))
+            	{
+            		logger.debug("Search found " + cuis.size() + " concepts");
+            		return cuis;
+            	}
+            	for (SearchResult result: results.result.results) {
+            		cuis.add(result.ui);
+            	}
+            } else {
+            	throw CodeMapperException.server("Cannot search: " 
+            			+ response.readEntity(String.class)
+            			+ "(" + response.getStatusInfo() + ")");
             }
-            
         }
-        return new LinkedList<>(cuis);
     }
     
     public static void main(String[] args) throws CodeMapperException {

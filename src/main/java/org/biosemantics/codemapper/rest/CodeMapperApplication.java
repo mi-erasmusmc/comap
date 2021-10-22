@@ -47,6 +47,7 @@ import org.biosemantics.codemapper.descendants.SnowstormDescender;
 import org.biosemantics.codemapper.descendants.UmlsDescender;
 import org.biosemantics.codemapper.persistency.PersistencyApi;
 import org.biosemantics.codemapper.service.DownloadResource;
+import org.biosemantics.codemapper.service.WriteTsvApi;
 import org.biosemantics.codemapper.service.WriteXlsApi;
 import org.biosemantics.codemapper.umls_ext.Icd10AnyCodingSystem;
 import org.biosemantics.codemapper.umls_ext.Rcd2CodingSystem;
@@ -85,7 +86,8 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static UmlsApi umlsApi;
 	private static PersistencyApi persistencyApi;
 	private static AuthentificationApi authentificationApi;
-	private static WriteXlsApi writeXlsApi;
+    private static WriteXlsApi writeXlsApi;
+    private static WriteTsvApi writeTsvApi;
 	private static UtsApi utsApi;
 	private static DescendersApi descendersApi;
 
@@ -154,6 +156,7 @@ public class CodeMapperApplication extends ResourceConfig {
 		persistencyApi = new PersistencyApi(codeMapperConnectionPool);
 		authentificationApi = new AuthentificationApi(codeMapperConnectionPool);
 		writeXlsApi = new WriteXlsApi();
+		writeTsvApi = new WriteTsvApi();
 
 		String utsApiKey = properties.getProperty(UTS_API_KEY);
 		utsApi = new UtsApi(utsApiKey);
@@ -208,6 +211,10 @@ public class CodeMapperApplication extends ResourceConfig {
 	public static WriteXlsApi getWriteXlsApi() {
 		return writeXlsApi;
 	}
+
+    public static WriteTsvApi getWriteTsvApi() {
+        return writeTsvApi;
+    }
 
 	public static UtsApi getUtsApi() {
 	    return utsApi;

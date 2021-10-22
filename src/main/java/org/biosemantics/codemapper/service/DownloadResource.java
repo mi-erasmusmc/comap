@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.Path;
@@ -55,38 +54,52 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 public class DownloadResource {
 
     private static Logger logger = LogManager.getLogger(DownloadResource.class);
+    
+    public Response getCaseDefinition(String project, String caseDefinition, String url, final WriteApis.Api writeApi) {
+        try {
+            PersistencyApi persistencyApi = CodeMapperApplication.getPersistencyApi();
+            final String jsonState = persistencyApi.getCaseDefinition(project, caseDefinition);
+            if (jsonState == null)
+                throw new WebApplicationException(404);
+            final ClientState.State state = new ClientState().ofJson(jsonState);
+            final Map<String, Map<String, Collection<SourceConcept>>> descendants =
+                    CodeMapperApplication.getDescendantsApi().getDescendants(state.codingSystems, state.mapping.concepts);
+            final List<Comment> comments = persistencyApi.getComments(project, caseDefinition);
+            String filename = String.format("%s - %s.%s", project, caseDefinition, writeApi.getFileExtension());
+            String contentDisposition = String.format("attachment; filename=\"%s\"", filename);
+            return Response.ok(new StreamingOutput() {
+                @Override
+                public void write(OutputStream output) throws IOException, WebApplicationException {
+                    writeApi.write(output, state, descendants, comments, caseDefinition, url);
+                }
+            }, writeApi.getMimetype()).header("Content-Disposition", contentDisposition).build();
+        } catch(CodeMapperException e) {
+            logger.error("Cannot load case definition " + project + "/" + caseDefinition, e);
+            throw new InternalServerErrorException(e);
+        } catch (JsonProcessingException e) {
+            logger.error("Cannot parse client state for " + project + "/" + caseDefinition, e);
+            throw new InternalServerErrorException(e);
+        }
+    }
 
 	@GET
 	@Path("case-definition-xls")
-	@Produces({"application/vnd.ms-excel"})
+	@Produces({WriteXlsApi.MIME_TYPE})
 	public Response getCaseDefinitonXls(@Context HttpServletRequest request, @Context User user, @QueryParam("project") final String project, @QueryParam("caseDefinition") final String caseDefinition, @QueryParam("url") final String url) {
 		PersistencyResource.assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
-		logger.debug(String.format("Download case definition %s/%s (%s)", project, caseDefinition, user));
-		try {
-			PersistencyApi persistencyApi = CodeMapperApplication.getPersistencyApi();
-			final String jsonState = persistencyApi.getCaseDefinition(project, caseDefinition);
-			if (jsonState == null)
-				throw new WebApplicationException(404);
-			final ClientState.State state = new ClientState().ofJson(jsonState);
-			final Map<String, Map<String, Collection<SourceConcept>>> descendants =
-					CodeMapperApplication.getDescendantsApi().getDescendants(state.codingSystems, state.mapping.concepts);
-			final List<Comment> comments = persistencyApi.getComments(project, caseDefinition);
-			String filename = String.format("%s - %s.xls", project, caseDefinition);
-			String contentDisposition = String.format("attachment; filename=\"%s\"", filename);
-			return Response.ok(new StreamingOutput() {
-					@Override
-					public void write(OutputStream output) throws IOException, WebApplicationException {
-                                            CodeMapperApplication.getWriteXlsApi().writeXls(output, state, descendants, comments, caseDefinition, url);
-					}
-				}).header("Content-Disposition", contentDisposition).build();
-		} catch(CodeMapperException e) {
-			logger.error("Cannot load case definition", e);
-			throw new InternalServerErrorException(e);
-		} catch (JsonProcessingException e) {
-			logger.error("Cannot parse client state", e);
-			throw new ClientErrorException(400);
-		}
+		logger.debug(String.format("Download case definition as XLS %s/%s (%s)", project, caseDefinition, user));
+		return getCaseDefinition(project, caseDefinition, url, CodeMapperApplication.getWriteXlsApi());
 	}
+
+    @GET
+    @Path("case-definition-tsv")
+    @Produces({WriteTsvApi.MIME_TYPE})
+    public Response getCaseDefinitonTsv(@Context HttpServletRequest request, @Context User user, @QueryParam("project") final String project, @QueryParam("caseDefinition") final String caseDefinition, @QueryParam("url") final String url) {
+        PersistencyResource.assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
+        logger.debug(String.format("Download case definition as TSV %s/%s (%s)", project, caseDefinition, user));
+        return getCaseDefinition(project, caseDefinition, url, CodeMapperApplication.getWriteTsvApi());
+    }
+
 
 	@GET
 	@Path("test")

@@ -1315,8 +1315,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             });
     };
 
-    $scope.downloadConceptsAsExcel = function() {
-        var url = urls.downloadExcel +
+    $scope.downloadConcepts = function(type) {
+        var url = urls.download[type] +
             '?project=' + encodeURIComponent($scope.project) +
             '&caseDefinition=' + encodeURIComponent($scope.caseDefinitionName) +
             '&url=' + encodeURIComponent(window.location.href);

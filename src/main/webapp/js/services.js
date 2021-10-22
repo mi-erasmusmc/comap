@@ -76,13 +76,16 @@ function UrlsService() {
     this.changePassword = authentificationApi + '/change-password';
 
     var downloadApi = 'rest/services/download';
-    this.downloadExcel = downloadApi + '/case-definition-xls';
+    this.download = {
+        'xls': downloadApi + '/case-definition-xls',
+        'tsv': downloadApi + '/case-definition-tsv'
+    };
 }
 
 /** Retrieve and provide stopwords, semantic types and coding systems. */
 function DataService($http, $q, urls) {
     var service = this;
-    
+
     this.peregrineResource = null;
     this.configPromise = $http.get(urls.config)
         .error(function(err, status) {

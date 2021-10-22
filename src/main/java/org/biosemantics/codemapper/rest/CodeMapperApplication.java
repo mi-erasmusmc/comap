@@ -30,8 +30,13 @@ import javax.sql.DataSource;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Context;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
+import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.biosemantics.codemapper.UmlsApi;
 import org.biosemantics.codemapper.UtsApi;
 import org.biosemantics.codemapper.authentification.AuthentificationApi;
@@ -209,4 +214,16 @@ public class CodeMapperApplication extends ResourceConfig {
 	public static DescendersApi getDescendantsApi() {
 	    return descendersApi;
 	}
+
+    public static void reconfigureLog4j2(Level level) {
+        ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory
+                .newConfigurationBuilder();
+        builder.add(builder
+                .newAppender("stdout", "Console")
+                .add(builder.newLayout("PatternLayout")
+                        .addAttribute("pattern", "%level: %logger{1} - %msg%n%throwable")));
+        builder.add(builder.newRootLogger(level)
+                .add(builder.newAppenderRef("stdout")));
+        Configurator.reconfigure(builder.build());
+    }
 }

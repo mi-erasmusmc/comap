@@ -36,18 +36,18 @@ public class SnowstormDescender implements SpecificDescender {
 
     private static Logger logger = LogManager.getLogger(SnowstormDescender.class);
 
-    public static final String SNOMEDCT_US = "SNOMEDCT_US";
-
+    private final String codingSystem;
     private final String baseUri;
     private final String branch;
 
-    public SnowstormDescender(String baseUri, String branch) {
+    public SnowstormDescender(String codingSystem, String baseUri, String branch) {
+        this.codingSystem = codingSystem;
         this.baseUri = baseUri;
         this.branch = branch;
     }
 
     public String getCodingSystem() {
-        return SNOMEDCT_US;
+        return codingSystem;
     }
 
     public Map<String, Collection<SourceConcept>> getDescendants(Collection<String> conceptIds)
@@ -180,7 +180,7 @@ public class SnowstormDescender implements SpecificDescender {
             logger.info("descendants found for " + conceptId);
             for (DescendentsConcept descConcept : res.items) {
                 SourceConcept sourceConcept = new SourceConcept();
-                sourceConcept.setCodingSystem(SNOMEDCT_US);
+                sourceConcept.setCodingSystem(codingSystem);
                 sourceConcept.setId(descConcept.conceptId);
                 sourceConcept.setPreferredTerm(descConcept.fsn.term);
                 descendants.add(sourceConcept);
@@ -242,8 +242,9 @@ public class SnowstormDescender implements SpecificDescender {
     public static void main(String[] args) throws CodeMapperException {
         CodeMapperApplication.reconfigureLog4j2(Level.TRACE);
         
-        SnowstormDescender descender = new SnowstormDescender("https://snowstorm.test-nictiz.nl",
-                "MAIN/2021-07-31");
+        SnowstormDescender descender = 
+                new SnowstormDescender("SNOMEDCT_US", "https://snowstorm.test-nictiz.nl",
+                        "MAIN/2021-07-31");
         Map<String, Collection<SourceConcept>> descendants = descender.getDescendantsSequential(Arrays.asList("158164000"));
         System.out.println("" + descendants.size());
         for (String conceptId : descendants.keySet()) { 

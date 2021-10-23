@@ -108,7 +108,6 @@ public class AuthentificationApi {
 	}
 
 	public LoginResult login(String username, String password, HttpServletRequest request) throws CodeMapperException {
-		logger.debug("Authentificate " + username);
 
 		String query = "SELECT password FROM users WHERE username = ?";
         try (Connection connection = connectionPool.getConnection();
@@ -122,6 +121,7 @@ public class AuthentificationApi {
 					        CodeMapperApplication.getPersistencyApi().getProjectPermissions(username);
 					User user = new User(username, projectPermissions);
 					request.getSession().setAttribute(SESSION_ATTRIBUTE_USER, user);
+					logger.debug("Authentificated " + username);
 					return LoginResult.createSuccess(user);
 				} else
 					return LoginResult.createError("Wrong password");

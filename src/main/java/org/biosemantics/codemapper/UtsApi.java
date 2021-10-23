@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
@@ -95,11 +96,11 @@ public class UtsApi {
         for (int retry=0; retry<2; retry++, setTGT()) {
             Form form = new Form()
                 .param("service", SERVICE);
-            Response response = loginTarget
+            Builder request = loginTarget
                 .path("api-key")
                 .path(tgt)
-                .request()
-                .post(Entity.form(form));
+                .request();
+            Response response = request.post(Entity.form(form));
             switch (response.getStatusInfo().getFamily()) {
                 case SUCCESSFUL:
                 	logger.debug("Retrieved ticket");
@@ -108,7 +109,9 @@ public class UtsApi {
                     logger.error(String.format("No TGT/ticket (retry %d): %s", retry, response.getStatusInfo()));
                     break;
                 default:
-                    logger.error("Error: " + response.getStatusInfo());
+                    logger.debug("Request: " + request);
+                    logger.error("Error while getting ticket (" +
+                            response.getStatusInfo() + "): " + response.readEntity(String.class));
                     return null;
             }
         }
@@ -184,6 +187,7 @@ public class UtsApi {
             		cuis.add(result.ui);
             	}
             } else {
+                logger.debug("Request : " + target);
             	throw CodeMapperException.server("Cannot search: " 
             			+ response.readEntity(String.class)
             			+ "(" + response.getStatusInfo() + ")");

@@ -916,8 +916,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         	query: searchQuery
         }
         $http.post(urls.searchUts, data, FORM_ENCODED_POST)
-            .then(function(result1) {
-            	var cuis = result1.data;
+            .error(handleError)
+            .success(function(cuis) {
                 var data = {
                     cuis: cuis,
                     codingSystems: $scope.state.codingSystems

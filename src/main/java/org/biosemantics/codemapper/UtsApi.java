@@ -18,15 +18,14 @@
  ******************************************************************************/
 package org.biosemantics.codemapper;
 
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
@@ -39,7 +38,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.biosemantics.codemapper.rest.CodeMapperApplication;
-import org.glassfish.jersey.client.ClientConfig;
 
 import jersey.repackaged.com.google.common.base.Objects;
 
@@ -56,66 +54,58 @@ public class UtsApi {
     
     private String apiKey;
     private String tgt;
-    
-    private Client client;
-    private WebTarget loginTarget;
-    private WebTarget restTarget;
+    private Date tgtDate;
     
     public UtsApi(String apiKey) {
         this.apiKey = apiKey;
-
-        ClientConfig clientConfig = new ClientConfig();
-        client = ClientBuilder.newClient(clientConfig);
-        loginTarget = client.target(LOGIN_URL);
-        restTarget = client.target(REST_URL);
-        setTGT();
     }
     
-    private void setTGT() {
-        Form form = new Form()
-                .param("apikey", apiKey);
-        Response response = loginTarget
-                .path("api-key")
-                .request()
-                .post(Entity.form(form));
+    private void setTGT() throws CodeMapperException {
+        tgt = null;
+        tgtDate = null;
+        WebTarget target = ClientBuilder.newClient().target(LOGIN_URL).path("api-key");
+        Form form = new Form().param("apikey", apiKey);
+        Response response = target.request().post(Entity.form(form));
         if (response.getStatusInfo().getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
             String string = response.readEntity(String.class);
             Matcher matcher = TGT_PATTERN.matcher(string);
             if (matcher.matches()) {
                 logger.debug("Received TGT");
                 this.tgt = matcher.group("key");
+                this.tgtDate = new Date();
             } else {
-                logger.error("Cannot login: Does not match pattern: " + string);
+                logger.debug("Cannot login: " + target + " POST " + form.asMap());
+                throw CodeMapperException.server("Cannot get TGT: Does not match pattern: " + string);
             }
         } else {
-            logger.error("Cannot login: " + response.getStatusInfo());
+            logger.debug("Cannot login: " + target + " POST " + form.asMap());
+            throw CodeMapperException.server("Cannot get TGT: " + response.getStatusInfo());
         }
     }
     
-    private String getTicket() {
-        for (int retry=0; retry<2; retry++, setTGT()) {
-            Form form = new Form()
-                .param("service", SERVICE);
-            Builder request = loginTarget
-                .path("api-key")
-                .path(tgt)
-                .request();
-            Response response = request.post(Entity.form(form));
-            switch (response.getStatusInfo().getFamily()) {
-                case SUCCESSFUL:
-                	logger.debug("Retrieved ticket");
-                    return response.readEntity(String.class);
-                case CLIENT_ERROR:
-                    logger.error(String.format("No TGT/ticket (retry %d): %s", retry, response.getStatusInfo()));
-                    break;
-                default:
-                    logger.debug("Request: " + request);
-                    logger.error("Error while getting ticket (" +
-                            response.getStatusInfo() + "): " + response.readEntity(String.class));
-                    return null;
-            }
+    private void assureTGT() throws CodeMapperException {
+        if (tgt == null || tgtDate == null || new Date().getTime() - tgtDate.getTime() >= 8 * 60 * 60 * 1000) {
+            setTGT();
         }
-        return null;
+    }
+    
+    private String getTicket() throws CodeMapperException {
+        assureTGT();
+        WebTarget target = ClientBuilder.newClient().target(LOGIN_URL).path("tickets").path(tgt);
+        Form form = new Form().param("service", SERVICE);
+        Response response = target.request().post(Entity.form(form));
+        switch (response.getStatusInfo().getFamily()) {
+        case SUCCESSFUL:
+            logger.debug("Retrieved ticket");
+            return response.readEntity(String.class);
+        case CLIENT_ERROR:
+            logger.debug("Request: " + target + " POST " + form.asMap());
+            throw CodeMapperException.server(String.format("No TGT/ticket: %s", response.getStatusInfo()));
+        default:
+            logger.debug("Request: " + target + " POST " + form.asMap());
+            throw CodeMapperException.server("Error while getting ticket (" +
+                    response.getStatusInfo() + "): " + response.readEntity(String.class));
+        }
     }
     
     
@@ -163,34 +153,33 @@ public class UtsApi {
         for (int pageNumber = 1;; pageNumber++) {
         	logger.debug("Search concepts page " + pageNumber);
             String ticket = getTicket();
-            WebTarget target = 
-            		restTarget
+            WebTarget target = ClientBuilder.newClient()
+                    .target(REST_URL)
                     .path("search")
                     .path(umlsVersion)
                     .queryParam("ticket", ticket)
                     .queryParam("string", query)
-//                    .queryParam("pageSize", 100)
+                    .queryParam("pageSize", 100)
                     .queryParam("pageNumber", pageNumber);
             Response response = target.request(MediaType.APPLICATION_JSON).get();
             response.bufferEntity();
-            if (response.getStatusInfo().getFamily() == Status.Family.SUCCESSFUL) {
-            	SearchResults results = response.readEntity(SearchResults.class);
-            	if (results.result.results.isEmpty() 
-            			|| (results.result.results.size() == 1 
-            			    && results.result.results.get(0).ui.equals("NONE")
-            			    && results.result.results.get(0).name.equals("NO RESULTS")))
-            	{
-            		logger.debug("Search found " + cuis.size() + " concepts");
-            		return cuis;
-            	}
-            	for (SearchResult result: results.result.results) {
-            		cuis.add(result.ui);
-            	}
-            } else {
-                logger.debug("Request : " + target);
-            	throw CodeMapperException.server("Cannot search: " 
-            			+ response.readEntity(String.class)
-            			+ "(" + response.getStatusInfo() + ")");
+            if (response.getStatusInfo().getFamily() != Status.Family.SUCCESSFUL) {
+                logger.debug("Cannot search: " + target);
+                throw CodeMapperException.server("Cannot search: " 
+                        + response.readEntity(String.class)
+                        + "(" + response.getStatusInfo() + ")");
+            };
+            SearchResults results = response.readEntity(SearchResults.class);
+            if (results.result.results.isEmpty() 
+                    || (results.result.results.size() == 1 
+                    && results.result.results.get(0).ui.equals("NONE")
+                    && results.result.results.get(0).name.equals("NO RESULTS")))
+            {
+                logger.debug("Search found " + cuis.size() + " concepts");
+                return cuis;
+            }
+            for (SearchResult result: results.result.results) {
+                cuis.add(result.ui);
             }
         }
     }

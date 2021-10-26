@@ -23,7 +23,12 @@ import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status.Family;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class CodeMapperException extends Exception {
+    
+    private static Logger logger = LogManager.getLogger(CodeMapperException.class);
 
 	private Family errorFamily;
 
@@ -43,33 +48,37 @@ public class CodeMapperException extends Exception {
 	}
 
 	public static CodeMapperException user(String msg) {
+	    logger.error("CLIENT: " + msg);
 		return new CodeMapperException(Family.CLIENT_ERROR, msg);
 	}
 
 	public static CodeMapperException user(String msg, Exception e) {
+        logger.error("CLIENT: " + msg + ": " + e);
 		return new CodeMapperException(Family.CLIENT_ERROR, msg, e);
 	}
 
 	public static CodeMapperException server(String msg, Exception e) {
+        logger.error("SERVER: " + msg + ": " + e);
 		return new CodeMapperException(Family.SERVER_ERROR, msg, e);
 	}
 
 	public static CodeMapperException server(String msg) {
+        logger.error("SERVER: " + msg);
 		return new CodeMapperException(Family.SERVER_ERROR, msg);
 	}
 
 	public WebApplicationException asWebApplicationException() {
 		switch (errorFamily) {
 			case CLIENT_ERROR:
-				System.out.println(this);
+			    logger.error(this);
 				getCause().printStackTrace();
-				return new BadRequestException(getMessage());
+				new BadRequestException(getMessage());
 			case SERVER_ERROR:
-				System.out.println(this);
+			    logger.error(this);
 				getCause().printStackTrace();
-				return new InternalServerErrorException();
+				new InternalServerErrorException(getMessage());
 			default:
-				return null;
+				throw new RuntimeException("Error family neither client nor server: " + errorFamily + ": " + this);
 		}
 	}
 

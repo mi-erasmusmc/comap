@@ -10,13 +10,8 @@
     <link type="text/css" rel="stylesheet" href="lib/bootstrap.min.css" />
     <link type="text/css" rel="stylesheet" href="lib/ng-grid.css" />
     <link type="text/css" rel="stylesheet" href="lib/angular-block-ui.min.css" />
-    
-    <!--start wordpress iframe helper-->
-    <script>
-    var onload_resize_delay = "3000";
-    </script>
-    <script src="https://vac4euorgdev.wpengine.com/wp-content/plugins/advanced-iframe/js/ai_external.js"></script>
-    <!--end wordpress iframe helper-->
+
+    <script src="https://vac4eu.org/wp-content/plugins/advanced-iframe/js/ai_external.js"></script>
 
     <script type="text/javascript" src="lib/jquery.min.js"></script>
     <script type="text/javascript" src="lib/angular.js"></script>

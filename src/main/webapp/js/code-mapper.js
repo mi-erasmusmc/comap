@@ -501,6 +501,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         if ($scope.state.mapping !== null) {
             var height = Math.floor(1.1 * ROW_HEIGHT * $scope.state.mapping.concepts.length);
             $(".concepts-grid").css('height', height+"px");
+            maybeAdvanceIframeResize();
         }
     });
 
@@ -665,6 +666,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     $scope.setMessage("Click the speech baloon in the column on the right to view or add comments for a concept.");
                 }
                 $scope.intervalUpdateComments(true);
+                maybeAdvanceIframeResize();
             })
         ['finally'](function() {
             $scope.numberUnsafedChanges = 0;

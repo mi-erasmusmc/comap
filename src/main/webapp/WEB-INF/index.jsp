@@ -12,6 +12,16 @@
     <link type="text/css" rel="stylesheet" href="lib/angular-block-ui.min.css" />
 
     <script src="https://vac4eu.org/wp-content/plugins/advanced-iframe/js/ai_external.js"></script>
+    <script>
+      // Cannot get working the vertical autoresize using wordpress' advance
+      // iframe plugin. Instead, we call the following shortcut to resize the
+      // embedding iframe whenever necessary.
+      function maybeAdvanceIframeResize() {
+          if (typeof aiExecuteWorkaround_advanced_iframe == 'function') {
+              aiExecuteWorkaround_advanced_iframe();
+          }
+      }
+    </script>
 
     <script type="text/javascript" src="lib/jquery.min.js"></script>
     <script type="text/javascript" src="lib/angular.js"></script>

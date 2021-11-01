@@ -24,6 +24,8 @@ var DEFAULT_CODING_SYSTEMS = ["ICD9CM", "ICD10", "ICD10CM", "MTHICD9", "ICPC2EEN
 var SHOW_UMLS_COLUMN = false;
 var FILTER_BY_STOPWORDS = false;
 
+var ROW_HEIGHT = 70;
+
 /**
  * Concepts found by Peregrine are filtered by a stopword list and by the
  * following regex matching three-digit numbers and two-letter words.
@@ -476,7 +478,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], true, false, {}, {});
     $scope.conceptsGridOptions = {
         data: "state.mapping.concepts",
-        rowHeight: 70,
+        rowHeight: ROW_HEIGHT,
         headerRowHeight: 35,
         multiSelect: true,
         keepLastSelected: false,
@@ -494,6 +496,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             return true;
         }
     };
+
+    $scope.$on('ngGridEventData', function () {
+        if ($scope.state.mapping !== null) {
+            var height = Math.floor(1.1 * ROW_HEIGHT * $scope.state.mapping.concepts.length);
+            $(".concepts-grid").css('height', height+"px");
+        }
+    });
 
     $scope.$watch('state.mapping', function(mapping) {
         if (mapping == null) {

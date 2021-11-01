@@ -58,6 +58,15 @@ h3 {
 .changes-grid {
 	height: 400px;
 }
+.concepts-grid {
+    overflow-y: hidden;
+}
+.concept-name {
+    overflow: auto;
+    hyphens: auto;
+    height: 70px;
+    scrollbar-width: thin; /* Chrome 98 / Firefox 95 */
+}
 textarea.case-definition {
 	height: 600px;
 	width: 72em;

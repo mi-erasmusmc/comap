@@ -1,7 +1,7 @@
 <div class="overview">
   <h3>My password</h3>
   <button ng-click="changePassword()" class="btn btn-default btn-sm">Change password</button>
-  <div ng-repeat="project in projects | orderBy">
+  <div ng-repeat="project in projects | orderBy:'toString()'">
     <hr/>
     <h3>Project <em>{{project}}</em> ({{usersInProjects[project][user.username].join(", ")}})</h3>
     <p>
@@ -13,7 +13,7 @@
     <p>
       <h4>Case definitions</h4>
       <ul>
-        <li ng-repeat="caseDefinition in caseDefinitions[project]">
+        <li ng-repeat="caseDefinition in caseDefinitions[project] | orderBy:'toString()' ">
           <a href="#/case-definition/{{project|encodeUriComponent}}/{{caseDefinition|encodeUriComponent}}" ng-bind="caseDefinition"></a>
         </li>
         <li ng-if="canCreateCaseDefinition(project)">

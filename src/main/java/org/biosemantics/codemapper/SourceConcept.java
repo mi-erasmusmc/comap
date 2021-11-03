@@ -18,10 +18,13 @@
  ******************************************************************************/
 package org.biosemantics.codemapper;
 
+import java.util.Comparator;
+import java.util.Objects;
+
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class SourceConcept {
+public class SourceConcept implements Comparable<SourceConcept> {
 
     private String cui = null;
     private String codingSystem = null;
@@ -29,6 +32,19 @@ public class SourceConcept {
     private String preferredTerm = null;
 
     public SourceConcept() {
+    }
+
+    @Override
+    public int compareTo(SourceConcept that) {
+        Comparator<String> stringComparator = ((String arg0, String arg1) -> arg0.compareTo(arg1));
+        return 
+            ((Comparator<SourceConcept>)((SourceConcept arg0, SourceConcept arg1) ->
+                Objects.compare(arg0.cui, arg1.cui, stringComparator)))
+            .thenComparing((SourceConcept arg0, SourceConcept arg1) ->
+                Objects.compare(arg0.codingSystem, arg1.codingSystem, stringComparator))
+            .thenComparing((SourceConcept arg0, SourceConcept arg1) ->
+                Objects.compare(arg0.id, arg1.id, stringComparator))
+            .compare(this, that);
     }
 
     public SourceConcept(String cui, String codingSystem, String id, String preferredTerm) {

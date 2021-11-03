@@ -3,11 +3,12 @@ package org.biosemantics.codemapper.descendants;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -17,7 +18,6 @@ import java.util.concurrent.Future;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -50,6 +50,7 @@ public class SnowstormDescender implements SpecificDescender {
         return codingSystem;
     }
 
+    @Override
     public Map<String, Collection<SourceConcept>> getDescendants(Collection<String> conceptIds)
             throws CodeMapperException {
         return getDescendantsConcurrent(new HashSet<>(conceptIds), 8);
@@ -61,13 +62,13 @@ public class SnowstormDescender implements SpecificDescender {
     public Map<String, Collection<SourceConcept>> getDescendantsSequential(
             Collection<String> conceptIds) throws CodeMapperException {
         Client client = ClientBuilder.newClient();
-        Map<String, Collection<SourceConcept>> descendants = new HashMap<>();
+        Map<String, Collection<SourceConcept>> descendants = new TreeMap<>();
         for (String conceptId : conceptIds) {
             for (String resolvedConceptId : resolveInactiveConcept(client, conceptId, 10)) {
                 if (!descendants.containsKey(conceptId)) {
                     descendants.put(conceptId, new LinkedList<>());
                 }
-                descendants.get(conceptId).addAll(getDescendants(resolvedConceptId));
+                descendants.get(conceptId).addAll(getDescendants(client, resolvedConceptId));
             }
         }
         return descendants;
@@ -87,7 +88,7 @@ public class SnowstormDescender implements SpecificDescender {
                     final Client client = ClientBuilder.newClient();
                     Collection<SourceConcept> descendants = new LinkedList<>();
                     for (String conceptId : resolveInactiveConcept(client, conceptId0, 5)) {
-                        descendants.addAll(getDescendants(conceptId));
+                        descendants.addAll(getDescendants(client, conceptId));
                     }
                     return Collections.singletonMap(conceptId0, descendants);
                 }
@@ -96,7 +97,7 @@ public class SnowstormDescender implements SpecificDescender {
         executor.shutdown();
 
         try {
-            Map<String, Collection<SourceConcept>> result = new HashMap<>();
+            Map<String, Collection<SourceConcept>> result = new TreeMap<>();
             for (Future<Map<String, Collection<SourceConcept>>> future : futures) {
                 result.putAll(future.get());
             }
@@ -111,6 +112,79 @@ public class SnowstormDescender implements SpecificDescender {
             }
         }
     }
+    
+//    // More concurrency doesn't really help because the bottleneck are calls to Snowstorm with many pages
+//    public Map<String, Collection<SourceConcept>> getDescendantsConcurrent2(
+//            Collection<String> conceptIds, int threads) throws CodeMapperException {
+//        try {
+//            Map<String, Collection<String>> relateds; 
+//            {
+//                ExecutorService executor = Executors.newFixedThreadPool(threads);
+//                Map<String, Future<Collection<String>>> futures = new HashMap<>();
+//                
+//                for (final String conceptId0 : conceptIds) {
+//                    futures.put(conceptId0, executor.submit(() -> {
+//                        final Client client = ClientBuilder.newClient();
+//                        return resolveInactiveConcept(client, conceptId0, 5);
+//                    }));
+//                }
+//                executor.shutdown();
+//
+//                relateds = new HashMap<>();
+//                for (Entry<String, Future<Collection<String>>> entry : futures.entrySet()) {
+//                    relateds.put(entry.getKey(), entry.getValue().get());
+//                }
+//            }
+//            
+//            Map<String, Collection<SourceConcept>> descendants;
+//            {
+//                ExecutorService executor = Executors.newFixedThreadPool(threads);
+//                Map<String, Future<Collection<SourceConcept>>> futures = new HashMap<>();
+//                
+//                for (Collection<String> conceptIds1 : relateds.values()) {
+//                    for (String conceptId : conceptIds1) {
+//                        if (futures.containsKey(conceptId)) {
+//                            logger.debug("Contains " + conceptId);
+//                        } else {
+//                            logger.debug("Contains not yet " + conceptId);
+//                        futures.put(conceptId, // conceptId1 ->
+//                            executor.submit(() -> {
+//                                Client client = ClientBuilder.newClient();
+//                                return getDescendants(client, conceptId);
+//                            }));   
+//                        }
+//                    }
+//                }
+//                executor.shutdown();
+//                logger.debug("Futures count: " + futures.size());
+//
+//                descendants = new HashMap<>();
+//                for (Entry<String, Future<Collection<SourceConcept>>> entry: futures.entrySet()) {
+//                    descendants.put(entry.getKey(), entry.getValue().get());
+//                }
+//                logger.debug("Descendants count: " + descendants.size());
+//            }
+//            
+//            Map<String, Collection<SourceConcept>> result = new TreeMap<>();
+//            for (final String conceptId0 : relateds.keySet()) {
+//                for (String conceptId : relateds.get(conceptId0)) {
+//                    Collection<SourceConcept> concepts = descendants.get(conceptId);
+//                    Collection<SourceConcept> sofar = result.putIfAbsent(conceptId0, concepts);
+//                    if (sofar != null)
+//                        sofar.addAll(concepts);
+//                }
+//            }
+//            return result;
+//        } catch (InterruptedException e) {
+//            throw CodeMapperException.server("execution was interupted", e);
+//        } catch (ExecutionException e) {
+//            if (e.getCause() instanceof CodeMapperException) {
+//                throw (CodeMapperException) e.getCause();
+//            } else {
+//                throw CodeMapperException.server("exception getting descendents", e);
+//            }
+//        }
+//    }
 
     /**
      * Associations that are used to resolve inactive concepts.
@@ -159,13 +233,14 @@ public class SnowstormDescender implements SpecificDescender {
         }
     }
 
-    private Collection<SourceConcept> getDescendants(String conceptId) throws CodeMapperException {
+    private Collection<SourceConcept> getDescendants(Client client, String conceptId) throws CodeMapperException {
+        logger.debug("getDescendants " + conceptId);
         String uri = String.format("%s/%s/concepts/%s/descendants", baseUri, branch, conceptId);
-        WebTarget target = ClientBuilder.newClient().target(uri);
-        Collection<SourceConcept> descendants = new HashSet<>();
+        Collection<SourceConcept> result = new TreeSet<>();
         int total = 0, offset = 0;
         do {
-            final Response response = target.queryParam("offset", offset)
+            final Response response = client.target(uri)
+                    .queryParam("offset", offset).queryParam("limit", 150)
                     .request(MediaType.APPLICATION_JSON).get();
             if (response.getStatusInfo().getFamily() == Family.CLIENT_ERROR) {
                 SnowstormError err = response.readEntity(SnowstormError.class);
@@ -177,18 +252,18 @@ public class SnowstormDescender implements SpecificDescender {
                 handleError("get descendants", response);
             }
             DescendantsResult res = response.readEntity(DescendantsResult.class);
-            logger.info("descendants found for " + conceptId);
             for (DescendentsConcept descConcept : res.items) {
                 SourceConcept sourceConcept = new SourceConcept();
                 sourceConcept.setCodingSystem(codingSystem);
                 sourceConcept.setId(descConcept.conceptId);
                 sourceConcept.setPreferredTerm(descConcept.fsn.term);
-                descendants.add(sourceConcept);
+                result.add(sourceConcept);
             }
             total = res.total;
             offset = res.offset + res.items.length;
-        } while (descendants.size() < total);
-        return descendants;
+        } while (result.size() < total);
+        logger.info("descendants found for " + conceptId);
+        return result;
     }
 
     private void handleError(String descr, Response response) throws CodeMapperException {

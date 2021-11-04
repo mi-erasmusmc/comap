@@ -3,6 +3,7 @@ package org.biosemantics.codemapper.descendants;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
@@ -10,10 +11,13 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
@@ -53,7 +57,7 @@ public class SnowstormDescender implements SpecificDescender {
     @Override
     public Map<String, Collection<SourceConcept>> getDescendants(Collection<String> conceptIds)
             throws CodeMapperException {
-        return getDescendantsConcurrent(new HashSet<>(conceptIds), 8);
+        return getDescendantsConcurrentCached(new HashSet<>(conceptIds), 8);
     }
 
     /**
@@ -113,6 +117,55 @@ public class SnowstormDescender implements SpecificDescender {
         }
     }
     
+    private ConcurrentMap<String, Collection<SourceConcept>> cache = new ConcurrentHashMap<>();
+
+    /**
+     * Get the descendants of some codes, concurrently and cached.
+     */
+    public Map<String, Collection<SourceConcept>> getDescendantsConcurrentCached(
+            Collection<String> conceptIds, int threads) throws CodeMapperException {
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        AtomicReference<CodeMapperException> exception = new AtomicReference<CodeMapperException>();
+        Map<String, Future<Collection<SourceConcept>>> futures = new HashMap<>();
+        for (final String conceptId0 : conceptIds) {
+            futures.put(conceptId0, executor.submit(() -> {
+                return cache.computeIfAbsent(conceptId0, conceptId00 -> {
+                    final Client client = ClientBuilder.newClient();
+                    Collection<SourceConcept> descendants = new LinkedList<>();
+                    try {
+                        for (String conceptId : resolveInactiveConcept(client, conceptId00, 5)) {
+                            descendants.addAll(getDescendants(client, conceptId));
+                        }
+                        return descendants;
+                    } catch (CodeMapperException e) {
+                        exception.updateAndGet(e1 -> e1 != null ? e1 : e);
+                        return null;
+                    }
+                });
+            }));
+        }
+        executor.shutdown();
+
+        try {
+            if (exception.get() != null) {
+                throw exception.get();
+            }
+            Map<String, Collection<SourceConcept>> result = new TreeMap<>();
+            for (Map.Entry<String, Future<Collection<SourceConcept>>> entry : futures.entrySet()) {
+                result.put(entry.getKey(), entry.getValue().get());
+            }
+            return result;
+        } catch (InterruptedException e) {
+            throw CodeMapperException.server("execution was interupted", e);
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof CodeMapperException) {
+                throw (CodeMapperException) e.getCause();
+            } else {
+                throw CodeMapperException.server("exception getting descendents", e);
+            }
+        }
+    }
+
 //    // More concurrency doesn't really help because the bottleneck are calls to Snowstorm with many pages
 //    public Map<String, Collection<SourceConcept>> getDescendantsConcurrent2(
 //            Collection<String> conceptIds, int threads) throws CodeMapperException {

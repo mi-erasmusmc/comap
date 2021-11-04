@@ -265,24 +265,25 @@ public class SnowstormDescender implements SpecificDescender {
         if (concept.active) {
             logger.trace("keep active concept " + concept.conceptId);
             return Collections.singletonList(concept.conceptId);
+        } else if (depth == 0) {
+            logger.info("Didn't find active concept for " + conceptId);
+            return Collections.emptyList();
+        } else if (concept.associationTargets == null) {
+            logger.info("No association targets");
+            return Collections.emptyList();
         } else {
-            if (depth == 0) {
-                logger.info("Didn't find active concept for " + conceptId);
-                return Collections.emptyList();
-            } else {
-                Collection<String> res = new HashSet<>();
-                for (String key : concept.associationTargets.keySet()) {
-                    if (ACTIVE_ASSOCIATIONS.contains(key)) {
-                        for (String associated : concept.associationTargets.get(key)) {
-                            // Recurse; inactive concept may be associate to other inactive
-                            // concepts
-                            res.addAll(resolveInactiveConcept(client, associated, depth - 1));
-                        }
+            Collection<String> res = new HashSet<>();
+            for (String key : concept.associationTargets.keySet()) {
+                if (ACTIVE_ASSOCIATIONS.contains(key)) {
+                    for (String associated : concept.associationTargets.get(key)) {
+                        // Recurse; inactive concept may be associate to other inactive
+                        // concepts
+                        res.addAll(resolveInactiveConcept(client, associated, depth - 1));
                     }
                 }
-                logger.trace("associate inactive concept " + concept.conceptId + " to " + res);
-                return res;
             }
+            logger.trace("associate inactive concept " + concept.conceptId + " to " + res);
+            return res;
         }
     }
 

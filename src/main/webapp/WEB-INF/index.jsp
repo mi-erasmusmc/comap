@@ -34,9 +34,12 @@
     <script type="text/javascript" src="lib/angular-block-ui.min.js"></script>
     <script type="text/javascript">
     var globals = {
+        <%-- from properties: --%>
     	codemapperUmlsVersion: "${CODEMAPPER_UMLS_VERSION}",
     	codemapperUrl: "${CODEMAPPER_URL}",
-    	codemapperContactEmail: "${CODEMAPPER_CONTACT_EMAIL}"
+    	codemapperContactEmail: "${CODEMAPPER_CONTACT_EMAIL}",
+        <%-- from pom.xml: --%>
+        projectVersion: "${PROJECT_VERSION}"
     };
     </script>
 

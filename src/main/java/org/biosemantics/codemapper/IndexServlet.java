@@ -43,6 +43,7 @@ public class IndexServlet extends HttpServlet {
         context.setAttribute("CODEMAPPER_UMLS_VERSION", CodeMapperApplication.properties.getProperty("codemapper-umls-version"));
         context.setAttribute("CODEMAPPER_CONTACT_EMAIL", CodeMapperApplication.properties.getProperty("codemapper-contact-email"));
         context.setAttribute("CODEMAPPER_URL", CodeMapperApplication.properties.getProperty("codemapper-url"));
+        context.setAttribute("PROJECT_VERSION", CodeMapperApplication.properties.getProperty("project.version"));
         context
             .getRequestDispatcher("/WEB-INF/index.jsp")
             .forward(req, res);

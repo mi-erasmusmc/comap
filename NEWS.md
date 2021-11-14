@@ -1,6 +1,19 @@
 
 [//]: # (pandoc -s --metadata title="CodeMapper NEWS" --css style.css -i NEWS.md -o src/main/webapp/NEWS.html)
 
+May 1, 2022
+--------------
+
+Features
+
+- include descendant codes when dowloading a mapping to a file (retrieved from the Snowstorm API for SNOMED-CT, and from the UMLS otherwise)
+- download mappings as text file (tab-separated values/TSV)
+
+Bug fixes
+
+- descriptive message instead of error when creating the mapping before
+  searching concepts
+
 January 20, 2022
 ----------------
 

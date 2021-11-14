@@ -82,20 +82,24 @@
         <h2 class="subtitle" ng-if="subtitle" ng-bind="subtitle"></h2>
       </div>
       <div class="col-md-6 text-right">
-          <div ng-controller="LoggedInCtrl" ng-if="user"></div>
-          <div>
-              <a title="See all case definitions" class="text-right" href="#/overview">
-                  <img class='comap-logo' src="images/logo.png" height="70px"></img>
+        <div ng-controller="LoggedInCtrl" ng-if="user"></div>
+        <div>
+          <div style="inline-block;">
+              <div style="display: inline-block; vertical-align: middle" >
+              <a title="See all case definitions" href="#/overview">
+                <img class='comap-logo' src="images/logo.png" height="70px"></img>
               </a>
-          </div>
-          <div class="container">
-            <div class="text-center">
-              <img class='erasmus-logo' src="images/erasmus_mc.jpg" height="40px" />
-              <img class='advance-logo' src="images/logo-advance.png" height="23px" />
+            </div>
+            by
+            <div style="display: inline-block; ">
+              <a href="https://vac4eu.org/" target="_blank">
+                <img class='advance-logo' src="images/vac4eu.png" height="35px" />
+              </a>
             </div>
           </div>
+        </div>
       </div>
     </div>
-    <div ng-view></div>
+    <div ng-view></div> <!-- keep this last -->
   </body>
 </html>

@@ -52,6 +52,45 @@ function handleError(err, status) {
     }
 }
 
+function getScrollBarWidth () {
+  var inner = document.createElement('p');
+  inner.style.width = "100%";
+  inner.style.height = "200px";
+
+  var outer = document.createElement('div');
+  outer.style.position = "absolute";
+  outer.style.top = "0px";
+  outer.style.left = "0px";
+  outer.style.visibility = "hidden";
+  outer.style.width = "200px";
+  outer.style.height = "150px";
+  outer.style.overflow = "hidden";
+  outer.appendChild (inner);
+
+  document.body.appendChild (outer);
+  var w1 = inner.offsetWidth;
+  outer.style.overflow = 'scroll';
+  var w2 = inner.offsetWidth;
+  if (w1 == w2) w2 = outer.clientWidth;
+
+  document.body.removeChild (outer);
+
+  return w1 - w2;
+};
+
+function resizeGrid() {
+    var winHeight = $(window).height();
+    var scrollbarWidth = getScrollBarWidth();
+    [".grid", ".ngViewport"]
+    .forEach(function(sel) {
+        var elt = $(sel);
+        var eltHeight = winHeight - elt.position().top - scrollbarWidth - 3;
+        elt.height(eltHeight);
+    });
+}
+
+$(window).on("resize", resizeGrid);
+
 // Patch: adapt concepts for the code mapper application
 function patchConcept(concept0, codingSystems, semanticTypesByType) {
     var concept = angular.copy(concept0);
@@ -667,6 +706,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 }
                 $scope.intervalUpdateComments(true);
                 maybeAdvanceIframeResize();
+                setTimeout(resizeGrid, 0);
             })
         ['finally'](function() {
             $scope.numberUnsafedChanges = 0;

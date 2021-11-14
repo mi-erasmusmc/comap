@@ -19,6 +19,9 @@ html, body {
 	padding: 0;
 	margin: 0;
 }
+html {
+    overflow-x: hidden;
+}
 p body {
     color: #5E7682;
     font-size: 13px;
@@ -60,6 +63,9 @@ h3 {
 }
 .concepts-grid {
     overflow-y: hidden;
+}
+.concepts-grid .ngViewport {
+    overflow-x: hidden;
 }
 .concept-name {
     overflow: auto;

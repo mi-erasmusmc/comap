@@ -88,14 +88,14 @@
                   <img class='comap-logo' src="images/logo.png" height="70px"></img>
               </a>
           </div>
+          <div class="container">
+            <div class="text-center">
+              <img class='erasmus-logo' src="images/erasmus_mc.jpg" height="40px" />
+              <img class='advance-logo' src="images/logo-advance.png" height="23px" />
+            </div>
+          </div>
       </div>
     </div>
     <div ng-view></div>
-    <div class="container">
-        <div class="text-center">
-            <img class='erasmus-logo' src="images/erasmus_mc.jpg" height="40px" />
-            <img class='advance-logo' src="images/logo-advance.png" height="23px" />
-        </div>
-    </div>
   </body>
 </html>

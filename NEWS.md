@@ -1,6 +1,20 @@
 
 [//]: # (pandoc -s --metadata title="CodeMapper NEWS" --css style.css -i NEWS.md -o src/main/webapp/NEWS.html)
 
+Testing
+-------
+
+Features
+
+- all descendant codes of the codes in the mapping are included in the download
+  files
+- download mappings as text file (tab-separated values/TSV)
+
+Bug fixes
+
+- descriptive message instead of error when creating the mapping before
+  searching concepts
+
 January 20, 2022
 ----------------
 

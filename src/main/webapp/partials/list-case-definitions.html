@@ -1,11 +1,11 @@
 <div class="overview">
   <hr/>
-  <button ng-click="changePassword()" class="btn btn-default btn-sm">Change password</button>
   <a href="NEWS.html" target="_blank">
     <button title="Show latest developments of CodeMapper" class="btn btn-default btn-sm">
       CodeMapper NEWS (<span ng-bind="globals.projectVersion"></span>)
     </button>
   </a>
+  <button ng-click="changePassword()" class="btn btn-default btn-sm">Change password</button>
   <div ng-repeat="project in projects | orderBy:'toString()'">
     <h3>Project <em>{{project}}</em> ({{usersInProjects[project][user.username].join(", ")}})</h3>
     <p>

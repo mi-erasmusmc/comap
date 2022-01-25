@@ -850,8 +850,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 
     $scope.createInitalTranslations = function(caseDefinition) {
         $log.info("Create initial coding");
-        if ($scope.state.mapping != null || $scope.state.indexing == null) {
+        if ($scope.state.mapping != null) {
             error("CodeMapperCtrl.searchConcepts called with state or without indexing", $scope.state);
+            return;
+        }
+        if ($scope.state.indexing == null) {
+            alert("Please search concepts before creating the mapping");
             return;
         }
         $scope.state.mapping = {

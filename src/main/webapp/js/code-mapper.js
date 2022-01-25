@@ -537,7 +537,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     };
 
     $scope.$on('ngGridEventData', function () {
-        if ($scope.state.mapping !== null) {
+        if ($scope.state.mapping !== null && $scope.state.mapping.concepts !== null) {
             var height = Math.floor(1.1 * ROW_HEIGHT * $scope.state.mapping.concepts.length);
             $(".concepts-grid").css('height', height+"px");
             maybeAdvanceIframeResize();

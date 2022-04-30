@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -128,15 +129,15 @@ public class SnowstormDescender implements SpecificDescender {
         for (final String conceptId0 : conceptIds) {
             futures.put(conceptId0, executor.submit(() -> {
                 return cache.computeIfAbsent(conceptId0, conceptId00 -> {
-                    final Client client = ClientBuilder.newClient();
-                    Collection<SourceConcept> descendants = new LinkedList<>();
                     try {
-                        for (String conceptId : resolveInactiveConcept(client, conceptId00, 5)) {
+                        Collection<SourceConcept> descendants = new LinkedList<>();
+                        final Client client = ClientBuilder.newClient();
+						for (String conceptId : resolveInactiveConcept(client, conceptId00, 5)) {
                             descendants.addAll(getDescendants(client, conceptId));
                         }
                         return descendants;
                     } catch (CodeMapperException e) {
-                        exception.updateAndGet(e1 -> e1 != null ? e1 : e);
+                        exception.updateAndGet(e1 -> e1 != null ? e1 : e); // keep first
                         return null;
                     }
                 });
@@ -241,14 +242,65 @@ public class SnowstormDescender implements SpecificDescender {
      * Associations that are used to resolve inactive concepts.
      */
     private static Set<String> ACTIVE_ASSOCIATIONS = new HashSet<>(
-            Arrays.asList("POSSIBLY_EQUIVALENT_TO", "SAME_AS", "REPLACED_BY'"));
-
+            Arrays.asList("POSSIBLY_EQUIVALENT_TO", "SAME_AS", "REPLACED_BY"));
+    
+    class ConceptDepth {
+    	String conceptId;
+    	int depth;
+    	ConceptDepth(String conceptId, int depth) {
+    		this.conceptId = conceptId;
+    		this.depth = depth;
+    	}
+    }
+    
     /**
      * Resolve inactive concepts to active concepts using the association targets of
-     * the concept. Since association targets may be in turn be inactive, the
-     * resolution is recursive, and terminates when depth = 0.
+     * the concept. Association targets may be in turn be inactive, and are further
+     * resolved until the given depth..
      */
-    private Collection<String> resolveInactiveConcept(Client client, String conceptId, int depth)
+     private Collection<String> resolveInactiveConcept(Client client, String conceptId, int maxDepth) throws CodeMapperException {
+        String uri = String.format("%s/browser/%s/concepts/%s", baseUri, branch, conceptId);
+        Collection<String> res = new HashSet<>();
+        Queue<ConceptDepth> todo = new LinkedList<>();
+        todo.add(new ConceptDepth(conceptId, 0));
+        while (true) {
+        	ConceptDepth cd = todo.poll();
+        	if (cd == null)
+        		break;
+        	res.add(cd.conceptId);
+            if (cd.depth == maxDepth) {
+                continue;
+            } 
+            Response response = client.target(uri).request(MediaType.APPLICATION_JSON).get();
+            if (response.getStatus() == 404) {
+                logger.info("concept not found " + cd.conceptId);
+                continue;
+            }
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throwError("get concept", response);
+            }
+            BrowserConcept concept = response.readEntity(BrowserConcept.class);
+            if (concept.active) {
+                logger.trace("keep active concept " + concept.conceptId);
+                continue;
+            }
+            if (concept.associationTargets == null) {
+                logger.info("No association targets");
+                continue;
+            }
+            for (String key : concept.associationTargets.keySet()) {
+            	if (ACTIVE_ASSOCIATIONS.contains(key)) {
+            		for (String associated : concept.associationTargets.get(key)) {
+            			todo.add(new ConceptDepth(associated, cd.depth + 1));
+            		}
+            	}
+            }
+        }
+        return res;
+    }
+
+    @SuppressWarnings("unused")
+	private Collection<String> resolveInactiveConceptRec(Client client, String conceptId, int depth)
             throws CodeMapperException {
         String uri = String.format("%s/browser/%s/concepts/%s", baseUri, branch, conceptId);
         Response response = client.target(uri).request(MediaType.APPLICATION_JSON).get();
@@ -263,26 +315,29 @@ public class SnowstormDescender implements SpecificDescender {
         if (concept.active) {
             logger.trace("keep active concept " + concept.conceptId);
             return Collections.singletonList(concept.conceptId);
-        } else if (depth == 0) {
+        } 
+        if (depth == 0) {
             logger.info("Didn't find active concept for " + conceptId);
             return Collections.emptyList();
-        } else if (concept.associationTargets == null) {
+        } 
+        if (concept.associationTargets == null) {
             logger.info("No association targets");
             return Collections.emptyList();
-        } else {
-            Collection<String> res = new HashSet<>();
-            for (String key : concept.associationTargets.keySet()) {
-                if (ACTIVE_ASSOCIATIONS.contains(key)) {
-                    for (String associated : concept.associationTargets.get(key)) {
-                        // Recurse; inactive concept may be associate to other inactive
-                        // concepts
-                        res.addAll(resolveInactiveConcept(client, associated, depth - 1));
-                    }
-                }
-            }
-            logger.trace("associate inactive concept " + concept.conceptId + " to " + res);
-            return res;
         }
+        Collection<String> res = new HashSet<>();
+        res.add(conceptId);
+        for (String key : concept.associationTargets.keySet()) {
+        	if (ACTIVE_ASSOCIATIONS.contains(key)) {
+        		for (String associated : concept.associationTargets.get(key)) {
+        			// Recurse; inactive concept may be associate to other inactive
+        			// concepts
+        			// TODO replace the recursion with a loop and a todo list
+        			res.addAll(resolveInactiveConcept(client, associated, depth - 1));
+        		}
+        	}
+        }
+        logger.trace("associate inactive concept " + concept.conceptId + " to " + res);
+        return res;
     }
 
     private Collection<SourceConcept> getDescendants(Client client, String conceptId) throws CodeMapperException {

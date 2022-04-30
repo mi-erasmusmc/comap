@@ -69,10 +69,8 @@ public class SnowstormDescender implements SpecificDescender {
         Map<String, Collection<SourceConcept>> descendants = new TreeMap<>();
         for (String conceptId : conceptIds) {
             for (String resolvedConceptId : resolveInactiveConcept(client, conceptId, 10)) {
-                if (!descendants.containsKey(conceptId)) {
-                    descendants.put(conceptId, new LinkedList<>());
-                }
-                descendants.get(conceptId).addAll(getDescendants(client, resolvedConceptId));
+                Collection<SourceConcept> concepts = descendants.computeIfAbsent(conceptId, id -> new LinkedList<>());
+                concepts.addAll(getDescendants(client, resolvedConceptId));
             }
         }
         return descendants;
@@ -259,7 +257,7 @@ public class SnowstormDescender implements SpecificDescender {
             return Collections.emptyList(); // Continue resolving other concepts
         }
         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-            handleError("get concept", response);
+            throwError("get concept", response);
         }
         BrowserConcept concept = response.readEntity(BrowserConcept.class);
         if (concept.active) {
@@ -303,7 +301,7 @@ public class SnowstormDescender implements SpecificDescender {
                 break; // Don't continue paging
             }
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                handleError("get descendants", response);
+                throwError("get descendants", response);
             }
             DescendantsResult res = response.readEntity(DescendantsResult.class);
             for (DescendentsConcept descConcept : res.items) {
@@ -320,7 +318,7 @@ public class SnowstormDescender implements SpecificDescender {
         return result;
     }
 
-    private void handleError(String descr, Response response) throws CodeMapperException {
+    private void throwError(String descr, Response response) throws CodeMapperException {
         SnowstormError err = null;
         try {
             err = response.readEntity(SnowstormError.class);

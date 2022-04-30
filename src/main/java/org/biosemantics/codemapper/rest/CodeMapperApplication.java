@@ -169,10 +169,8 @@ public class CodeMapperApplication extends ResourceConfig {
         if (snowstormBaseUri == null || snowstormBranch == null) {
         	logger.warn("Snowstorm not configured; disabled");
         } else {
-            descendersApi.addSpecificDescender(
-                    new SnowstormDescender("SNOMEDCT_US", snowstormBaseUri, snowstormBranch));
-            descendersApi.addSpecificDescender(
-                    new SnowstormDescender("SCTSPA", snowstormBaseUri, snowstormBranch));
+            descendersApi.add(new SnowstormDescender("SNOMEDCT_US", snowstormBaseUri, snowstormBranch));
+            descendersApi.add(new SnowstormDescender("SCTSPA", snowstormBaseUri, snowstormBranch));
         }
 	}
 

@@ -40,11 +40,11 @@ public class DescendersApi {
 	GeneralDescender generalDescender;
 
 	public DescendersApi(GeneralDescender generalDescender) {
-		this.specificDescenders = new HashMap<>();
 		this.generalDescender = generalDescender;
+		this.specificDescenders = new HashMap<>();
 	}
 	
-	public void addSpecificDescender(SpecificDescender specificDescender) {
+	public void add(SpecificDescender specificDescender) {
 		this.specificDescenders.put(specificDescender.getCodingSystem(), specificDescender);
 	}
 

@@ -50,7 +50,7 @@ public class UtsApi {
     private static String REST_URL = "https://uts-ws.nlm.nih.gov/rest";
     private static String SERVICE = "http://umlsks.nlm.nih.gov";
     
-    private static Pattern TGT_PATTERN = Pattern.compile(".*/api-key/(?<key>[^\"]*).*");
+    private static Pattern TGT_PATTERN = Pattern.compile(".*/api-key/(?<key>[^\"]*).*", Pattern.DOTALL);
     
     private String apiKey;
     private String tgt;

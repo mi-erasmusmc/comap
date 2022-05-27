@@ -48,21 +48,6 @@ admin_site = MyAdminSite()
 admin_site.register(auth_models.User, auth_admin.UserAdmin)
 
 
-class MappingInline(admin.TabularInline):
-
-    model = Mapping
-    extra = 0
-
-    def get_readonly_fields(self, request, obj=None):
-        if obj:
-            return ["name"]
-        else:
-            return []
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-
 class MemberInline(admin.TabularInline):
 
     model = Member
@@ -77,29 +62,81 @@ class MemberAdmin(admin.ModelAdmin):
         else:
             return []
 
+    def has_add_permission(self, request):
+        return True
 
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_module_permission(self, request):
+        return True
+
+
+@admin.register(Mapping, site=admin_site)
 class MappingAdmin(admin.ModelAdmin):
 
-    def has_add_permission(self, request, obj=None):
-        return False
+    fields = ["project", "name"]
+    search_fields = ['name']
+    save_as = True
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return ["name", "state"]
+            return ["state"]
         else:
             return []
 
+    def has_add_permission(self, request):
+        return True
 
-@admin.register(Project, site=admin_site)
-class ProjectAdmin(admin.ModelAdmin):
+    def has_change_permission(self, request, obj=None):
+        return True
 
-    inlines = (MemberInline, MappingInline,)
+    def has_module_permission(self, request):
+        return True
+
+
+class MappingInline(admin.TabularInline):
+
+    model = Mapping
+    extra = 0
+    show_change_link = True
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
             return ["name"]
         else:
             return []
+
+    def has_add_permission(self, request):
+        return True
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_module_permission(self, request):
+        return True
+
+
+@admin.register(Project, site=admin_site)
+class ProjectAdmin(admin.ModelAdmin):
+
+    inlines = (MemberInline, MappingInline,)
+    search_fields = ['name']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return ["name"]
+        else:
+            return []
+
+    def has_add_permission(self, request):
+        return True
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_module_permission(self, request):
+        return True
 
 class UserForm(forms.ModelForm):
 
@@ -115,6 +152,7 @@ class UserAdmin(admin.ModelAdmin):
     form = UserForm
     inlines = (MemberInline,)
     change_form_template = 'admin/change_user.html'
+    search_fields = ['username', 'email']
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
@@ -128,3 +166,11 @@ class UserAdmin(admin.ModelAdmin):
         else:
             return []
 
+    def has_add_permission(self, request):
+        return True
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_module_permission(self, request):
+        return True

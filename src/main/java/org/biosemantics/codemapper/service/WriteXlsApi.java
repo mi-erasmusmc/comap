@@ -206,11 +206,12 @@ public class WriteXlsApi implements WriteApis.Api {
 	private void setInfoSheet(HSSFSheet sheet, String name, String url) {
 		int rowIx = 0;
 
-		Hyperlink hyperlink = sheet.getWorkbook().getCreationHelper().createHyperlink(HyperlinkType.URL);
-		hyperlink.setAddress(url);
-
 		setRow(sheet.createRow(rowIx++), "Case definition:", name);
-		setRow(sheet.createRow(rowIx++), "URL:", url).get(1).setHyperlink(hyperlink);
+                if (url != null) {
+                    Hyperlink hyperlink = sheet.getWorkbook().getCreationHelper().createHyperlink(HyperlinkType.URL);
+                    hyperlink.setAddress(url);
+                    setRow(sheet.createRow(rowIx++), "URL:", url).get(1).setHyperlink(hyperlink);
+                }
 		rowIx++;
 		setRow(sheet.createRow(rowIx++), "Case definition created with ADVANCE Code Mapper");
 		setRow(sheet.createRow(rowIx++),

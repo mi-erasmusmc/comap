@@ -89,7 +89,7 @@ textarea.case-definition {
 body {
 	padding: 1em;
 }
-label {
+label.ctrl-heading {
   display: block;
 }
 .strong {
@@ -266,6 +266,7 @@ span.tag {
 }
 .dropdown-menu {
 	text-align: left;
+	min-width: 200px;
 }
 .advance-code-mapper-title {
 	margin: 0;

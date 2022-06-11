@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -55,15 +56,17 @@ public class DownloadResource {
 
     private static Logger logger = LogManager.getLogger(DownloadResource.class);
     
-    public Response getCaseDefinition(String project, String caseDefinition, String url, final WriteApis.Api writeApi) {
+    public Response getCaseDefinition(String project, String caseDefinition, String url, final WriteApis.Api writeApi, final boolean includeDescendants) {
         try {
             PersistencyApi persistencyApi = CodeMapperApplication.getPersistencyApi();
             final String jsonState = persistencyApi.getCaseDefinition(project, caseDefinition);
             if (jsonState == null)
                 throw new WebApplicationException(404);
             final ClientState.State state = new ClientState().ofJson(jsonState);
-            final Map<String, Map<String, Collection<SourceConcept>>> descendants =
-                    CodeMapperApplication.getDescendantsApi().getDescendants(state.codingSystems, state.mapping.concepts);
+            final Map<String, Map<String, Collection<SourceConcept>>> descendants = new HashMap<>();
+            if (includeDescendants) {
+                CodeMapperApplication.getDescendantsApi().getDescendants(state.codingSystems, state.mapping.concepts);
+            };
             final List<Comment> comments = persistencyApi.getComments(project, caseDefinition);
             String filename = String.format("%s - %s.%s", project, caseDefinition, writeApi.getFileExtension());
             String contentDisposition = String.format("attachment; filename=\"%s\"", filename);
@@ -85,19 +88,19 @@ public class DownloadResource {
 	@GET
 	@Path("case-definition-xls")
 	@Produces({WriteXlsApi.MIME_TYPE})
-	public Response getCaseDefinitonXls(@Context HttpServletRequest request, @Context User user, @QueryParam("project") final String project, @QueryParam("caseDefinition") final String caseDefinition, @QueryParam("url") final String url) {
+	public Response getCaseDefinitonXls(@Context HttpServletRequest request, @Context User user, @QueryParam("project") final String project, @QueryParam("caseDefinition") final String caseDefinition, @QueryParam("url") final String url, @QueryParam("includeDescendants") final boolean includeDescendants) {
 		PersistencyResource.assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
 		logger.debug(String.format("Download case definition as XLS %s/%s (%s)", project, caseDefinition, user));
-		return getCaseDefinition(project, caseDefinition, url, CodeMapperApplication.getWriteXlsApi());
+		return getCaseDefinition(project, caseDefinition, url, CodeMapperApplication.getWriteXlsApi(), includeDescendants);
 	}
 
     @GET
     @Path("case-definition-tsv")
     @Produces({WriteTsvApi.MIME_TYPE})
-    public Response getCaseDefinitonTsv(@Context HttpServletRequest request, @Context User user, @QueryParam("project") final String project, @QueryParam("caseDefinition") final String caseDefinition, @QueryParam("url") final String url) {
+    public Response getCaseDefinitonTsv(@Context HttpServletRequest request, @Context User user, @QueryParam("project") final String project, @QueryParam("caseDefinition") final String caseDefinition, @QueryParam("url") final String url, @QueryParam("includeDescendants") final boolean includeDescendants) {
         PersistencyResource.assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
         logger.debug(String.format("Download case definition as TSV %s/%s (%s)", project, caseDefinition, user));
-        return getCaseDefinition(project, caseDefinition, url, CodeMapperApplication.getWriteTsvApi());
+        return getCaseDefinition(project, caseDefinition, url, CodeMapperApplication.getWriteTsvApi(), includeDescendants);
     }
 
 

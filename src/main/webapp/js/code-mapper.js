@@ -1319,10 +1319,11 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             });
     };
 
-    $scope.downloadConcepts = function(type) {
+    $scope.downloadConcepts = function(type, downloadDescendants) {
         var url = urls.download[type] +
             '?project=' + encodeURIComponent($scope.project) +
             '&caseDefinition=' + encodeURIComponent($scope.caseDefinitionName) +
+            '&includeDescendants=' + encodeURIComponent(downloadDescendants)
             '&url=' + encodeURIComponent(window.location.href);
         window.open(url, '_blank');
     };

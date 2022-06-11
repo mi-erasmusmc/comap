@@ -74,11 +74,17 @@ public class SnowstormDescender implements SpecificDescender {
 					throw new RuntimeException(e);
 				} catch (InterruptedException e) {
 					String msg = "computation of descendants was interrupted";
-					InterruptedException e1 = (InterruptedException) e.getCause();
+                                        Exception e1 = null;
+                                        if (e.getCause() instanceof Exception) {
+                                            e1 = (Exception) e.getCause();
+                                        }
 					throw new RuntimeException(CodeMapperException.server(msg, e1));
 				} catch (ExecutionException e) {
 					String msg = "computation of descendants couldn't be executed";
-					InterruptedException e1 = (InterruptedException) e.getCause();
+                                        Exception e1 = null;
+                                        if (e.getCause() instanceof Exception) {
+                                            e1 = (Exception) e.getCause();
+                                        }
 					throw new RuntimeException(CodeMapperException.server(msg, e1));
 				}
 			}).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
@@ -111,7 +117,7 @@ public class SnowstormDescender implements SpecificDescender {
 				break; // stop paging
 			}
 			if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-				throwError("get descendants", response);
+				throw createException("get descendants", response);
 			}
 			DescendantsResult res = response.readEntity(DescendantsResult.class);
 			result.addAll(res.items.stream().map(dc -> new CachedConcept(dc)).collect(Collectors.toList()));
@@ -138,7 +144,7 @@ public class SnowstormDescender implements SpecificDescender {
 			return null;
 		}
 		if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-			throwError("get concept", response);
+			throw createException("get concept", response);
 		}
 		BrowserConcept concept = response.readEntity(BrowserConcept.class);
 		if (concept.active) {
@@ -270,13 +276,13 @@ public class SnowstormDescender implements SpecificDescender {
 		int total;
 	}
 
-	private void throwError(String descr, Response response) throws CodeMapperException {
+	private CodeMapperException createException(String descr, Response response) {
 		SnowstormError err = null;
 		try {
 			err = response.readEntity(SnowstormError.class);
 		} catch (ProcessingException e) {
 		}
-		throw CodeMapperException.server("Cannot " + descr + " from Snowstorm: "
+		return CodeMapperException.server("Cannot " + descr + " from Snowstorm: "
 				+ response.getStatusInfo().getReasonPhrase() + (err != null ? " (" + err + ")" : ""));
 	}
 

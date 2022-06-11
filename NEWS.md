@@ -1,6 +1,11 @@
 
 [//]: # (pandoc -s --metadata title="CodeMapper NEWS" --css style.css -i NEWS.md -o src/main/webapp/NEWS.html)
 
+June 10, 2022
+--------------
+
+Disabled descendant codes in download due to an server error in the SNOMED-CT API used by CodeMapper
+
 May 1, 2022
 --------------
 

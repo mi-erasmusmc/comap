@@ -1,6 +1,12 @@
 
 [//]: # (pandoc -s --metadata title="CodeMapper NEWS" --css style.css -i NEWS.md -o src/main/webapp/NEWS.html)
 
+July 3, 2022
+--------------
+
+- update UMLS to version 2022AA
+- optional download of descendant codes
+
 June 10, 2022
 --------------
 

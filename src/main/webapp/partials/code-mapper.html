@@ -128,18 +128,19 @@
           <span class="dropdown">
             <button class="btn btn-xs btn-default dropdown-toggle"
                     type="button" data-toggle="dropdown"
-                    title="Download the mapping in a file"
+                    title="Download the mapping in a file. This can take some time. If the request times out, please try again a little later."
                     ng-disabled="numberUnsafedChanges > 0">
               <i class="glyphicon glyphicon-cloud-download"></i>
               Download*
             </button>
             <div class="download dropdown-menu">
               <div>
+                <h6 class="dropdown-header">With descendant codes</h6>
+                <button class="btn btn-xs btn-default" ng-click="downloadConcepts('tsv', true)">TSV (Text)</button>
+                <button class="btn btn-xs btn-default" ng-click="downloadConcepts('xls', true)">XLS (Excel)</button>
+                <h6 class="dropdown-header">Without descendant codes</h6>
                 <button class="btn btn-xs btn-default" ng-click="downloadConcepts('tsv', false)">TSV (Text)</button>
                 <button class="btn btn-xs btn-default" ng-click="downloadConcepts('xls', false)">XLS (Excel)</button>
-                <h6 class="dropdown-header">(descendant codes currently disabled)</h6>
-                <!-- <button disabled="disabled" class="btn btn-xs btn-default" ng-click="downloadConcepts('tsv', true)">TSV (Text)</button> -->
-                <!-- <button disabled="disabled" class="btn btn-xs btn-default" ng-click="downloadConcepts('xls', true)">XLS (Excel)</button> -->
               </div>
             </div>
           </span>

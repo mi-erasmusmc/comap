@@ -1323,7 +1323,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         var url = urls.download[type] +
             '?project=' + encodeURIComponent($scope.project) +
             '&caseDefinition=' + encodeURIComponent($scope.caseDefinitionName) +
-            '&includeDescendants=' + encodeURIComponent(downloadDescendants)
+            '&includeDescendants=' + encodeURIComponent(downloadDescendants) +
             '&url=' + encodeURIComponent(window.location.href);
         window.open(url, '_blank');
     };

@@ -6,7 +6,7 @@
   <groupId>org.biosemantics</groupId>
   <artifactId>codemapper</artifactId>
   <name>CodeMapper</name>
-  <version>2022-07-03</version>
+  <version>2022-09-14</version>
   <packaging>war</packaging>
 
   <description>Semi-automated mapping of case definitions</description>

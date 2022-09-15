@@ -1,6 +1,11 @@
 
 [//]: # (pandoc -s --metadata title="CodeMapper NEWS" --css style.css -i NEWS.md -o src/main/webapp/NEWS.html)
 
+September 14, 2022
+--------------
+
+Faster and more reliable retrieval of descendant codes for SNOMED-CT
+
 July 3, 2022
 --------------
 

@@ -43,7 +43,7 @@ import org.biosemantics.codemapper.authentification.AuthentificationApi;
 import org.biosemantics.codemapper.authentification.User;
 import org.biosemantics.codemapper.descendants.DescendersApi;
 import org.biosemantics.codemapper.descendants.DescendersApi.GeneralDescender;
-import org.biosemantics.codemapper.descendants.SnowstormDescender;
+import org.biosemantics.codemapper.descendants.SnomedCtDescender;
 import org.biosemantics.codemapper.descendants.UmlsDescender;
 import org.biosemantics.codemapper.persistency.PersistencyApi;
 import org.biosemantics.codemapper.service.DownloadResource;
@@ -67,6 +67,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	// Property names
 	private static final String AVAILABLE_CODING_SYSTEMS = "available-coding-systems";
 	private static final String CODE_MAPPER_DB = "code-mapper-db";
+	private static final String SNOMEDCT_DB = "snomedct-db";
 	private static final String CODEMAPPER_UMLS_VERSION = "codemapper-umls-version";
 	private static final String CODING_SYSTEMS_WITH_DEFINITION = "coding-systems-with-definition";
 	private static final String DB_PASSWORD_SUFFIX = "-password";
@@ -125,11 +126,12 @@ public class CodeMapperApplication extends ResourceConfig {
 	}
 
 	public static void initialize() {
-		DataSource umlsConnectionPool,  umlsExtConnectionPool, codeMapperConnectionPool;
+		DataSource umlsConnectionPool,  umlsExtConnectionPool, codeMapperConnectionPool, snomedctConnectionPool;
 		try {
 			umlsConnectionPool = getConnectionPool(UMLS_DB);
             umlsExtConnectionPool = getConnectionPool(UMLS_EXT_DB);
             codeMapperConnectionPool = getConnectionPool(CODE_MAPPER_DB);
+            snomedctConnectionPool = getConnectionPool(SNOMEDCT_DB);
 		} catch (SQLException e) {
 		    logger.error("Cannot create pooled data source");
             e.printStackTrace();
@@ -163,19 +165,15 @@ public class CodeMapperApplication extends ResourceConfig {
 
 		GeneralDescender umlsDescender = new UmlsDescender(umlsConnectionPool);
 		descendersApi = new DescendersApi(umlsDescender);
-		
-		String snowstormBaseUri = properties.getProperty(SNOWSTORM_BASE_URI);
-		String snowstormBranch = properties.getProperty(SNOWSTORM_BRANCH);
-        if (snowstormBaseUri == null || snowstormBranch == null) {
-        	logger.warn("Snowstorm not configured; disabled");
-        } else {
-            descendersApi.add(new SnowstormDescender("SNOMEDCT_US", snowstormBaseUri, snowstormBranch));
-            descendersApi.add(new SnowstormDescender("SCTSPA", snowstormBaseUri, snowstormBranch));
-        }
+		descendersApi.add(new SnomedCtDescender("SNOMEDCT_US", snomedctConnectionPool));
+		descendersApi.add(new SnomedCtDescender("SCTSPA", snomedctConnectionPool));
 	}
 
 	public static DataSource getConnectionPool(String prefix) throws SQLException {
         String uri = properties.getProperty(prefix + DB_URI_SUFFIX);
+        if (uri == null) {
+        	return null;
+        }
         String username = properties.getProperty(prefix + DB_USERNAME_SUFFIX);
         String password = properties.getProperty(prefix + DB_PASSWORD_SUFFIX);
         logger.info("Get connection pool " + prefix);

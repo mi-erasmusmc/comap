@@ -63,9 +63,11 @@ public class DownloadResource {
             if (jsonState == null)
                 throw new WebApplicationException(404);
             final ClientState.State state = new ClientState().ofJson(jsonState);
-            final Map<String, Map<String, Collection<SourceConcept>>> descendants = new HashMap<>();
+            Map<String, Map<String, Collection<SourceConcept>>> descendants;
             if (includeDescendants) {
-                CodeMapperApplication.getDescendantsApi().getDescendants(state.codingSystems, state.mapping.concepts);
+                descendants = CodeMapperApplication.getDescendantsApi().getDescendants(state.codingSystems, state.mapping.concepts);
+            } else {
+                descendants = new HashMap<>();
             };
             final List<Comment> comments = persistencyApi.getComments(project, caseDefinition);
             String filename = String.format("%s - %s.%s", project, caseDefinition, writeApi.getFileExtension());

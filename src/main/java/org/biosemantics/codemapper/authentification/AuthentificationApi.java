@@ -121,7 +121,7 @@ public class AuthentificationApi {
 					        CodeMapperApplication.getPersistencyApi().getProjectPermissions(username);
 					User user = new User(username, projectPermissions);
 					request.getSession().setAttribute(SESSION_ATTRIBUTE_USER, user);
-					logger.debug("Authentificated " + username);
+					logger.info("Authentificated " + username);
 					return LoginResult.createSuccess(user);
 				} else
 					return LoginResult.createError("Wrong password");
@@ -166,7 +166,7 @@ public class AuthentificationApi {
 	}
 	
 	public ChangePasswordResult changePassword(User user, String password, String newPassword) throws CodeMapperException {
-		logger.debug("Change password " + user.getUsername());
+		logger.info("Change password " + user.getUsername());
 
 		String query = "UPDATE users SET password = ? WHERE username = ? AND password = ?";
         try (Connection connection = connectionPool.getConnection();

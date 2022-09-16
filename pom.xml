@@ -39,7 +39,7 @@
       <properties>
         <code-mapper.properties>code-mapper-testing.properties</code-mapper.properties>
         <final.name>codemapper-testing</final.name>
-        <logging.level>debug</logging.level>
+        <logging.level>trace</logging.level>
       </properties>
     </profile>
     <profile>

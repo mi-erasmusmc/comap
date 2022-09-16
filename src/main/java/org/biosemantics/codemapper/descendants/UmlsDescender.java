@@ -14,6 +14,8 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.SourceConcept;
 import org.biosemantics.codemapper.descendants.DescendersApi.GeneralDescender;
@@ -21,6 +23,8 @@ import org.biosemantics.codemapper.descendants.DescendersApi.GeneralDescender;
 import com.mchange.v2.c3p0.DataSources;
 
 public class UmlsDescender implements GeneralDescender {
+
+	private static Logger logger = LogManager.getLogger(UmlsDescender.class);
 
 	private DataSource connectionPool;
 
@@ -83,6 +87,7 @@ public class UmlsDescender implements GeneralDescender {
 			Array array = connection.createArrayOf("VARCHAR", codes.toArray());
 			statement.setArray(2, array);
 			
+			logger.debug(statement);
 			ResultSet set = statement.executeQuery();
 
 			Map<String, Collection<String>> res = new HashMap<>();
@@ -137,6 +142,7 @@ public class UmlsDescender implements GeneralDescender {
 		try (Connection connection = connectionPool.getConnection();
 				PreparedStatement statement = connection.prepareStatement(query)) {
 
+			logger.debug(statement);
 			ResultSet set = statement.executeQuery();
 
 			Map<String, Collection<String>> descendants = new HashMap<>();
@@ -168,6 +174,7 @@ public class UmlsDescender implements GeneralDescender {
 			Array array = connection.createArrayOf("VARCHAR", auis.toArray());
 			statement.setArray(1, array);
 
+			logger.debug(statement);
 			ResultSet set = statement.executeQuery();
 
 			Map<String, SourceConcept> res = new HashMap<>();

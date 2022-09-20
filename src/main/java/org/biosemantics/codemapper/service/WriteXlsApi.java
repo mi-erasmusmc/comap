@@ -23,7 +23,9 @@ import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -240,13 +242,20 @@ public class WriteXlsApi implements WriteApis.Api {
 		bold(header, sheet);
 
 		for (String codingSystem : codingSystems) {
-			Set<String> printedCodes = new HashSet<String>();
+        	// {tags -> {code}}
+            Map<String, Set<String>> allPrintedCodes = new HashMap<>();
 			for (ClientState.Concept concept : concepts) {
+                String tags = WriteApis.formatTags(concept.tags);
+                if (!allPrintedCodes.containsKey(tags)) {
+                	allPrintedCodes.put(tags, new HashSet<>());
+                }
+                Set<String> printedCodes = allPrintedCodes.get(tags);
 				String cui = concept.cui;
 				String conceptName = concept.preferredName;
-				String tags = WriteApis.formatTags(concept.tags);
 				boolean printedCode = false;
-				for (ClientState.SourceConcept sourceConcept : concept.codes.get(codingSystem)) {
+				org.biosemantics.codemapper.ClientState.SourceConcept[] sourceConcepts = concept.codes.get(codingSystem).clone();
+				Arrays.sort(sourceConcepts, Comparator.comparing(c -> c.id));
+				for (ClientState.SourceConcept sourceConcept : sourceConcepts) {
 					if (!printedCodes.contains(sourceConcept.id)) {
 						setRow(sheet.createRow(rowIx++),
 								codingSystem, sourceConcept.id, sourceConcept.preferredTerm,
@@ -255,7 +264,9 @@ public class WriteXlsApi implements WriteApis.Api {
 						printedCode = true;
 					}
 					if (descendants.get(codingSystem) != null && descendants.get(codingSystem).get(sourceConcept.id) != null) {
-						for (SourceConcept c : descendants.get(codingSystem).get(sourceConcept.id)) {
+						SourceConcept[] descConcepts = descendants.get(codingSystem).get(sourceConcept.id).toArray(new SourceConcept[0]);
+						Arrays.sort(descConcepts);
+						for (SourceConcept c : descConcepts) {
 							if (!printedCodes.contains(c.getId())) {
 								setRow(sheet.createRow(rowIx++), 
 										codingSystem, c.getId(), c.getPreferredTerm(), null, null,

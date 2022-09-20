@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,11 +36,18 @@ public class WriteTsvApi implements WriteApis.Api {
             String name, String url) throws IOException {
         writeRow(output, WriteApis.CODES_HEADERS);
         for (String codingSystem : state.codingSystems) {
-            Set<String> printedCodes = new HashSet<String>();
+        	// {tags -> {code}}
+            Map<String, Set<String>> allPrintedCodes = new HashMap<>();
             for (ClientState.Concept concept : state.mapping.concepts) {
                 String tags = WriteApis.formatTags(concept.tags);
+                if (!allPrintedCodes.containsKey(tags)) {
+                	allPrintedCodes.put(tags, new HashSet<>());
+                }
+                Set<String> printedCodes = allPrintedCodes.get(tags);
                 boolean printedCode = false;
-                for (ClientState.SourceConcept sourceConcept : concept.codes.get(codingSystem)) {
+                org.biosemantics.codemapper.ClientState.SourceConcept[] sourceConcepts = concept.codes.get(codingSystem).clone();
+				Arrays.sort(sourceConcepts, Comparator.comparing(c -> c.id));
+				for (ClientState.SourceConcept sourceConcept : sourceConcepts) {
                     if (!printedCodes.contains(sourceConcept.id)) {
                         writeRow(output, codingSystem, sourceConcept.id,
                                 sourceConcept.preferredTerm, concept.cui, concept.preferredName,
@@ -48,8 +57,9 @@ public class WriteTsvApi implements WriteApis.Api {
                     }
                     if (descendants.get(codingSystem) != null
                             && descendants.get(codingSystem).get(sourceConcept.id) != null) {
-                        for (SourceConcept c : descendants.get(codingSystem)
-                                .get(sourceConcept.id)) {
+						SourceConcept[] descConcepts = descendants.get(codingSystem).get(sourceConcept.id).toArray(new SourceConcept[0]);
+						Arrays.sort(descConcepts);
+                        for (SourceConcept c : descConcepts) {
                             if (!printedCodes.contains(c.getId())) {
                                 writeRow(output, codingSystem, c.getId(), c.getPreferredTerm(), "",
                                         "", tags, WriteXlsApi.desc(sourceConcept.id));

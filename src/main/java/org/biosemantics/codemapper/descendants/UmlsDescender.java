@@ -32,7 +32,7 @@ public class UmlsDescender implements GeneralDescender {
 		this.connectionPool = connectionPool;
 	}
 
-	private static Collection<String> concat(Collection<Collection<String>> sss) {
+	public static Collection<String> concat(Collection<Collection<String>> sss) {
 		Collection<String> res = new HashSet<>();
 		for (Collection<String> ss : sss) {
 			res.addAll(ss);
@@ -49,7 +49,7 @@ public class UmlsDescender implements GeneralDescender {
 		Map<String, Collection<String>> descendantAuis = getDescendantAuis(concat(auis.values()));
 
 		// {aui -> SourceConcept}
-		Map<String, SourceConcept> concepts = getConcepts(concat(descendantAuis.values()));
+		Map<String, SourceConcept> concepts = getConcepts(connectionPool, concat(descendantAuis.values()));
 
 		// {code -> {SourceConcept}}
 		Map<String, Collection<SourceConcept>> res = new HashMap<>();
@@ -163,7 +163,7 @@ public class UmlsDescender implements GeneralDescender {
 		}
 	}
 
-	private Map<String, SourceConcept> getConcepts(Collection<String> auis) throws CodeMapperException {
+	public static Map<String, SourceConcept> getConcepts(DataSource connectionPool, Collection<String> auis) throws CodeMapperException {
 		String query = //
 				"SELECT DISTINCT aui, code, str, ispref "
 				+ "FROM mrconso WHERE aui = ANY(?)";

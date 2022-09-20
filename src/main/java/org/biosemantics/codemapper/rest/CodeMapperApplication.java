@@ -43,7 +43,7 @@ import org.biosemantics.codemapper.authentification.AuthentificationApi;
 import org.biosemantics.codemapper.authentification.User;
 import org.biosemantics.codemapper.descendants.DescendersApi;
 import org.biosemantics.codemapper.descendants.DescendersApi.GeneralDescender;
-import org.biosemantics.codemapper.descendants.SnomedCtDescender;
+import org.biosemantics.codemapper.descendants.SnomedTCDescender;
 import org.biosemantics.codemapper.descendants.UmlsDescender;
 import org.biosemantics.codemapper.persistency.PersistencyApi;
 import org.biosemantics.codemapper.service.DownloadResource;
@@ -165,8 +165,13 @@ public class CodeMapperApplication extends ResourceConfig {
 
 		GeneralDescender umlsDescender = new UmlsDescender(umlsConnectionPool);
 		descendersApi = new DescendersApi(umlsDescender);
-		descendersApi.add(new SnomedCtDescender("SNOMEDCT_US", snomedctConnectionPool));
-		descendersApi.add(new SnomedCtDescender("SCTSPA", snomedctConnectionPool));
+		// for the followings vocabularies, the transitive closure has been generated
+		for (String sab: Arrays.asList("ICPC2ICD10DUT","ICPC2ICD10ENG","KCD5","ICPCDUT","LNC","ICPC2EDUT","MSH","MDR","RCD","ICPC2EENG","ICPC","MTHICD9","ICD10","ICD10CM","ICPC2P","RCD2","ICD9CM")) {
+			descendersApi.add(new UmlsTCDescender(sab, umlsConnectionPool));
+		}
+		for (String sab: Arrays.asList("SNOMEDCT_US", "SCTSPA")) {
+			descendersApi.add(new SnomedTCDescender(sab, snomedctConnectionPool));
+		}
 	}
 
 	public static DataSource getConnectionPool(String prefix) throws SQLException {

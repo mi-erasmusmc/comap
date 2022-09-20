@@ -155,6 +155,13 @@ these steps is a string `yyyyXX`, e.g. `2022aa`.
     zcat umls$VERSION.sql.gz|sudo -u postgres psql umls$VERSION
     sudo -u postgres psql umls$VERSION < $CODEMAPPER/src/main/resources/umls-functions.sql
     ```
-7. Reflect the version update in the variables `codemapper-umls-version` and
+7. Add transitive closures for UMLS
+   - `cd src/main/resources/umls-transitive-closure`
+   - `cargo run --release -- --mrconso .../META/MRCONSO.RRF --mrrel .../META/MRREL.RRF --sabs "$(cat sabs.txt)" --write-auis --output $TCRRF`
+     (the vocabularies in `sabs.txt` should match those used with the `UmlsTCDescender` in `CodeMapperApplication`)
+   - `sed "s!{{TRANSITIVE_CLOSURE}}!$TCRRF!" | psql $UMLSDB`
+7. Add transitive closures for SNOMED-CT
+   - follow instructions in `src/main/resources/snomedct-transitive-closure/README.md`
+8. Reflect the version update in the variables `codemapper-umls-version` and
    `umls-db-uri` in `code-mapper-*.properties`. This will result in an update of
    `src/main/resources/code-mapper.properties`.

@@ -18,14 +18,14 @@ import org.biosemantics.codemapper.SourceConcept;
 import org.biosemantics.codemapper.Utils;
 import org.biosemantics.codemapper.descendants.DescendersApi.SpecificDescender;
 
-public class SnomedCtDescender implements SpecificDescender {
+public class SnomedTCDescender implements SpecificDescender {
 
-	private static Logger logger = LogManager.getLogger(SnomedCtDescender.class);
+	private static Logger logger = LogManager.getLogger(SnomedTCDescender.class);
 
 	private final String codingSystem;
 	private final DataSource dataSource;
 
-	public SnomedCtDescender(String codingSystem, DataSource dataSource) {
+	public SnomedTCDescender(String codingSystem, DataSource dataSource) {
 		this.codingSystem = codingSystem;
 		this.dataSource = dataSource;
 	}

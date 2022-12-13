@@ -46,6 +46,7 @@ import org.biosemantics.codemapper.descendants.DescendersApi.GeneralDescender;
 import org.biosemantics.codemapper.descendants.SnomedTCDescender;
 import org.biosemantics.codemapper.descendants.UmlsDescender;
 import org.biosemantics.codemapper.persistency.PersistencyApi;
+import org.biosemantics.codemapper.review.ReviewApi;
 import org.biosemantics.codemapper.service.DownloadResource;
 import org.biosemantics.codemapper.service.WriteTsvApi;
 import org.biosemantics.codemapper.service.WriteXlsApi;
@@ -91,6 +92,7 @@ public class CodeMapperApplication extends ResourceConfig {
     private static WriteTsvApi writeTsvApi;
 	private static UtsApi utsApi;
 	private static DescendersApi descendersApi;
+	private static ReviewApi reviewApi;
 
 	static {
 		properties = new Properties();
@@ -162,6 +164,8 @@ public class CodeMapperApplication extends ResourceConfig {
 
 		String utsApiKey = properties.getProperty(UTS_API_KEY);
 		utsApi = new UtsApi(utsApiKey);
+		
+		reviewApi = new ReviewApi(codeMapperConnectionPool);
 
 		GeneralDescender umlsDescender = new UmlsDescender(umlsConnectionPool);
 		descendersApi = new DescendersApi(umlsDescender);
@@ -176,6 +180,7 @@ public class CodeMapperApplication extends ResourceConfig {
 
 	public static DataSource getConnectionPool(String prefix) throws SQLException {
         String uri = properties.getProperty(prefix + DB_URI_SUFFIX);
+        System.out.println("DB " + prefix + ": " + uri);
         if (uri == null) {
         	return null;
         }
@@ -199,6 +204,10 @@ public class CodeMapperApplication extends ResourceConfig {
 
 	public static UmlsApi getUmlsApi() {
 		return umlsApi;
+	}
+
+	public static ReviewApi getReviewApi() {
+		return reviewApi;
 	}
 
 	public static PersistencyApi getPersistencyApi() {

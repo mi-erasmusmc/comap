@@ -80,6 +80,13 @@ function UrlsService() {
         'xls': downloadApi + '/case-definition-xls',
         'tsv': downloadApi + '/case-definition-tsv'
     };
+    
+    var reviewApi = 'rest/review';
+    this.topicsByCui = (project, casedef) => `${reviewApi}/topics-by-cui/${project}/${casedef}`;
+    this.newTopic = (project, casedef, cui) => `${reviewApi}/new-topic/${project}/${casedef}/${cui}`;
+    this.newMessage = (project, casedef, cui, topicId) => `${reviewApi}/new-message/${project}/${casedef}/${cui}/${topicId}`;
+    this.resolveTopic = (project, casedef, cui, topicId) => `${reviewApi}/resolve-topic/${project}/${casedef}/${cui}/${topicId}`;
+    this.markTopicRead = (project, casedef, cui, topicId) => `${reviewApi}/mark-topic-read/${project}/${casedef}/${cui}/${topicId}`;
 }
 
 /** Retrieve and provide stopwords, semantic types and coding systems. */

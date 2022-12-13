@@ -351,3 +351,44 @@ img.advance-logo {
 .footer {
     font-size: x-small;
 }
+
+.num-new-messages {
+	font-weight: bold;
+}
+.new-message {
+	font-weight: bold;
+}
+
+.topic-by-cui {
+	width: 72em;
+}
+.topic-by-cui {
+/* 	margin-bottom: 3em; */
+/* 	border: 1px solid green; */
+}
+.topic-heading {
+	margin: 0 0 0 0;
+}
+textarea.review-message:focus, textarea.review-message.filled {
+	height: 6em;
+}
+.topic {
+	padding: .5em;
+	margin-bottom: .5em;
+background: #f6f5f4;
+	border: 1px solid #9a9996;
+}
+.resolved {
+	background: #deddda;
+color: 0x444444;
+}
+.messages {
+	margin: 0 0 0 0;
+}
+.review-message {
+	vertical-align: top;
+	margin-top: .2ex;
+}
+.topic-button {
+	background: #deddda;
+}

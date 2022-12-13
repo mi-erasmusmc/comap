@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.sql.DataSource;
+import javax.xml.bind.DatatypeConverter;
 
 import org.biosemantics.codemapper.ClientState;
 import org.biosemantics.codemapper.CodeMapperException;
@@ -213,9 +214,7 @@ public class PersistencyApi {
 			while (result.next()) {
 				String author = result.getString("author");
 				Timestamp timestamp0 = result.getTimestamp("timestamp");
-				Calendar calendar = new GregorianCalendar();
-				calendar.setTime(timestamp0);
-				String timestamp = javax.xml.bind.DatatypeConverter.printDateTime(calendar);
+				String timestamp = timestampToString(timestamp0);
 				String cui = result.getString("cui");
 				String content = result.getString("content");
 				Comment comment = new Comment(cui, author, timestamp, content);
@@ -225,6 +224,12 @@ public class PersistencyApi {
 		} catch (SQLException e) {
 			throw CodeMapperException.server("Cannot execute query to get comments", e);
 		}
+	}
+
+	public static String timestampToString(Timestamp timestamp) {
+		Calendar calendar = new GregorianCalendar();
+		calendar.setTime(timestamp);
+		return DatatypeConverter.printDateTime(calendar);
 	}
 
 	public void createComment(String project, String caseDefinition, User user, String cui, String content) throws CodeMapperException {

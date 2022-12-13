@@ -56,7 +56,6 @@ function ListCaseDefinitionsCtrl($scope, $rootScope, $http, $location, urls, use
                         $scope.usersInProjects[project] = perms;
                     });
             });
-            maybeAdvanceIframeResize();
         });
     
     var projectNameRegex = /^[\w\d _()-]+$/;

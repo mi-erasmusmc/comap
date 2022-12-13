@@ -53,13 +53,116 @@ create table case_definitions (
   primary key (id)
 );
 
-drop table if exists comments;
-
-create table comments (
-  id int not null auto_increment primary key,
-  `timestamp` TIMESTAMP not null default CURRENT_TIMESTAMP,
+drop table if exists review_topic cascade;
+create table review_topic (
+  id serial primary key,
   case_definition_id int not null references case_definitions(id),
   cui char(8) not null,
-  author int not null references users(id),
-  content mediumtext not null
+  heading text,
+  resolved boolean not null default false,
+  resolved_by int references users(id),
+  resolved_at TIMESTAMP
 );
+
+drop function if exists review_resolve_topic;
+create function review_resolve_topic(topic_id int, username text) returns boolean
+language plpgsql as $$ begin
+update
+  review_topic
+set
+  resolved = true,
+  resolved_by = u.id,
+  resolved_at = now()
+from
+  users as u
+where
+  review_topic.id = review_resolve_topic.topic_id
+and
+  u.username = review_resolve_topic.username;
+return found;
+end; $$; 
+
+drop table if exists review_message cascade;
+create table review_message (
+  id serial primary key,
+  topic_id int not null references review_topic(id),
+  timestamp TIMESTAMP not null default CURRENT_TIMESTAMP,
+  author_id int not null references users(id),
+  content text not null
+);
+
+drop function if exists review_new_message;
+create function review_new_message(project text, casedef text, cui char(8), topic_id int, content text, username text)
+returns table (message_id int) as $$
+with
+  message as (
+    insert into review_message (topic_id, author_id, content)
+    select review_new_message.topic_id, a.id, review_new_message.content
+    from users a
+    where a.username = review_new_message.username
+    returning id
+  ),
+  x as (
+    insert into review_message_is_read (message_id, user_id)
+    select m.id, u.id
+    from message m, users u
+    where u.username = review_new_message.username
+  )
+  select * from message
+$$ language sql;
+
+drop function if exists review_new_topic;
+create function review_new_topic(project text, casedef text, cui char(8), heading text, username text) returns table (topic_id int)
+as $$
+  insert into review_topic (case_definition_id, cui, heading)
+  select cd.id, review_new_topic.cui, review_new_topic.heading
+  from projects p
+  inner join case_definitions cd on cd.project_id = p.id
+  where p.name = review_new_topic.project and cd.name = review_new_topic.casedef
+  returning id
+$$ language sql;
+
+
+drop table if exists review_message_is_read;
+create table review_message_is_read (
+  message_id int not null references review_message(id),
+  user_id int not null references users(id),
+  constraint primary_keys primary key (message_id, user_id)
+);
+
+drop function if exists review_mark_topic_read;
+create function review_mark_topic_read(topic_id int, username text) returns void
+language plpgsql as $$ begin
+  insert into review_message_is_read (message_id, user_id)
+  select m.id, u.id
+  from review_message m, users u
+  where m.topic_id = review_mark_topic_read.topic_id
+  and u.username = review_mark_topic_read.username
+  on conflict on constraint primary_keys do nothing;
+end; $$; 
+
+drop function if exists review_all_messages;
+create function review_all_messages(project text, casedef text, username text)
+  returns table (
+    cui char(8), topic_id int, topic_heading text,
+    resolved boolean, resolved_user text, resolved_timestamp TIMESTAMP,
+    message_id int, message_author text, message_timestamp TIMESTAMP, message_content text,
+    is_read boolean
+  ) as $$
+    select
+      t.cui, t.id, t.heading,
+      t.resolved, mu.username, t.resolved_at,
+      m.id, mu.username, m.timestamp, m.content,
+      r.message_id is not null
+    from projects p
+    inner join case_definitions c on c.project_id = p.id
+    inner join review_topic t on t.case_definition_id = c.id
+    left join review_message m on m.topic_id = t.id
+    left join users mu on mu.id = m.author_id
+    left join users ru on ru.username = review_all_messages.username
+    left join review_message_is_read r on (r.message_id = m.id and r.user_id = ru.id)
+    where p.name = review_all_messages.project
+    and c.name = review_all_messages.casedef
+    order by t.cui, t.id, m.timestamp;
+$$ language sql;
+

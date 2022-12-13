@@ -105,10 +105,13 @@ var codeMapperApp =
         .filter('origin', function() {
             return getOrigin;
         })
+        .controller("CommentThreads", CommentThreatsCtrl)
         .controller("ShowConceptsCtrl", ShowConceptsCtrl)
         .controller("SelectCodingSystemsCtrl", SelectCodingSystemsCtrl)
         .controller("CodeMapperCtrl", CodeMapperCtrl)
         .controller("ListCaseDefinitionsCtrl", ListCaseDefinitionsCtrl)
         .controller("LoginCtrl", LoginCtrl)
         .controller("LoggedInCtrl", LoggedInCtrl)
+//        .factory('reviewSocket', ReviewSocket)
+//        .controller("ReviewThreadsCtrl", ReviewThreadsCtrl)
         ;

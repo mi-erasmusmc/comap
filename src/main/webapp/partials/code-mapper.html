@@ -157,5 +157,56 @@
     <tab id="history-tab" heading="History" disabled="state.mapping == null" select="updateHistoryGridStyle()" title="{{state.mapping == null ? 'Create mapping first!' : ''}}">
       <div ng-grid="historyGridOptions" class="grid history-grid"></div>
     </tab>
+
+    <tab id="review-tab" heading="Review" disabled="state.mapping == null">
+      <button ng-click="refresh()" class="btn btn-primary">Refresh</button>
+      <div ng-if="topicsByCui" class="topics-by-cui">
+        <section ng-repeat="(cui, topics) in topicsByCui track by $index" class="topic-by-cui" id="topics-{{cui}}">
+          <h2 class="review-cui-concept"><span ng-if="topics.conceptName" ng-bind="topics.conceptName"></span> ({{cui}})</h2> 
+          <section class="topic" id="topic-{{topic-id}}" ng-repeat="topic in topics.topics" ng-class="{resolved: topic.resolved != null}">
+            <h3 class="topic-heading" ng-click="toggleTopicShowMessages(topic.id)">
+            Topic: <em>{{topic.heading || "(No heading)"}}</em>
+            <span ng-if="topic.resolved">
+              . Resolved by
+              <span class="comment-author" ng-bind="topic.resolved.user"></span>
+              <span class="comment-timestamp" ng-bind="topic.resolved.timestamp | date:'mediumDate'" 
+                    title="{{topic.resolved.timestamp|date:'medium'}}"></span>
+            </span>.
+            {{topic.numNewMessages + topic.numReadMessages}} messages
+            <span ng-if="!topic.resolved && topic.numNewMessages > 0">
+              , <span class="num-new-messages">{{topic.numNewMessages}} new</span>
+            </span>.
+            <span ng-if="topicShowMessages[topic.id]" class="glyphicon glyphicon-chevron-down"></span>
+            <span ng-if="!topicShowMessages[topic.id]" class="glyphicon glyphicon-chevron-right"></span>
+            </h3>
+            <div ng-if="topicShowMessages[topic.id]">
+              <div>
+                <button ng-if="!topic.resolved" ng-click="resolveTopic(cui, topic.id)" class="topic-button btn btn-sm btn-secondary">Resolve topic</button>
+                <button ng-if="topic.numNewMessages > 0 && topic.resolved == null" ng-click="markAsRead(cui, topic.id)" class="topic-button btn btn-sm btn-secondary">Mark all as read</button>
+              </div>
+              <ul class="messages" ng-class="{resolved: topic.resolved != null}">
+                <li ng-repeat="message in topic.messages" ng-class="{'new-message': !message.isRead && topic.resolved == null}" class="message"> <!--  ng-class="{new: (!message.isRead)" -->
+                  <span class="comment-author" ng-if="message.username != user.username" ng-bind="message.username"></span>
+                  <span class="comment-author" ng-if="message.username == user.username">me</span>
+                  <span class="comment-timestamp" ng-bind="message.timestamp | date:'mediumDate'" 
+                        title="{{comment.timestamp|date:'medium'}}"></span>:
+                  <span class="comment-content" ng-bind="message.content"></span>
+                  <span ng-if="!message.isRead"> (new)</span>
+                </li>
+                <li ng-if="topic.resolved == null">
+                  <textarea placeholder="(new message)" ng-model="newMessageText[cui][topic.id]" ng-class="{filled: !!newMessageText[cui][topic.id]}" ng-disabled="reviewInputDisabled" class="review-message" cols="72" rows="1">
+                  </textarea>
+                  <button ng-click="newMessage(cui, topic.id, newMessageText[cui][topic.id])" ng-disabled="!newMessageText[cui][topic.id]" class="btn btn-primary">Send</button>
+                </li>
+              </ul>
+            </div>
+          </section>
+          <section class="topic">
+          Topic: <input placeholder="(short description)" type="text" ng-model="newTopicHeading[cui]" ng-disabled="reviewInputDisabled"></input>
+          <button ng-click="newTopic(cui, newTopicHeading[cui])" ng-disabled="!newTopicHeading[cui]" class="btn btn-primary">Create new</button>
+          </section>
+        </section>
+        </div>
+	</tab>
   </tabset>
 </div>

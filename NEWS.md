@@ -1,6 +1,11 @@
 
 [//]: # (pandoc -s --metadata title="CodeMapper NEWS" --css style.css -i NEWS.md -o src/main/webapp/NEWS.html)
 
+Next
+----
+
+- improved review functionality
+
 September 19, 2022
 ------------------
 

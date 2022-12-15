@@ -1,16 +1,13 @@
 <div>
-  <button title='Show and create comments' class='btn btn-default btn-xs'
-          ng-click='showComments(row.entity)'
-          ng-disabled='row.entity.comments | isUndefined'>
+  <button title='Show and create comments' ng-click="navigateToComments(row.entity.cui)" class='btn btn-default btn-xs'>
     <i class='glyphicon glyphicon-comment'></i>
-    <span class='subscript'
-          ng-if='row.entity.comments'
-          ng-bind='row.entity.comments.length'></span>
+    {{topicsByCui[row.entity.cui].numReadMessages + topicsByCui[row.entity.cui].numNewMessages}}
+    <span ng-if="topicsByCui[row.entity.cui].numNewMessages > 0" class="num-new-messages">
+      ({{topicsByCui[row.entity.cui].numNewMessages}})
+    </span>
   </button>
-  <i class='glyphicon glyphicon-option-horizontal'
-     ng-if='row.entity.comments | isUndefined'></i>
 </div>
-<div>
+<div ng-if="false">
   <span ng-if="conceptWarnings.missingCodes[row.entity.cui]"
         title="Missing codes for {{conceptWarnings.missingCodes[row.entity.cui].join(', ')}}">
       <i class="glyphicon glyphicon-warning-sign"></i>

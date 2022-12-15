@@ -510,12 +510,18 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 						$scope.newMessageText[cui][topicId] = "";
 					}
 					if ($scope.topicShowMessages[topicId] === undefined) {
-						$scope.topicShowMessages[topicId] = topic.resolved == null;
+						$scope.topicShowMessages[topicId] = !topic.resolved;
 					}
 					var numNewMessages = 0;
 					var numReadMessages = 0;
 					const messages = [];
+					if (topic.messages == []) {
+						numNewMessages += 1;
+					}
 					angular.forEach(topic.messages, (message) => {
+						if (topic.resolved) {
+							message.isRead = true;
+						}
 						if (!message.isRead) {
 							numNewMessages += 1;
 						} else {
@@ -1137,6 +1143,13 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 	    			return null;
 	    		}
 	    	});
+    };
+
+    $scope.navigateToComments = (cui) => {
+		$scope.activateTab("review-tab");
+		$timeout(() => {
+			document.getElementById("topics-" + cui).scrollIntoView({behavior: 'smooth'}, true)
+		}, 0);
     };
 
     /**

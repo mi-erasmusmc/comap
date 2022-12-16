@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright 2017 Erasmus Medical Center, Department of Medical Informatics.
+ * Copyright 2021-2023 VAC4EU
+ * Copyright 2017-2020 Erasmus Medical Center, Department of Medical Informatics.
  * 
  * This program shall be referenced as “Codemapper”.
  * 
@@ -406,36 +407,6 @@ function insertConcepts(concepts, selectedConcepts, scope, operation, descr) {
     scope.historyStep(operation, concepts.map(reduceConcept), selectedConcepts.map(reduceConcept), descr);
 }
 
-//function ReviewSocket($routeParams) {
-//	return new WebSocket("ws://localhost:8080/codemapper-dev/review/" + encodeURIComponent($routeParams.project) + "/" + encodeURIComponent($routeParams.caseDefinitionName));
-//}
-
-//function ReviewThreadsCtrl($scope, reviewSocket) {
-//	
-//	$scope.topicsByCui = null;
-//    
-//    window.socket.addEventListener('message', function(event) {
-//		const data = JSON.parse(event.data);	
-//		console.log(typeof(event.data), event.data, data);
-//		if (data.content.type == "CurrentThreadsMessage") {
-//			$scope.topicsByCui = data.content.topicsByCui;
-//			$scope.conceptNames = {};
-//			data.content.topicsByCuipicsByCui.forEach(function(topics, cui) {
-//				$scope.conceptNames
-//			});
-//			console.log("message data", $scope.topicsByCui);
-//		}
-//	});
-//
-//    $scope.newMessage = function(content) {
-//        console.log("newMessage", content, socket);
-//    };
-//    
-//    $scope.newTopic = function(content) {
-//        console.log("newTopic", content, socket);
-//    };
-//}
-
 function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $interval, $q, $log, $routeParams, $location, config, urls, dataService, user) {
 
     $scope.user = user;
@@ -476,153 +447,138 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         return roles.indexOf('Editor') != -1;
     };
     
-	$scope.topicsByCui = null;
-	$scope.reviewConceptNames = null;
-	$scope.reviewInputDisabled = false;
-	$scope.newMessageText = {};
-	$scope.newTopicHeading = {};
-	$scope.topicShowMessages = {};
+    $scope.topicsByCui = null;
+    $scope.reviewConceptNames = null;
+    $scope.reviewInputDisabled = false;
+    $scope.newMessageText = {};
+    $scope.newTopicHeading = {};
+    $scope.topicShowMessages = {};
     
     $scope.refreshReview = () => {
-	    $scope.reviewInputDisabled = true;
-		$http.get(urls.topicsByCui($scope.project, $scope.caseDefinitionName))
-		.error((err) => {
-			console.log("topics by cui error", err);
-			$scope.reviewInputDisabled = false;
-		})
-		.success((data) => {
-			$scope.reviewInputDisabled = false;
-			// data: {'<cui>': {<topicId>: {resolved: null | {...}}, isRead: <bool>}}
-			// [{cui: <cui>, name: <string>, topics: [{messages: {content: string, isRead: bool}}]}]
-			$scope.topicsByCui = {};
-	        var concepts = byKey($scope.state.mapping.concepts, getCui);
-	        console.log(data);
-			angular.forEach(data, (topics, cui) => {
-				if ($scope.newMessageText[cui] === undefined) {
-					$scope.newMessageText[cui] = {};
-				}
-				console.log(cui);
-				var cuiNumNewMessages = 0;
-				var cuiNumReadMessages = 0;
-				const topics1 = [];
-				angular.forEach(topics, (topic, topicId) => {
-					if ($scope.newMessageText[cui][topicId] === undefined) {
-						$scope.newMessageText[cui][topicId] = "";
-					}
-					if ($scope.topicShowMessages[topicId] === undefined) {
-						$scope.topicShowMessages[topicId] = !topic.resolved;
-					}
-					var numNewMessages = 0;
-					var numReadMessages = 0;
-					const messages = [];
-					if (topic.messages == []) {
-						numNewMessages += 1;
-					}
-					angular.forEach(topic.messages, (message) => {
-						if (topic.resolved) {
-							message.isRead = true;
-						}
-						if (!message.isRead) {
-							numNewMessages += 1;
-						} else {
-							numReadMessages += 1;
-						}
-					});
-					topics1.push({
-						id: topicId,
-						heading: topic.heading,
-						messages: topic.messages,
-						numNewMessages: numNewMessages,
-						numReadMessages: numReadMessages,
-						resolved: topic.resolved
-					});
-					cuiNumNewMessages += numNewMessages;
-					cuiNumReadMessages += numReadMessages;
-				});
-				const conceptName = concepts[cui] ? concepts[cui].preferredName : null;
-				$scope.topicsByCui[cui] = {
-					conceptName: conceptName,
-					topics: topics1,
-					numNewMessages: cuiNumNewMessages,
-					numReadMessages: cuiNumReadMessages
-				};
-			});
-			angular.forEach(concepts, (concept, cui) => {
-				if (!$scope.topicsByCui[cui]) {
-					$scope.topicsByCui[cui] = {
-						conceptName: concept.preferredName,
-						topics: [],
-						numNewMessages: 0,
-						numReadMessages: 0
-					};
-				}
-			});
-			console.log($scope.topicsByCui);
-		});
-	}
-	$scope.toggleTopicShowMessages = (topicId) => {
-		$scope.topicShowMessages[topicId] = !$scope.topicShowMessages[topicId]; 
-	};
-	$scope.resolveTopic = (cui, topicId) => {
-		$http.post(urls.markTopicRead($scope.project, $scope.caseDefinitionName, cui, topicId), {}, FORM_ENCODED_POST)
-			.success(() => {
-				$http.post(urls.resolveTopic($scope.project, $scope.caseDefinitionName, cui, topicId), {}, FORM_ENCODED_POST)
-					.success(() => {
-						$scope.refreshReview();
-					})
-					.error((err) => {
-						console.log("resolve topic error", err);
-					});
-			})
-			.error((err) => {
-				console.log("mark as read error", err);
-			});
-	};
-	$scope.newMessage = (cui, topicId, content) => {
-		const data = {'content': content};
-		$http.post(urls.newMessage($scope.project, $scope.caseDefinitionName, cui, topicId), data, FORM_ENCODED_POST)
-			.success(() => {
-				$scope.refreshReview();
-				$scope.newMessageText[cui][topicId] = "";
-			})
-			.error((err) => {
-				console.log("new message error", err);
-			});
-	};
-	$scope.newTopic = (cui, heading) => {
-		const data = {'heading': heading};
-		$http.post(urls.newTopic($scope.project, $scope.caseDefinitionName, cui), data, FORM_ENCODED_POST)
-			.success(() => {
-				$scope.refreshReview();
-				$scope.newTopicHeading[cui] = "";
-			})
-			.error((err) => {
-				console.log("new topic error", err);
-			});
-	};
-	
-	$scope.markAsRead = function(cui, topicId) {
-		$http.post(urls.markTopicRead($scope.project, $scope.caseDefinitionName, cui, topicId), {}, FORM_ENCODED_POST)
-			.success(() => {
-				$scope.refreshReview();
-			})
-			.error((err) => {
-				console.log("mark as read error", err);
-			});
-	};
-
-//    reviewSocket.addEventListener('message', function(event) {
-//		const data = JSON.parse(event.data);	
-//		console.log(typeof(event.data), event.data, data);
-//		if (data.type == "CurrentThreads") {
-//			$scope.topicsByCui = data.topicsByCui;
-//			$scope.reviewConceptNames = {};
-////			data.content.topicsByCuipicsByCui.forEach(function(topics, cui) {
-////				$scope.conceptNames
-////			});
-//			console.log("message data", $scope.topicsByCui);
-//		}
-//	});
+        $scope.reviewInputDisabled = true;
+        $http.get(urls.topicsByCui($scope.project, $scope.caseDefinitionName))
+            .error((err) => {
+                error("could not get review topics", err);
+                $scope.reviewInputDisabled = false;
+            })
+            .success((data) => {
+                $scope.reviewInputDisabled = false;
+                // data: {'<cui>': {<topicId>: {resolved: null | {...}}, isRead: <bool>}}
+                // [{cui: <cui>, name: <string>, topics: [{messages: {content: string, isRead: bool}}]}]
+                $scope.topicsByCui = {};
+                var concepts = byKey($scope.state.mapping.concepts, getCui);
+                angular.forEach(data, (topics, cui) => {
+                    if ($scope.newMessageText[cui] === undefined) {
+                        $scope.newMessageText[cui] = {};
+                    }
+                    var cuiNumNewMessages = 0;
+                    var cuiNumReadMessages = 0;
+                    const topics1 = [];
+                    angular.forEach(topics, (topic, topicId) => {
+                        if ($scope.newMessageText[cui][topicId] === undefined) {
+                            $scope.newMessageText[cui][topicId] = "";
+                        }
+                        if ($scope.topicShowMessages[topicId] === undefined) {
+                            $scope.topicShowMessages[topicId] = !topic.resolved;
+                        }
+                        var numNewMessages = 0;
+                        var numReadMessages = 0;
+                        const messages = [];
+                        if (topic.messages == []) {
+                            numNewMessages += 1;
+                        }
+                        angular.forEach(topic.messages, (message) => {
+                            if (topic.resolved) {
+                                message.isRead = true;
+                            }
+                            if (!message.isRead) {
+                                numNewMessages += 1;
+                            } else {
+                                numReadMessages += 1;
+                            }
+                        });
+                        topics1.push({
+                            id: topicId,
+                            heading: topic.heading,
+                            messages: topic.messages,
+                            numNewMessages: numNewMessages,
+                            numReadMessages: numReadMessages,
+                            resolved: topic.resolved
+                        });
+                        cuiNumNewMessages += numNewMessages;
+                        cuiNumReadMessages += numReadMessages;
+                    });
+                    const conceptName = concepts[cui] ? concepts[cui].preferredName : null;
+                    $scope.topicsByCui[cui] = {
+                        conceptName: conceptName,
+                        topics: topics1,
+                        numNewMessages: cuiNumNewMessages,
+                        numReadMessages: cuiNumReadMessages
+                    };
+                });
+                angular.forEach(concepts, (concept, cui) => {
+                    if (!$scope.topicsByCui[cui]) {
+                        $scope.topicsByCui[cui] = {
+                            conceptName: concept.preferredName,
+                            topics: [],
+                            numNewMessages: 0,
+                            numReadMessages: 0
+                        };
+                    }
+                });
+            });
+    }
+    $scope.toggleTopicShowMessages = (topicId) => {
+        $scope.topicShowMessages[topicId] = !$scope.topicShowMessages[topicId]; 
+    };
+    $scope.resolveTopic = (cui, topicId) => {
+        $http.post(urls.markTopicRead($scope.project, $scope.caseDefinitionName, cui, topicId), {}, FORM_ENCODED_POST)
+            .success(() => {
+                $http.post(urls.resolveTopic($scope.project, $scope.caseDefinitionName, cui, topicId), {}, FORM_ENCODED_POST)
+                    .success(() => {
+                        $scope.refreshReview();
+                        $scope.topicShowMessages[topicId] = false;
+                    })
+                    .error((err) => {
+                        error("could not resolve topic", err);
+                    });
+            })
+            .error((err) => {
+                error("could not mark messages as read to resolve topic", err);
+            });
+    };
+    $scope.newMessage = (cui, topicId, content) => {
+        const data = {'content': content};
+        $http.post(urls.newMessage($scope.project, $scope.caseDefinitionName, cui, topicId), data, FORM_ENCODED_POST)
+            .success(() => {
+                $scope.refreshReview();
+                $scope.newMessageText[cui][topicId] = "";
+            })
+            .error((err) => {
+                error("colud not send message", err);
+            });
+    };
+    $scope.newTopic = (cui, heading) => {
+        const data = {'heading': heading};
+        $http.post(urls.newTopic($scope.project, $scope.caseDefinitionName, cui), data, FORM_ENCODED_POST)
+            .success(() => {
+                $scope.refreshReview();
+                $scope.newTopicHeading[cui] = "";
+            })
+            .error((err) => {
+                error("could not create topic", err);
+            });
+    };
+    
+    $scope.markAsRead = function(cui, topicId) {
+        $http.post(urls.markTopicRead($scope.project, $scope.caseDefinitionName, cui, topicId), {}, FORM_ENCODED_POST)
+            .success(() => {
+                $scope.refreshReview();
+            })
+            .error((err) => {
+                error("colud not mark messages as read", err);
+            });
+    };
 
     /* KEYBOARD */
 

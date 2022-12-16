@@ -353,42 +353,39 @@ img.advance-logo {
 }
 
 .num-new-messages {
-	font-weight: bold;
+    font-weight: bold;
 }
 .new-message {
-	font-weight: bold;
+    font-weight: bold;
 }
 
 .topic-by-cui {
-	width: 72em;
+    width: 72em;
 }
 .topic-by-cui {
-/* 	margin-bottom: 3em; */
-/* 	border: 1px solid green; */
 }
 .topic-heading {
-	margin: 0 0 0 0;
+    margin: 0 0 0 0;
 }
 textarea.review-message:focus, textarea.review-message.filled {
-	height: 6em;
+    height: 6em;
 }
 .topic {
-	padding: .5em;
-	margin-bottom: .5em;
-background: #f6f5f4;
-	border: 1px solid #9a9996;
+    padding: .5em;
+    margin-bottom: .5em;
+    background: #f6f5f4;
+    border: 1px solid #9a9996;
 }
-.resolved {
-	background: #deddda;
-color: 0x444444;
+.resolved h3 {
+    opacity: 0.65;
 }
 .messages {
-	margin: 0 0 0 0;
+    margin: 0 0 0 0;
 }
 .review-message {
-	vertical-align: top;
-	margin-top: .2ex;
+    vertical-align: top;
+    margin-top: .2ex;
 }
 .topic-button {
-	background: #deddda;
+    background: #deddda;
 }

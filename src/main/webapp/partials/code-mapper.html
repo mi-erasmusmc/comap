@@ -159,7 +159,7 @@
     </tab>
 
     <tab id="review-tab" heading="Review" disabled="state.mapping == null">
-      <button ng-click="refresh()" class="btn btn-primary">Refresh</button>
+      <button ng-click="refreshReview()" class="btn btn-primary">Refresh</button>
       <div ng-if="topicsByCui" class="topics-by-cui">
         <section ng-repeat="(cui, topics) in topicsByCui track by $index" class="topic-by-cui" id="topics-{{cui}}">
           <h2 class="review-cui-concept"><span ng-if="topics.conceptName" ng-bind="topics.conceptName"></span> ({{cui}})</h2> 

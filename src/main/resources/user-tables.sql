@@ -64,6 +64,7 @@ create table review_topic (
   resolved_at TIMESTAMP
 );
 
+-- mark a topic as resolved by a given user
 drop function if exists review_resolve_topic;
 create function review_resolve_topic(topic_id int, username text) returns boolean
 language plpgsql as $$ begin
@@ -82,6 +83,17 @@ and
 return found;
 end; $$; 
 
+-- delete all read-markers of messages for a (resolved) topic
+drop function if exists review_reset_mark_read;
+create function review_reset_mark_read(topic_id int) returns void
+as $$
+delete from review_message_is_read
+where message_id in
+( select id
+  from review_message
+  where topic_id = review_reset_mark_read.topic_id )
+$$ language sql;
+
 drop table if exists review_message cascade;
 create table review_message (
   id serial primary key,
@@ -91,6 +103,7 @@ create table review_message (
   content text not null
 );
 
+-- create a new message
 drop function if exists review_new_message;
 create function review_new_message(project text, casedef text, cui char(8), topic_id int, content text, username text)
 returns table (message_id int) as $$
@@ -111,6 +124,7 @@ with
   select * from message
 $$ language sql;
 
+-- create a new topic
 drop function if exists review_new_topic;
 create function review_new_topic(project text, casedef text, cui char(8), heading text, username text) returns table (topic_id int)
 as $$
@@ -130,6 +144,7 @@ create table review_message_is_read (
   constraint primary_keys primary key (message_id, user_id)
 );
 
+-- mark all messages of a topic read for a given user
 drop function if exists review_mark_topic_read;
 create function review_mark_topic_read(topic_id int, username text) returns void
 language plpgsql as $$ begin
@@ -141,6 +156,7 @@ language plpgsql as $$ begin
   on conflict on constraint primary_keys do nothing;
 end; $$; 
 
+-- get all messages
 drop function if exists review_all_messages;
 create function review_all_messages(project text, casedef text, username text)
   returns table (
@@ -165,4 +181,3 @@ create function review_all_messages(project text, casedef text, username text)
     and c.name = review_all_messages.casedef
     order by t.cui, t.id, m.timestamp;
 $$ language sql;
-

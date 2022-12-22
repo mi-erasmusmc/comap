@@ -116,6 +116,20 @@ public class ReviewApi {
         }
 	}
 
+	public void resetReadMarkers(int topicId) throws CodeMapperException {
+		if (topicId == 0) {
+			throw CodeMapperException.user("invalid parameters to reset read markers");
+		}
+		String query = "SELECT * FROM review_reset_mark_read(?)";
+        try (Connection connection = connectionPool.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+        	statement.setInt(1, topicId);
+        	statement.execute();
+        } catch (SQLException e) {
+			throw CodeMapperException.server("Cannot execute query to reset read markers", e);
+        }
+	}
+
 	public void markRead(int topicId, String username) throws CodeMapperException {
 		String query = "SELECT * FROM review_mark_topic_read(?, ?::TEXT)";
         try (Connection connection = connectionPool.getConnection();

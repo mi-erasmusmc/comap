@@ -42,11 +42,11 @@ import org.biosemantics.codemapper.ClientState;
 import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.Comment;
 import org.biosemantics.codemapper.SourceConcept;
+import org.biosemantics.codemapper.authentification.AuthentificationApi;
 import org.biosemantics.codemapper.authentification.ProjectPermission;
 import org.biosemantics.codemapper.authentification.User;
 import org.biosemantics.codemapper.persistency.PersistencyApi;
 import org.biosemantics.codemapper.rest.CodeMapperApplication;
-import org.biosemantics.codemapper.rest.PersistencyResource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -91,7 +91,7 @@ public class DownloadResource {
 	@Path("case-definition-xls")
 	@Produces({WriteXlsApi.MIME_TYPE})
 	public Response getCaseDefinitonXls(@Context HttpServletRequest request, @Context User user, @QueryParam("project") final String project, @QueryParam("caseDefinition") final String caseDefinition, @QueryParam("url") final String url, @QueryParam("includeDescendants") final boolean includeDescendants) {
-		PersistencyResource.assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
+		AuthentificationApi.assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
 		logger.debug(String.format("Download case definition as XLS %s/%s (%s)", project, caseDefinition, user));
 		return getCaseDefinition(project, caseDefinition, url, CodeMapperApplication.getWriteXlsApi(), includeDescendants);
 	}
@@ -100,7 +100,7 @@ public class DownloadResource {
     @Path("case-definition-tsv")
     @Produces({WriteTsvApi.MIME_TYPE})
     public Response getCaseDefinitonTsv(@Context HttpServletRequest request, @Context User user, @QueryParam("project") final String project, @QueryParam("caseDefinition") final String caseDefinition, @QueryParam("url") final String url, @QueryParam("includeDescendants") final boolean includeDescendants) {
-        PersistencyResource.assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
+        AuthentificationApi.assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
         logger.debug(String.format("Download case definition as TSV %s/%s (%s)", project, caseDefinition, user));
         return getCaseDefinition(project, caseDefinition, url, CodeMapperApplication.getWriteTsvApi(), includeDescendants);
     }

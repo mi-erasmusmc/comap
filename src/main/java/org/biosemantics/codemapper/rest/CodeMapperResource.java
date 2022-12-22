@@ -39,6 +39,7 @@ import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.CodingSystem;
 import org.biosemantics.codemapper.UmlsApi;
 import org.biosemantics.codemapper.UmlsConcept;
+import org.biosemantics.codemapper.authentification.AuthentificationApi;
 import org.biosemantics.codemapper.authentification.User;
 
 @Path("code-mapper")
@@ -54,7 +55,7 @@ public class CodeMapperResource {
 	@Path("version")
 	@Produces(MediaType.APPLICATION_JSON)
 	public String version(@Context User user) {
-		AuthentificationResource.assertAuthentificated(user);
+		AuthentificationApi.assertAuthentificated(user);
 		return VERSION;
 	}
 
@@ -64,7 +65,7 @@ public class CodeMapperResource {
 	public List<UmlsConcept> getConceptCompletions(@Context User user,
 			@QueryParam("str") String str,
 			@QueryParam("codingSystems") List<String> codingSystems) {
-		AuthentificationResource.assertAuthentificated(user);
+		AuthentificationApi.assertAuthentificated(user);
 		try {
 			return api.getCompletions(str, codingSystems);
 		} catch (CodeMapperException e) {
@@ -78,7 +79,7 @@ public class CodeMapperResource {
     public List<UmlsConcept> getCodeCompletions(@Context User user,
             @QueryParam("str") String str,
             @QueryParam("codingSystem") String codingSystem) {
-        AuthentificationResource.assertAuthentificated(user);
+        AuthentificationApi.assertAuthentificated(user);
         try {
             List<UmlsConcept> res = api.getCodeCompletions(str, codingSystem);
             System.out.println(res);
@@ -92,7 +93,7 @@ public class CodeMapperResource {
 	@Path("coding-systems")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<CodingSystem> getCodingSystems(@Context User user) {
-		AuthentificationResource.assertAuthentificated(user);
+		AuthentificationApi.assertAuthentificated(user);
 		try {
 			return api.getCodingSystems();
 		} catch (CodeMapperException e) {
@@ -104,7 +105,7 @@ public class CodeMapperResource {
 	@Path("cuis-for-codes")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<String> getCuisForCodes(@FormParam("codes") List<String> codes, @FormParam("codingSystem") String codingSystem, @Context User user) {
-        AuthentificationResource.assertAuthentificated(user);
+        AuthentificationApi.assertAuthentificated(user);
         try {
             return api.getCuisByCodes(codes, codingSystem);
         } catch (CodeMapperException e) {
@@ -116,7 +117,7 @@ public class CodeMapperResource {
     @Path("known-codes")
     @Produces(MediaType.APPLICATION_JSON)
     public List<String> getKnownCodes(@FormParam("codes") List<String> codes, @FormParam("codingSystem") String codingSystem, @Context User user) {
-        AuthentificationResource.assertAuthentificated(user);
+        AuthentificationApi.assertAuthentificated(user);
         try {
             return api.getKnownCodes(codes, codingSystem);
         } catch (CodeMapperException e) {
@@ -130,7 +131,7 @@ public class CodeMapperResource {
 	public List<UmlsConcept> getUmlsConcepts(@FormParam("cuis") List<String> cuis,
 			@FormParam("codingSystems") List<String> codingSystems,
 			@Context User user) {
-		AuthentificationResource.assertAuthentificated(user);
+		AuthentificationApi.assertAuthentificated(user);
 		try {
 			Map<String, UmlsConcept> concepts = api.getConcepts(cuis, codingSystems);
 			return new LinkedList<>(concepts.values());
@@ -143,7 +144,7 @@ public class CodeMapperResource {
 	@Path("config")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getConfig(@Context User user) {
-		AuthentificationResource.assertAuthentificated(user);
+		AuthentificationApi.assertAuthentificated(user);
 		Map<String, String> config = new TreeMap<>();
 		config.put("peregrineResourceUrl", CodeMapperApplication.getPeregrineResourceUrl());
 		return Response.ok(config).build();
@@ -155,7 +156,7 @@ public class CodeMapperResource {
 	public Map<String, List<UmlsConcept>> getHyponyms(@FormParam("cuis") List<String> cuis,
 			@FormParam("codingSystems") List<String> codingSystems,
 			@Context User user) {
-		AuthentificationResource.assertAuthentificated(user);
+		AuthentificationApi.assertAuthentificated(user);
 		return getHyponymsOrHypernyms(cuis, codingSystems, true, user);
 	}
 
@@ -165,7 +166,7 @@ public class CodeMapperResource {
 	public Map<String, List<UmlsConcept>> getHypernyms(@FormParam("cuis") List<String> cuis,
 			@FormParam("codingSystems") List<String> codingSystems,
 			@Context User user) {
-		AuthentificationResource.assertAuthentificated(user);
+		AuthentificationApi.assertAuthentificated(user);
 		return getHyponymsOrHypernyms(cuis, codingSystems, false, user);
 	}
 
@@ -176,7 +177,7 @@ public class CodeMapperResource {
 			@FormParam("codingSystems") List<String> codingSystems,
 			@FormParam("hyponymsNotHypernyms") boolean hyponymsNotHypernyms,
 			@Context User user) {
-		AuthentificationResource.assertAuthentificated(user);
+		AuthentificationApi.assertAuthentificated(user);
 		logger.debug(String.format("Get connected concepts %s of %s (%s)", hyponymsNotHypernyms ? "hypo" : "hyper", cuis, user));
 		if (cuis.isEmpty())
 			return new TreeMap<>();
@@ -196,7 +197,7 @@ public class CodeMapperResource {
 			@FormParam("codingSystems") List<String> codingSystems,
 			@FormParam("relations") List<String> relations,
 			@Context User user) {
-		AuthentificationResource.assertAuthentificated(user);
+		AuthentificationApi.assertAuthentificated(user);
 		try {
 			return api.getRelated(cuis, codingSystems, relations);
 		} catch (CodeMapperException e) {
@@ -213,7 +214,7 @@ public class CodeMapperResource {
 	        @FormParam("missingCodingSystems") List<String> missingCodingSystems,
 	        @FormParam("excludeCuis") List<String> excludeCuis,
 	        @Context User user) {
-        AuthentificationResource.assertAuthentificated(user);
+        AuthentificationApi.assertAuthentificated(user);
         try {
             return api.getSimilarConcepts(cuis, missingCodingSystems, codingSystems, excludeCuis);
         } catch (CodeMapperException e) {
@@ -227,7 +228,7 @@ public class CodeMapperResource {
 	public List<String> searchConcepts(
 	        @FormParam("query") String query,
 	        @Context User user) {
-	    AuthentificationResource.assertAuthentificated(user);
+	    AuthentificationApi.assertAuthentificated(user);
 	    try {
 	        return CodeMapperApplication.getUtsApi().searchConcepts(query, CodeMapperApplication.getUmlsVersion());
 	    } catch (CodeMapperException e) {

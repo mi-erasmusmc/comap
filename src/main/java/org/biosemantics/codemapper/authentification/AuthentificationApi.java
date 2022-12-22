@@ -25,6 +25,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,6 +38,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.rest.CodeMapperApplication;
+import org.biosemantics.codemapper.rest.UnauthorizedException;
 
 public class AuthentificationApi {
 
@@ -186,6 +189,20 @@ public class AuthentificationApi {
 		} catch (SQLException e) {
 			throw CodeMapperException.server("Cannot change password", e);
 		}
+	}
+
+	public static void assertAuthentificated(User user) {
+		if (user == null)
+			throw new UnauthorizedException();
+	}
+
+	/** Test if user has any of the projectPermissions in a project. */
+	public static void assertProjectRoles(User user, String project, ProjectPermission... projectPermissions) {
+		assertAuthentificated(user);
+		Set<ProjectPermission> perms = user.getProjectPermissions().get(project);
+		if (perms != null && !Collections.disjoint(perms, Arrays.asList(projectPermissions)))
+			return;
+		throw new UnauthorizedException();
 	}
 	
 }

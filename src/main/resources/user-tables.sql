@@ -167,7 +167,7 @@ create function review_all_messages(project text, casedef text, username text)
   ) as $$
     select
       t.cui, t.id, t.heading,
-      t.resolved, mu.username, t.resolved_at,
+      t.resolved, ru.username, t.resolved_at,
       m.id, mu.username, m.timestamp, m.content,
       r.message_id is not null
     from projects p

@@ -181,3 +181,22 @@ create function review_all_messages(project text, casedef text, username text)
     and c.name = review_all_messages.casedef
     order by t.cui, t.id, m.timestamp;
 $$ language sql;
+
+
+drop function if exists review_migrate_from_comments;
+create function review_migrate_from_comments() returns void
+as $$
+
+insert into review_topic (case_definition_id, cui, heading)
+select distinct c.case_definition_id, c.cui, 'Comment' as heading
+from "code-mapper".comments c
+inner join case_definitions cd
+on c.case_definition_id = cd.id;
+
+insert into review_message (topic_id, timestamp, author_id, content)
+select t.id as topic_id, c.timestamp, c.author, c.content
+from "code-mapper".comments as c, review_topic as t
+where c.case_definition_id = t.case_definition_id
+and c.cui = t.cui;
+
+$$ language sql;

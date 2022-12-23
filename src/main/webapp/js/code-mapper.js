@@ -527,10 +527,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     }
                 });
             });
-    }
+    };
+    
     $scope.toggleTopicShowMessages = (topicId) => {
         $scope.topicShowMessages[topicId] = !$scope.topicShowMessages[topicId]; 
     };
+    
     $scope.resolveTopic = (cui, topicId) => {
         $http.post(urls.markTopicRead($scope.project, $scope.caseDefinitionName, cui, topicId), {}, FORM_ENCODED_POST)
             .success(() => {
@@ -547,6 +549,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 error("could not mark messages as read to resolve topic", err);
             });
     };
+    
     $scope.newMessage = (cui, topicId, content) => {
         const data = {'content': content};
         $http.post(urls.newMessage($scope.project, $scope.caseDefinitionName, cui, topicId), data, FORM_ENCODED_POST)
@@ -558,6 +561,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 error("colud not send message", err);
             });
     };
+    
     $scope.newTopic = (cui, heading) => {
         const data = {'heading': heading};
         $http.post(urls.newTopic($scope.project, $scope.caseDefinitionName, cui), data, FORM_ENCODED_POST)

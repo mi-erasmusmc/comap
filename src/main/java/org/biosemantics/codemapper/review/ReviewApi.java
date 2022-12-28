@@ -13,7 +13,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.biosemantics.codemapper.CodeMapperException;
-import org.biosemantics.codemapper.review.Topic.Resolved;
+import org.biosemantics.codemapper.review.Topic.Action;
 
 public class ReviewApi {
 
@@ -71,6 +71,8 @@ public class ReviewApi {
 				String cui = result.getString(ix++);
 				int topicID = result.getInt(ix++);
 				String topicHeading = result.getString(ix++);
+				String createdBy = result.getString(ix++);
+				Timestamp createdAt = result.getTimestamp(ix++);
 				boolean isResolved = result.getBoolean(ix++);
 				String resolvedUser = result.getString(ix++);
 				Timestamp resolvedTime = result.getTimestamp(ix++);
@@ -79,17 +81,19 @@ public class ReviewApi {
 				Timestamp messageTime = result.getTimestamp(ix++);
 				String messageContent = result.getString(ix++);
 				boolean messageIsRead = result.getBoolean(ix++);
-				Resolved resolved;
+				
+				Action created = new Action(createdBy, timestampToString(createdAt));
+				Action resolved;
 				if (isResolved) {
 					assert (resolvedUser != null && resolvedTime != null);
-					resolved = new Resolved(resolvedUser, timestampToString(resolvedTime));
+					resolved = new Action(resolvedUser, timestampToString(resolvedTime));
 				} else {
 					resolved = null;
 				}
 				
 				Topic topic = topicsByCUI
 						.computeIfAbsent(cui, key -> new HashMap<>())
-						.computeIfAbsent(topicID, key -> new Topic(topicID, topicHeading, resolved));
+						.computeIfAbsent(topicID, key -> new Topic(topicID, topicHeading, created, resolved));
 				if (messageId != 0) {
 					Message message = new Message(messageId, messageAuthor, timestampToString(messageTime), messageContent, messageIsRead);
 					topic.messages.add(message);
@@ -140,5 +144,20 @@ public class ReviewApi {
         } catch (SQLException e) {
 			throw CodeMapperException.server("Cannot execute query to resolve topic", e);
         }
+	}
+
+	public String getTopicCreatedBy(int topicId) throws CodeMapperException {
+		String query = "SELECT * FROM review_topic_created_by(?)";
+		try (Connection connection = connectionPool.getConnection();
+			 PreparedStatement statement = connection.prepareStatement(query)) {
+			statement.setInt(1, topicId);
+			ResultSet set = statement.executeQuery();
+			if (!set.next()) {
+				return null;
+			}
+			return set.getString(1);
+		} catch (SQLException e) {
+			throw CodeMapperException.server("Cannot execute query to get topic creator", e);
+		}
 	}
 }

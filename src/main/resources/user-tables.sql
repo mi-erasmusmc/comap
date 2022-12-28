@@ -59,6 +59,8 @@ create table review_topic (
   case_definition_id int not null references case_definitions(id),
   cui char(8) not null,
   heading text,
+  created_by int references users(id),
+  created_at TIMESTAMP not null default CURRENT_TIMESTAMP,
   resolved boolean not null default false,
   resolved_by int references users(id),
   resolved_at TIMESTAMP
@@ -128,10 +130,11 @@ $$ language sql;
 drop function if exists review_new_topic;
 create function review_new_topic(project text, casedef text, cui char(8), heading text, username text) returns table (topic_id int)
 as $$
-  insert into review_topic (case_definition_id, cui, heading)
-  select cd.id, review_new_topic.cui, review_new_topic.heading
+  insert into review_topic (case_definition_id, cui, heading, created_by)
+  select cd.id, review_new_topic.cui, review_new_topic.heading, u.id
   from projects p
   inner join case_definitions cd on cd.project_id = p.id
+  inner join users u on u.username = review_new_topic.username
   where p.name = review_new_topic.project and cd.name = review_new_topic.casedef
   returning id
 $$ language sql;
@@ -161,18 +164,21 @@ drop function if exists review_all_messages;
 create function review_all_messages(project text, casedef text, username text)
   returns table (
     cui char(8), topic_id int, topic_heading text,
+    created_by text, created_at TIMESTAMP,
     resolved boolean, resolved_user text, resolved_timestamp TIMESTAMP,
     message_id int, message_author text, message_timestamp TIMESTAMP, message_content text,
     is_read boolean
   ) as $$
     select
       t.cui, t.id, t.heading,
+      cu.username, t.created_at,
       t.resolved, ru.username, t.resolved_at,
       m.id, mu.username, m.timestamp, m.content,
       r.message_id is not null
     from projects p
     inner join case_definitions c on c.project_id = p.id
     inner join review_topic t on t.case_definition_id = c.id
+    left join users cu on cu.id = t.created_by
     left join review_message m on m.topic_id = t.id
     left join users mu on mu.id = m.author_id
     left join users ru on ru.username = review_all_messages.username
@@ -182,13 +188,21 @@ create function review_all_messages(project text, casedef text, username text)
     order by t.cui, t.id, m.timestamp;
 $$ language sql;
 
+drop function if exists review_topic_created_by;
+create function review_topic_created_by(topic_id int)
+returns text
+as $$
+select u.username
+from review_topic t
+inner join users u on u.id = t.created_by 
+$$ language sql;
 
 drop function if exists review_migrate_from_comments;
 create function review_migrate_from_comments() returns void
 as $$
 
-insert into review_topic (case_definition_id, cui, heading)
-select distinct c.case_definition_id, c.cui, 'Comment' as heading
+insert into review_topic (case_definition_id, cui, created_by, created_at, heading)
+select distinct c.case_definition_id, c.cui, c.author, c.timestamp, 'Comment' as heading
 from "code-mapper".comments c
 inner join case_definitions cd
 on c.case_definition_id = cd.id;

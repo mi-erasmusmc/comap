@@ -503,6 +503,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             messages: topic.messages,
                             numNewMessages: numNewMessages,
                             numReadMessages: numReadMessages,
+                            created: topic.created,
                             resolved: topic.resolved
                         });
                         cuiNumNewMessages += numNewMessages;

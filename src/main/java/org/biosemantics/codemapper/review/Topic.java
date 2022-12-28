@@ -10,21 +10,23 @@ public class Topic {
 	
 	int id;
 	String heading;
-	Resolved resolved = null;
+	Action created;
+	Action resolved = null;
 	Collection<Message> messages;
 	
-	public Topic(int id, String heading, Resolved resolved) {
+	public Topic(int id, String heading, Action created, Action resolved) {
 		this.id = id;
 		this.heading = heading;
+		this.created = created;
 		this.resolved = resolved;
 		this.messages = new LinkedList<>();
 	}
 
 	@XmlRootElement
-	public static class Resolved {
+	public static class Action {
 		String timestamp;
 		String user;
-		public Resolved(String user, String timestamp) {
+		public Action(String user, String timestamp) {
 			this.timestamp = timestamp;
 			this.user = user;
 		}

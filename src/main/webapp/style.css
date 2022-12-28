@@ -389,3 +389,6 @@ textarea.review-message:focus, textarea.review-message.filled {
 .topic-button {
     background: #deddda;
 }
+.topic-heading-heading {
+	text-decoration: underline;
+}

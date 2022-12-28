@@ -1,6 +1,7 @@
 package org.biosemantics.codemapper.rest;
 
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.FormParam;
@@ -65,8 +66,11 @@ public class ReviewResource {
 	@Path("resolve-topic/{project}/{caseDefinition}/{cui}/{topicId}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public void resolveTopic(@Context HttpServletRequest request, @Context User user, @PathParam("project") String project, @PathParam("caseDefinition") String caseDefinition, @PathParam("cui") String cui, @PathParam("topicId") int topicId) {
-		AuthentificationApi.assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
+		Set<ProjectPermission> perms = user.getProjectPermissions().get(project);
 		try {
+			if (!(perms.contains(ProjectPermission.Editor) || user.getUsername().equals(CodeMapperApplication.getReviewApi().getTopicCreatedBy(topicId)))) {
+				throw new UnauthorizedException();
+			}
 			CodeMapperApplication.getReviewApi().resolveTopic(topicId, user.getUsername());
 			CodeMapperApplication.getReviewApi().resetReadMarkers(topicId);
 		} catch (CodeMapperException e) {

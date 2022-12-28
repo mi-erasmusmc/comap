@@ -181,8 +181,12 @@
             </h3>
             <div ng-if="topicShowMessages[topic.id]">
               <div>
-                <button ng-if="!topic.resolved" ng-disabled="!userCanEdit() && topic.created.user != user.user" title="Resolve this topic, preventing further messages" ng-click="resolveTopic(cui, topic.id)" confirm-click="Mark this topic as resolved and disable further messages?" class="topic-button btn btn-sm btn-secondary">Resolve topic</button>
-                <button ng-if="topic.numNewMessages > 0 && topic.resolved == null" ng-click="markAsRead(cui, topic.id)" class="topic-button btn btn-sm btn-secondary">Mark all as read</button>
+                <button ng-if="!topic.resolved" ng-disabled="!userCanEdit() && topic.created.user != user.user" title="Resolve this discussion, preventing further messages" ng-click="resolveTopic(cui, topic.id)" confirm-click="Mark this discussion as resolved and disable further messages?" class="topic-button btn btn-sm btn-secondary">
+                Resolve discussion
+                </button>
+                <button ng-if="topic.numNewMessages > 0 && topic.resolved == null" ng-click="markAsRead(cui, topic.id)" class="topic-button btn btn-sm btn-secondary">
+                Mark all as read
+                </button>
               </div>
               <ul class="messages" ng-class="{resolved: topic.resolved != null}">
                 <li ng-repeat="message in topic.messages" ng-class="{'new-message': !message.isRead && topic.resolved == null}" class="message"> <!--  ng-class="{new: (!message.isRead)" -->
@@ -196,14 +200,18 @@
                 <li ng-if="topic.resolved == null">
                   <textarea placeholder="(new message)" ng-model="newMessageText[cui][topic.id]" ng-class="{filled: !!newMessageText[cui][topic.id]}" ng-disabled="reviewInputDisabled" class="review-message" cols="72" rows="1">
                   </textarea>
-                  <button ng-click="newMessage(cui, topic.id, newMessageText[cui][topic.id])" ng-disabled="!newMessageText[cui][topic.id]" class="btn btn-primary">Send</button>
+                  <button ng-click="newMessage(cui, topic.id, newMessageText[cui][topic.id])" ng-disabled="!newMessageText[cui][topic.id]" class="btn btn-primary">
+                  Post
+                  </button>
                 </li>
               </ul>
             </div>
           </section>
           <section class="topic">
-          <input placeholder="(topic description)" type="text" ng-model="newTopicHeading[cui]" ng-disabled="reviewInputDisabled"></input>
-          <button ng-click="newTopic(cui, newTopicHeading[cui])" ng-disabled="!newTopicHeading[cui]" class="btn btn-primary">Create new topic</button>
+          <input placeholder="(discussion topic)" type="text" ng-model="newTopicHeading[cui]" ng-disabled="reviewInputDisabled"></input>
+          <button ng-click="newTopic(cui, newTopicHeading[cui])" ng-disabled="!newTopicHeading[cui]" class="btn btn-primary">
+          Create new discussion
+          </button>
           </section>
         </section>
         </div>

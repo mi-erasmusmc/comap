@@ -68,7 +68,8 @@ public class ReviewResource {
 	public void resolveTopic(@Context HttpServletRequest request, @Context User user, @PathParam("project") String project, @PathParam("caseDefinition") String caseDefinition, @PathParam("cui") String cui, @PathParam("topicId") int topicId) {
 		Set<ProjectPermission> perms = user.getProjectPermissions().get(project);
 		try {
-			if (!(perms.contains(ProjectPermission.Editor) || user.getUsername().equals(CodeMapperApplication.getReviewApi().getTopicCreatedBy(topicId)))) {
+			String createdBy = CodeMapperApplication.getReviewApi().getTopicCreatedBy(topicId);
+			if (!(perms.contains(ProjectPermission.Editor) || (createdBy != null && user.getUsername().equals(createdBy)))) {
 				throw new UnauthorizedException();
 			}
 			CodeMapperApplication.getReviewApi().resolveTopic(topicId, user.getUsername());

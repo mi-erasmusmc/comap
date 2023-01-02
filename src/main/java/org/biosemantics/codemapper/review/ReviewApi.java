@@ -40,7 +40,7 @@ public class ReviewApi {
 		}
 	}
 	
-	public void newTopic(String project, String mapping, String cui, String heading, String user) throws CodeMapperException {
+	public int newTopic(String project, String mapping, String cui, String heading, String user) throws CodeMapperException {
 		String query = "SELECT * FROM review_new_topic(?, ?, ?, ?, ?)";
 
         try (Connection connection = connectionPool.getConnection();
@@ -50,7 +50,11 @@ public class ReviewApi {
         	statement.setString(3, cui);
         	statement.setString(4, heading);
         	statement.setString(5, user);
-			statement.executeQuery();
+			ResultSet set = statement.executeQuery();
+			if (!set.next()) {
+				return 0;
+			}
+			return set.getInt(1);
         } catch (SQLException e) {
 			throw CodeMapperException.server("Cannot execute query to create topic", e);
 		}

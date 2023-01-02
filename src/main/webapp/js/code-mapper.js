@@ -456,7 +456,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     
     $scope.refreshReview = () => {
         $scope.reviewInputDisabled = true;
-        $http.get(urls.topicsByCui($scope.project, $scope.caseDefinitionName))
+        return $http.get(urls.topicsByCui($scope.project, $scope.caseDefinitionName))
             .error((err) => {
                 error("could not get review topics", err);
                 $scope.reviewInputDisabled = false;
@@ -497,6 +497,8 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                                 numReadMessages += 1;
                             }
                         });
+                        cuiNumNewMessages += numNewMessages;
+                        cuiNumReadMessages += numReadMessages;
                         topics1.push({
                             id: topicId,
                             heading: topic.heading,
@@ -506,8 +508,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             created: topic.created,
                             resolved: topic.resolved
                         });
-                        cuiNumNewMessages += numNewMessages;
-                        cuiNumReadMessages += numReadMessages;
                     });
                     const conceptName = concepts[cui] ? concepts[cui].preferredName : null;
                     $scope.topicsByCui[cui] = {
@@ -539,8 +539,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
             .success(() => {
                 $http.post(urls.resolveTopic($scope.project, $scope.caseDefinitionName, cui, topicId), {}, FORM_ENCODED_POST)
                     .success(() => {
-                        $scope.refreshReview();
-                        $scope.topicShowMessages[topicId] = false;
+                        $scope.refreshReview()
+                            .success(() => {
+                                $scope.topicShowMessages[topicId] = false;
+                            });
                     })
                     .error((err) => {
                         error("could not resolve topic", err);
@@ -555,8 +557,10 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
         const data = {'content': content};
         $http.post(urls.newMessage($scope.project, $scope.caseDefinitionName, cui, topicId), data, FORM_ENCODED_POST)
             .success(() => {
-                $scope.refreshReview();
-                $scope.newMessageText[cui][topicId] = "";
+                $scope.refreshReview()
+                    .success(() => {
+		                $scope.newMessageText[cui][topicId] = "";
+					});
             })
             .error((err) => {
                 error("colud not send message", err);
@@ -566,9 +570,12 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $scope.newTopic = (cui, heading) => {
         const data = {'heading': heading};
         $http.post(urls.newTopic($scope.project, $scope.caseDefinitionName, cui), data, FORM_ENCODED_POST)
-            .success(() => {
-                $scope.refreshReview();
-                $scope.newTopicHeading[cui] = "";
+            .success((topicId) => {
+                $scope.refreshReview()
+                	.success(() => {
+                		$scope.newTopicHeading[cui] = "";
+                		$("topic-" + topicId + " textarea").focus();
+					});
             })
             .error((err) => {
                 error("could not create topic", err);

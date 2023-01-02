@@ -39,10 +39,10 @@ public class ReviewResource {
 	@POST
 	@Path("new-topic/{project}/{caseDefinition}/{cui}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public void postNewTopic(@Context HttpServletRequest request, @Context User user, @PathParam("project") String project, @PathParam("caseDefinition") String caseDefinition, @PathParam("cui") String cui, @FormParam("heading") String heading) {
+	public int postNewTopic(@Context HttpServletRequest request, @Context User user, @PathParam("project") String project, @PathParam("caseDefinition") String caseDefinition, @PathParam("cui") String cui, @FormParam("heading") String heading) {
 		AuthentificationApi.assertProjectRoles(user, project, ProjectPermission.Editor, ProjectPermission.Commentator);
 		try {
-			CodeMapperApplication.getReviewApi().newTopic(project, caseDefinition, cui, heading, user.getUsername());
+			return CodeMapperApplication.getReviewApi().newTopic(project, caseDefinition, cui, heading, user.getUsername());
 		} catch (CodeMapperException e) {
 			e.printStackTrace();
 			throw new InternalServerErrorException(e);

@@ -69,7 +69,7 @@ public class ReviewResource {
 		Set<ProjectPermission> perms = user.getProjectPermissions().get(project);
 		try {
 			String createdBy = CodeMapperApplication.getReviewApi().getTopicCreatedBy(topicId);
-			if (!(perms.contains(ProjectPermission.Editor) || (createdBy != null && user.getUsername().equals(createdBy)))) {
+			if (!perms.contains(ProjectPermission.Editor) && createdBy != null && !user.getUsername().equals(createdBy)) {
 				throw new UnauthorizedException();
 			}
 			CodeMapperApplication.getReviewApi().resolveTopic(topicId, user.getUsername());

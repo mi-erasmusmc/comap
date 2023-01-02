@@ -195,6 +195,7 @@ as $$
 select u.username
 from review_topic t
 inner join users u on u.id = t.created_by 
+where t.id = review_topic_created_by.topic_id
 $$ language sql;
 
 drop function if exists review_migrate_from_comments;

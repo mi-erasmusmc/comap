@@ -162,8 +162,7 @@
           <section class="topic" id="topic-{{topic.id}}" ng-repeat="topic in topics.topics" ng-class="{resolved: topic.resolved != null}">
             <h3 class="topic-heading" ng-click="toggleTopicShowMessages(topic.id)">
             <span class="topic-heading-heading">{{topic.heading || "(No topic)"}}.</span>
-            {{topic.numNewMessages + topic.numReadMessages}} <ng-pluralize count="topic.numNewMessages + topic.numReadMessages" when="{'1': 'message', 'other': 'messages'}"></ng-pluralize>
-            <span ng-if="!topic.resolved && topic.numNewMessages > 0">
+            {{topic.numNewMessages + topic.numReadMessages}} <ng-pluralize count="topic.numNewMessages + topic.numReadMessages" when="{'1': 'message', 'other': 'messages'}"></ng-pluralize><span ng-if="!topic.resolved && topic.numNewMessages > 0">
               , <span class="num-new-messages">{{topic.numNewMessages}} unread</span>
             </span>.
             Created by
@@ -181,7 +180,7 @@
             </h3>
             <div ng-if="topicShowMessages[topic.id]">
               <div>
-                <button ng-if="!topic.resolved" ng-disabled="!userCanEdit() && topic.created.user != user.user" title="Resolve this discussion, preventing further messages" ng-click="resolveTopic(cui, topic.id)" confirm-click="Mark this discussion as resolved and disable further messages?" class="topic-button btn btn-sm btn-secondary">
+                <button ng-if="!topic.resolved" ng-disabled="!userCanEdit() && topic.created.user != user.username" title="Resolve this discussion, preventing further messages" ng-click="resolveTopic(cui, topic.id)" confirm-click="Mark this discussion as resolved and disable further messages?" class="topic-button btn btn-sm btn-secondary">
                 Resolve discussion
                 </button>
                 <button ng-if="topic.numNewMessages > 0 && topic.resolved == null" ng-click="markAsRead(cui, topic.id)" class="topic-button btn btn-sm btn-secondary">

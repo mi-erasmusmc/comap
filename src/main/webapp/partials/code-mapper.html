@@ -166,12 +166,14 @@
               , <span class="num-new-messages">{{topic.numNewMessages}} unread</span>
             </span>.
             Created by
-            <span class="comment-author" ng-bind="topic.created.user || 'unknown'"></span>
+            <span class="comment-author" ng-if="topic.created.user != user.username" ng-bind="topic.created.user"></span>
+            <span class="comment-author" ng-if="topic.created.user == user.username">me</span>
             <span class="comment-timestamp" ng-bind="topic.created.timestamp | date:'mediumDate'"
                   title="{{topic.resolved.timestamp|date:'medium'}}"></span>.
             <span ng-if="topic.resolved">
-              Resolved by
-              <span class="comment-author" ng-bind="topic.resolved.user"></span>
+            Resolved by
+            <span class="comment-author" ng-if="topic.resolved.user != user.username" ng-bind="topic.resolved.user"></span>
+            <span class="comment-author" ng-if="topic.resolved.user == user.username">me</span>
               <span class="comment-timestamp" ng-bind="topic.resolved.timestamp | date:'mediumDate'" 
                     title="{{topic.resolved.timestamp|date:'medium'}}"></span>.
             </span>

@@ -358,23 +358,34 @@ img.advance-logo {
 .new-message {
     font-weight: bold;
 }
-
+.message {
+	margin-top: .2em;
+}
+.post-message {
+	list-style-type: none;
+}
 .topic-by-cui {
     width: 72em;
-}
-.topic-by-cui {
+	margin-bottom: 2.5em;
 }
 .topic-heading {
-    margin: 0 0 0 0;
+    margin: .2em .2em .2em .2em;
+    cursor: pointer;
 }
 textarea.review-message:focus, textarea.review-message.filled {
     height: 6em;
 }
 .topic {
     padding: .5em;
+    margin-top: 1em;
     margin-bottom: .5em;
-    background: #f6f5f4;
+	background: #f6f5f4;
     border: 1px solid #9a9996;
+}
+.topic.new {
+/* 	margin-top: 0; */
+}
+.topic.existing {
 }
 .resolved h3 {
     opacity: 0.65;
@@ -391,4 +402,7 @@ textarea.review-message:focus, textarea.review-message.filled {
 }
 .topic-heading-heading {
 	text-decoration: underline;
+}
+.comment-content.newline {
+	display: block;
 }

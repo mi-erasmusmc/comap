@@ -488,6 +488,7 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                             numNewMessages += 1;
                         }
                         angular.forEach(topic.messages, (message) => {
+	                        message.hasNewline = /\r|\n/.exec(message.content);
                             if (topic.resolved) {
                                 message.isRead = true;
                             }

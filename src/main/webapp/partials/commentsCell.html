@@ -1,5 +1,5 @@
 <div>
-  <button title='Show and create comments ({{topicsByCui[row.entity.cui].topics.length}} topics, {{topicsByCui[row.entity.cui].numReadMessages + topicsByCui[row.entity.cui].numNewMessages}} messages, {{topicsByCui[row.entity.cui].numNewMessages}} new)' ng-click="navigateToComments(row.entity.cui)" class='btn btn-default btn-xs'>
+  <button title='Show and create comments ({{topicsByCui[row.entity.cui].topics.length}} discussions, {{topicsByCui[row.entity.cui].numReadMessages + topicsByCui[row.entity.cui].numNewMessages}} messages, {{topicsByCui[row.entity.cui].numNewMessages}} new)' ng-click="navigateToComments(row.entity.cui)" class='btn btn-default btn-xs'>
     <i class='glyphicon glyphicon-comment'></i>
     {{topicsByCui[row.entity.cui].topics.length}}/{{topicsByCui[row.entity.cui].numReadMessages + topicsByCui[row.entity.cui].numNewMessages}}
     <span ng-if="topicsByCui[row.entity.cui].numNewMessages > 0" class="num-new-messages">

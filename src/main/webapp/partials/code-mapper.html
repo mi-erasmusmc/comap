@@ -159,7 +159,7 @@
       <div ng-if="topicsByCui" class="topics-by-cui">
         <section ng-repeat="(cui, topics) in topicsByCui track by $index" class="topic-by-cui" id="topics-{{cui}}">
           <h2 class="review-cui-concept"><span ng-if="topics.conceptName" ng-bind="topics.conceptName"></span> ({{cui}})</h2> 
-          <section class="topic" id="topic-{{topic.id}}" ng-repeat="topic in topics.topics" ng-class="{resolved: topic.resolved != null}">
+          <section class="topic existing" id="topic-{{topic.id}}" ng-repeat="topic in topics.topics" ng-class="{resolved: topic.resolved != null}">
             <h3 class="topic-heading" ng-click="toggleTopicShowMessages(topic.id)">
             <span class="topic-heading-heading">{{topic.heading || "(No topic)"}}.</span>
             {{topic.numNewMessages + topic.numReadMessages}} <ng-pluralize count="topic.numNewMessages + topic.numReadMessages" when="{'1': 'message', 'other': 'messages'}"></ng-pluralize><span ng-if="!topic.resolved && topic.numNewMessages > 0">
@@ -195,23 +195,22 @@
                   <span class="comment-author" ng-if="message.username == user.username">me</span>
                   <span class="comment-timestamp" ng-bind="message.timestamp | date:'mediumDate'" 
                         title="{{comment.timestamp|date:'medium'}}"></span>:
-                  <span class="comment-content" ng-bind="message.content"></span>
-<!--                   <span ng-if="!message.isRead"> (new)</span> -->
+                  <span class="comment-content" ng-class="{newline: message.hasNewline}" ng-bind="message.content"></span>
                 </li>
-                <li ng-if="topic.resolved == null">
+                <li class="post-message" ng-if="topic.resolved == null">
                   <textarea placeholder="(new message)" ng-model="newMessageText[cui][topic.id]" ng-class="{filled: !!newMessageText[cui][topic.id]}" ng-disabled="reviewInputDisabled" class="review-message" cols="72" rows="1">
                   </textarea>
                   <button ng-click="newMessage(cui, topic.id, newMessageText[cui][topic.id])" ng-disabled="!newMessageText[cui][topic.id]" class="btn btn-primary">
-                  Post
+                  <i class="glyphicon glyphicon-send"></i> Send
                   </button>
                 </li>
               </ul>
             </div>
           </section>
-          <section class="topic">
+          <section class="topic new">
           <input placeholder="(discussion topic)" type="text" ng-model="newTopicHeading[cui]" ng-disabled="reviewInputDisabled"></input>
           <button ng-click="newTopic(cui, newTopicHeading[cui])" ng-disabled="!newTopicHeading[cui]" class="btn btn-primary">
-          Create new discussion
+          <i class="glyphicon glyphicon-pencil"></i> New discussion
           </button>
           </section>
         </section>

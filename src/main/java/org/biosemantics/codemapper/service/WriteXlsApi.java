@@ -127,10 +127,10 @@ public class WriteXlsApi implements WriteApis.Api {
 				List<HSSFCell> row = setRow(sheet.createRow(rowIx++), dateString, comment.getAuthor(), concept,
 						comment.getCui(), comment.getContent());
 				if (date != null) {
-					row.get(0).setCellValue(date);
 					HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
 					short format = sheet.getWorkbook().getCreationHelper().createDataFormat().getFormat("m/d/yy hh:mm");
 					style.setDataFormat(format);
+					row.get(0).setCellValue(date);
 					row.get(0).setCellStyle(style);
 				}
 			}
@@ -159,11 +159,11 @@ public class WriteXlsApi implements WriteApis.Api {
 			String result = historyDatumToString(entry.result);
 			List<HSSFCell> row = setRow(sheet.createRow(rowIx++), entry.date, entry.user, operation, argument, result);			
 			if (date != null) {
-				row.get(0).setCellValue(date);
 				HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
 				short format = sheet.getWorkbook().getCreationHelper().createDataFormat().getFormat("m/d/yy hh:mm");
 				style.setDataFormat(format);
 				row.get(0).setCellStyle(style);
+				row.get(0).setCellValue(date);
 			}
 		}
 		sheet.setAutoFilter(new CellRangeAddress(0, rowIx - 1, 0, header.size() - 1));
@@ -196,10 +196,15 @@ public class WriteXlsApi implements WriteApis.Api {
 	}
 
 	private List<HSSFCell> setRow(HSSFRow row, String... cells) {
+		HSSFWorkbook wb = row.getSheet().getWorkbook();
+		short textFormat = wb.getCreationHelper().createDataFormat().getFormat("@");
+		HSSFCellStyle textStyle = wb.createCellStyle();
+		textStyle.setDataFormat(textFormat);
 		List<HSSFCell> result = new LinkedList<>();
 		for (int ix = 0; ix < cells.length; ix++) {
 			HSSFCell cell = row.createCell(ix);
 			cell.setCellValue(cells[ix]);
+			cell.setCellStyle(textStyle);
 			result.add(cell);
 		}
 		return result;

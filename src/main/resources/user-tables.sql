@@ -66,6 +66,22 @@ create table review_topic (
   resolved_at TIMESTAMP
 );
 
+drop table if exists review_message cascade;
+create table review_message (
+  id serial primary key,
+  topic_id int not null references review_topic(id),
+  timestamp TIMESTAMP not null default CURRENT_TIMESTAMP,
+  author_id int not null references users(id),
+  content text not null
+);
+
+drop table if exists review_message_is_read;
+create table review_message_is_read (
+  message_id int not null references review_message(id),
+  user_id int not null references users(id),
+  constraint primary_keys primary key (message_id, user_id)
+);
+
 -- mark a topic as resolved by a given user
 drop function if exists review_resolve_topic;
 create function review_resolve_topic(topic_id int, username text) returns boolean
@@ -95,15 +111,6 @@ where message_id in
   from review_message
   where topic_id = review_reset_mark_read.topic_id )
 $$ language sql;
-
-drop table if exists review_message cascade;
-create table review_message (
-  id serial primary key,
-  topic_id int not null references review_topic(id),
-  timestamp TIMESTAMP not null default CURRENT_TIMESTAMP,
-  author_id int not null references users(id),
-  content text not null
-);
 
 -- create a new message
 drop function if exists review_new_message;
@@ -139,13 +146,6 @@ as $$
   returning id
 $$ language sql;
 
-
-drop table if exists review_message_is_read;
-create table review_message_is_read (
-  message_id int not null references review_message(id),
-  user_id int not null references users(id),
-  constraint primary_keys primary key (message_id, user_id)
-);
 
 -- mark all messages of a topic read for a given user
 drop function if exists review_mark_topic_read;

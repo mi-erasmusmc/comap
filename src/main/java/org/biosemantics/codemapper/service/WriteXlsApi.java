@@ -106,7 +106,7 @@ public class WriteXlsApi implements WriteApis.Api {
 
 		int rowIx = 0;
 
-		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Date", "User", "Concept", "CUI", "Message");
+		List<HSSFCell> header = setTextRow(sheet.createRow(rowIx++), "Date", "User", "Concept", "CUI", "Message");
 		bold(header, sheet);
 
 		Map<String, String> conceptNames = new HashMap<>();
@@ -124,13 +124,13 @@ public class WriteXlsApi implements WriteApis.Api {
 			}
 			String concept = conceptNames.get(comment.getCui());
 			if (concept != null) {
-				List<HSSFCell> row = setRow(sheet.createRow(rowIx++), dateString, comment.getAuthor(), concept,
+				List<HSSFCell> row = setTextRow(sheet.createRow(rowIx++), dateString, comment.getAuthor(), concept,
 						comment.getCui(), comment.getContent());
 				if (date != null) {
-					row.get(0).setCellValue(date);
 					HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
 					short format = sheet.getWorkbook().getCreationHelper().createDataFormat().getFormat("m/d/yy hh:mm");
 					style.setDataFormat(format);
+					row.get(0).setCellValue(date);
 					row.get(0).setCellStyle(style);
 				}
 			}
@@ -144,7 +144,7 @@ public class WriteXlsApi implements WriteApis.Api {
 
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
-		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), "Date", "User", "Operation", "Argument", "Result");
+		List<HSSFCell> header = setTextRow(sheet.createRow(rowIx++), "Date", "User", "Operation", "Argument", "Result");
 		bold(header, sheet);
 
 		for (ClientState.HistoryEntry<?, ?> entry : history) {
@@ -157,13 +157,13 @@ public class WriteXlsApi implements WriteApis.Api {
 			String operation = entry.getClass().getName().substring("HistoryEntry".length());
 			String argument = historyDatumToString(entry.argument);
 			String result = historyDatumToString(entry.result);
-			List<HSSFCell> row = setRow(sheet.createRow(rowIx++), entry.date, entry.user, operation, argument, result);			
+			List<HSSFCell> row = setTextRow(sheet.createRow(rowIx++), entry.date, entry.user, operation, argument, result);			
 			if (date != null) {
-				row.get(0).setCellValue(date);
 				HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
 				short format = sheet.getWorkbook().getCreationHelper().createDataFormat().getFormat("m/d/yy hh:mm");
 				style.setDataFormat(format);
 				row.get(0).setCellStyle(style);
+				row.get(0).setCellValue(date);
 			}
 		}
 		sheet.setAutoFilter(new CellRangeAddress(0, rowIx - 1, 0, header.size() - 1));
@@ -195,11 +195,16 @@ public class WriteXlsApi implements WriteApis.Api {
 		return null;
 	}
 
-	private List<HSSFCell> setRow(HSSFRow row, String... cells) {
+	private List<HSSFCell> setTextRow(HSSFRow row, String... cells) {
+		HSSFWorkbook wb = row.getSheet().getWorkbook();
+		short textFormat = wb.getCreationHelper().createDataFormat().getFormat("@");
+		HSSFCellStyle textStyle = wb.createCellStyle();
+		textStyle.setDataFormat(textFormat);
 		List<HSSFCell> result = new LinkedList<>();
 		for (int ix = 0; ix < cells.length; ix++) {
 			HSSFCell cell = row.createCell(ix);
 			cell.setCellValue(cells[ix]);
+			cell.setCellStyle(textStyle);
 			result.add(cell);
 		}
 		return result;
@@ -208,15 +213,15 @@ public class WriteXlsApi implements WriteApis.Api {
 	private void setInfoSheet(HSSFSheet sheet, String name, String url) {
 		int rowIx = 0;
 
-		setRow(sheet.createRow(rowIx++), "Case definition:", name);
+		setTextRow(sheet.createRow(rowIx++), "Case definition:", name);
                 if (url != null) {
                     Hyperlink hyperlink = sheet.getWorkbook().getCreationHelper().createHyperlink(HyperlinkType.URL);
                     hyperlink.setAddress(url);
-                    setRow(sheet.createRow(rowIx++), "URL:", url).get(1).setHyperlink(hyperlink);
+                    setTextRow(sheet.createRow(rowIx++), "URL:", url).get(1).setHyperlink(hyperlink);
                 }
 		rowIx++;
-		setRow(sheet.createRow(rowIx++), "Case definition created with ADVANCE Code Mapper");
-		setRow(sheet.createRow(rowIx++),
+		setTextRow(sheet.createRow(rowIx++), "Case definition created with ADVANCE Code Mapper");
+		setTextRow(sheet.createRow(rowIx++),
 				"Concepts, history, comments and original wording of the case definitions are in separate sheets.");
 
 	}
@@ -228,7 +233,7 @@ public class WriteXlsApi implements WriteApis.Api {
 			if (line.length() > 32767) {
 				line = line.substring(0, 32766) + "…";
 			}
-			List<HSSFCell> row = setRow(sheet.createRow(rowIx++), line);
+			List<HSSFCell> row = setTextRow(sheet.createRow(rowIx++), line);
 			HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
 			style.setWrapText(true);
 			row.get(0).setCellStyle(style);
@@ -238,7 +243,7 @@ public class WriteXlsApi implements WriteApis.Api {
 	private void setCodesSheet(HSSFSheet sheet, String[] codingSystems, ClientState.Concept[] concepts, Map<String, Map<String, Collection<SourceConcept>>> descendants) {
 		int rowIx = 0;
 
-		List<HSSFCell> header = setRow(sheet.createRow(rowIx++), WriteApis.CODES_HEADERS);
+		List<HSSFCell> header = setTextRow(sheet.createRow(rowIx++), WriteApis.CODES_HEADERS);
 		bold(header, sheet);
 
 		for (String codingSystem : codingSystems) {
@@ -257,7 +262,7 @@ public class WriteXlsApi implements WriteApis.Api {
 				Arrays.sort(sourceConcepts, Comparator.comparing(c -> c.id));
 				for (ClientState.SourceConcept sourceConcept : sourceConcepts) {
 					if (!printedCodes.contains(sourceConcept.id)) {
-						setRow(sheet.createRow(rowIx++),
+						setTextRow(sheet.createRow(rowIx++),
 								codingSystem, sourceConcept.id, sourceConcept.preferredTerm,
 								concept.cui, concept.preferredName, tags, WriteApis.origin(concept.origin));
 						printedCodes.add(sourceConcept.id);
@@ -268,7 +273,7 @@ public class WriteXlsApi implements WriteApis.Api {
 						Arrays.sort(descConcepts);
 						for (SourceConcept c : descConcepts) {
 							if (!printedCodes.contains(c.getId())) {
-								setRow(sheet.createRow(rowIx++), 
+								setTextRow(sheet.createRow(rowIx++), 
 										codingSystem, c.getId(), c.getPreferredTerm(), null, null,
 										tags, desc(sourceConcept.id));
 								printedCodes.add(c.getId());
@@ -278,7 +283,7 @@ public class WriteXlsApi implements WriteApis.Api {
 					}
 				}
 				if (!printedCode) {
-					setRow(sheet.createRow(rowIx++),
+					setTextRow(sheet.createRow(rowIx++),
 							codingSystem, NO_CODE, null, cui, conceptName, tags);
 				}
 			}

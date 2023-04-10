@@ -68,7 +68,8 @@ public class CodeMapperApplication extends ResourceConfig {
 	// Property names
 	private static final String AVAILABLE_CODING_SYSTEMS = "available-coding-systems";
 	private static final String CODE_MAPPER_DB = "code-mapper-db";
-	private static final String SNOMEDCT_DB = "snomedct-db";
+	private static final String SNOMEDCT_US_DB = "snomedct-db-us";
+	private static final String SNOMEDCT_SPA_DB = "snomedct-db-spa";
 	private static final String CODEMAPPER_UMLS_VERSION = "codemapper-umls-version";
 	private static final String CODING_SYSTEMS_WITH_DEFINITION = "coding-systems-with-definition";
 	private static final String DB_PASSWORD_SUFFIX = "-password";
@@ -128,12 +129,13 @@ public class CodeMapperApplication extends ResourceConfig {
 	}
 
 	public static void initialize() {
-		DataSource umlsConnectionPool,  umlsExtConnectionPool, codeMapperConnectionPool, snomedctConnectionPool;
+            DataSource umlsConnectionPool,  umlsExtConnectionPool, codeMapperConnectionPool, snomedctUsConnectionPool, snomedctSpaConnectionPool;
 		try {
 			umlsConnectionPool = getConnectionPool(UMLS_DB);
             umlsExtConnectionPool = getConnectionPool(UMLS_EXT_DB);
             codeMapperConnectionPool = getConnectionPool(CODE_MAPPER_DB);
-            snomedctConnectionPool = getConnectionPool(SNOMEDCT_DB);
+            snomedctUsConnectionPool = getConnectionPool(SNOMEDCT_US_DB);
+            snomedctSpaConnectionPool = getConnectionPool(SNOMEDCT_SPA_DB);
 		} catch (SQLException e) {
 		    logger.error("Cannot create pooled data source");
             e.printStackTrace();
@@ -173,9 +175,8 @@ public class CodeMapperApplication extends ResourceConfig {
 		for (String sab: Arrays.asList("ICPC2ICD10DUT","ICPC2ICD10ENG","KCD5","ICPCDUT","LNC","ICPC2EDUT","MSH","MDR","RCD","ICPC2EENG","ICPC","MTHICD9","ICD10","ICD10CM","ICPC2P","RCD2","ICD9CM")) {
 			descendersApi.add(new UmlsTCDescender(sab, umlsConnectionPool));
 		}
-		for (String sab: Arrays.asList("SNOMEDCT_US", "SCTSPA")) {
-			descendersApi.add(new SnomedTCDescender(sab, snomedctConnectionPool));
-		}
+                descendersApi.add(new SnomedTCDescender("SNOMEDCT_US", snomedctUsConnectionPool));
+                descendersApi.add(new SnomedTCDescender("SCTSPA", snomedctSpaConnectionPool));
 	}
 
 	public static DataSource getConnectionPool(String prefix) throws SQLException {

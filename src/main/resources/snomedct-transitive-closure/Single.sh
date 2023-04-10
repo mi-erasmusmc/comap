@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 
 if [ $# != 3 ]; then
-    echo "Usage: $0 SNOMEDZIP DATABASE"
+    echo "Usage: $0 SNOMEDZIP DATABASE, found $#"
+    exit 1
 fi
 
 SNOMEDZIP=$1

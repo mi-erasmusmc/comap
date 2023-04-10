@@ -1,3 +1,4 @@
+.phony: deploy-dev deploy-testing deploy-production
 
 deploy-production:
 	mvn -P testing clean package

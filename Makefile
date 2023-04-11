@@ -1,15 +1,18 @@
-.phony: deploy-dev deploy-testing deploy-production
+.PHONY: deploy-dev deploy-testing deploy-production
+
+SERVER=advance
+LOCAL_TOMCAT=/var/lib/tomcat9/
 
 deploy-production:
-	mvn -P testing clean package
-	scp target/codemapper-testing.war advance:/tmp/
-	ssh -t advance make deploy-production
+	mvn -P production clean package
+	scp target/codemapper-production.war $(SERVER):/tmp/
+	ssh -t $(SERVER) make deploy-production
 
 deploy-testing:
 	mvn -P testing clean package
-	scp target/codemapper-testing.war advance:/tmp/
-	ssh -t advance make deploy-testing
+	scp target/codemapper-testing.war $(SERVER):/tmp/
+	ssh -t $(SERVER) make deploy-testing
 
 deploy-dev:
 	mvn -P dev package
-	sudo -u tomcat cp target/codemapper-dev.war /var/lib/tomcat9/webapps
+	sudo -u tomcat cp target/codemapper-dev.war $(LOCAL_TOMCAT)/webapps

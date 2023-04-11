@@ -204,13 +204,13 @@ as $$
 
 insert into review_topic (case_definition_id, cui, created_by, created_at, heading)
 select distinct c.case_definition_id, c.cui, c.author, c.timestamp, 'Comment' as heading
-from "code-mapper".comments c
+from "public".comments c
 inner join case_definitions cd
 on c.case_definition_id = cd.id;
 
 insert into review_message (topic_id, timestamp, author_id, content)
 select t.id as topic_id, c.timestamp, c.author, c.content
-from "code-mapper".comments as c, review_topic as t
+from "public".comments as c, review_topic as t
 where c.case_definition_id = t.case_definition_id
 and c.cui = t.cui;
 

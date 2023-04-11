@@ -86,3 +86,8 @@ done
 8. Reflect the version update in the variables `codemapper-umls-version` and
    `umls-db-uri` in `code-mapper-*.properties`. This will result in an update of
    `src/main/resources/code-mapper.properties`.
+9. Set permissions
+   ```sql
+   grant usage on schema public to codemapper;
+   grant select on all tables in schema public to codemapper;
+   ```

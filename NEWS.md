@@ -8,7 +8,7 @@ April 10, 2023
 ----
 
 - improved review functionality
-- upgrade UMLS to version 2022AB, SNOMED-CT to version 20230301
+- upgrade UMLS to version 2022AB, SNOMED-CT descendents to version 20230301
 
 September 19, 2022
 ------------------

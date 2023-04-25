@@ -76,8 +76,6 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static final String DB_URI_SUFFIX = "-uri";
 	private static final String DB_USERNAME_SUFFIX = "-username";
 	private static final String PEREGRINE_RESOURCE_URL = "peregrine-resource-url";
-	private static final String SNOWSTORM_BASE_URI = "snowstorm-base-uri";
-	private static final String SNOWSTORM_BRANCH = "snowstorm-branch";
 	private static final String UMLS_DB = "umls-db";
 	private static final String UMLS_EXT_DB_CTV3RCT_TABLE = "umls-ext-db-ctv3rct-table";
 	private static final String UMLS_EXT_DB = "umls-ext-db";

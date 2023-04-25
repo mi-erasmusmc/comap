@@ -828,7 +828,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
 
     $scope.$on('$routeChangeStart', function(scope, next, current) {
         // Stop interval update comments when leaving
-        $scope.intervalUpdateComments(false);
     });
 
     /* FUNCTIONS */
@@ -916,7 +915,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                     }
                 })
                 .success(function() {
-                    $scope.intervalUpdateComments(true);
                     $scope.numberUnsafedChanges = 0;
                     $rootScope.subtitle = $scope.caseDefinitionName; // Remove NEW (...) from fresh mappings
                 });
@@ -1061,7 +1059,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
                 $scope.conceptWarnings = getConceptWarnings($scope.state);
                 var descr = "Automatic mapping created.";
                 $scope.historyStep("Automatic coding", null, $scope.state.mapping.concepts.map(reduceConcept), descr);
-                $scope.intervalUpdateComments(true);
             });
     };
 
@@ -1215,7 +1212,6 @@ function CodeMapperCtrl($scope, $rootScope, $http, $sce, $modal, $timeout, $inte
     $scope.discardMapping = function() {
         console.log("DISCARD");
         $scope.$apply(function() {
-            $scope.intervalUpdateComments(false);
             $scope.state.mapping = null;
             $scope.conceptWarnings = getConceptWarnings();
             $scope.conceptsColumnDefs = createConceptsColumnDefs(false, [], false, false, {}, {});

@@ -83,7 +83,7 @@ public class UmlsTCDescender implements SpecificDescender {
 	}
 
 	private Map<String, Collection<String>> getDescendantAuis(Collection<String> auis) throws SQLException {
-		String query = "SELECT sup, sub FROM transitive_closure WHERE sup = ANY(?)";
+		String query = "SELECT sup, sub FROM transitiveclosure WHERE sup = ANY(?)";
 		Connection connection = dataSource.getConnection();
 		PreparedStatement statement = connection.prepareStatement(query);
 		Array codesArray = connection.createArrayOf("VARCHAR", auis.toArray());

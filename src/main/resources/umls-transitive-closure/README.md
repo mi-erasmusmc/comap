@@ -13,6 +13,22 @@ The argument `SABS` must be a comma-separated list of UMLS vocabulary names.
 This should match the vocabularies used with the `UmlsTCDescender` in
 `CodeMapperApplication`.
 
+
+```sql
+drop table if exists transitiveclosure;
+create table transitiveclosure (
+  sup char(9) not null,
+  sub char(9) not null
+);
+grant ALL on all tables in schema public to codemapper;
+```
+
+```shell
+  psql "umls$VERSION" \
+    -c "\COPY transitiveclosure FROM STDIN WITH DELIMITER AS '|' NULL AS '' CSV QUOTE AS E'\b' ESCAPE '\'" \
+    < TC.RRF
+```
+
 Here is a script to find the vocabularies that are actually used in CodeMapper:
 
 ```

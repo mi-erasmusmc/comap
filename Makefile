@@ -5,7 +5,7 @@ LOCAL_TOMCAT=/var/lib/tomcat9/
 
 deploy-production:
 	mvn -P production clean package
-	scp target/codemapper-production.war $(SERVER):/tmp/
+	scp target/codemapper.war $(SERVER):/tmp/
 	ssh -t $(SERVER) make deploy-production
 
 deploy-testing:

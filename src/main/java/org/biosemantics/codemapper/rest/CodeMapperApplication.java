@@ -21,8 +21,10 @@ package org.biosemantics.codemapper.rest;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -80,6 +82,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static final String UMLS_EXT_DB_CTV3RCT_TABLE = "umls-ext-db-ctv3rct-table";
 	private static final String UMLS_EXT_DB = "umls-ext-db";
 	private static final String UTS_API_KEY = "uts-api-key";
+	private static final String IGNORE_TERM_TYPES = "ignore-term-types";
 
 	private static Properties properties;
 	private static String peregrineResourceUrl;
@@ -151,7 +154,9 @@ public class CodeMapperApplication extends ResourceConfig {
 		peregrineResourceUrl = properties.getProperty(PEREGRINE_RESOURCE_URL);
 		umlsVersion = properties.getProperty(CODEMAPPER_UMLS_VERSION);
 
-		umlsApi = new UmlsApi(umlsConnectionPool, availableCodingSystems, codingSystemsWithDefinition);
+		Set<String> ignoreTermTypes = new HashSet<>(Arrays.asList(properties.getProperty(IGNORE_TERM_TYPES).split(",\\s*")));
+		
+		umlsApi = new UmlsApi(umlsConnectionPool, availableCodingSystems, codingSystemsWithDefinition, ignoreTermTypes);
 
 		String ctv3rctTableName = properties.getProperty(UMLS_EXT_DB_CTV3RCT_TABLE);
 		umlsApi.registerCodingSystemsExtension(new Rcd2CodingSystem(umlsExtConnectionPool, ctv3rctTableName));

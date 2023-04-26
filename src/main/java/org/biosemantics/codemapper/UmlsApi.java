@@ -64,11 +64,13 @@ public class UmlsApi  {
     private DataSource connectionPool;
 	private List<String> codingSystemsWithDefinition;
 	private List<String> availableCodingSystems;
+	private Set<String> ignoreTermTypes;
 
-	public UmlsApi(DataSource connectionPool, List<String> availableCodingSystems, List<String> codingSystemsWithDefinition) {
+	public UmlsApi(DataSource connectionPool, List<String> availableCodingSystems, List<String> codingSystemsWithDefinition, Set<String> ignoreTermTypes) {
 	    this.connectionPool = connectionPool;
 		this.availableCodingSystems = availableCodingSystems;
 		this.codingSystemsWithDefinition = codingSystemsWithDefinition;
+		this.ignoreTermTypes = ignoreTermTypes;
 	}
 
 	private Map<String, ExtCodingSystem> extCodingSystems = new HashMap<>();
@@ -351,115 +353,121 @@ public class UmlsApi  {
 	}
 
     public Map<String, List<SourceConcept>> getSourceConcepts(Collection<String> cuis, Collection<String> codingSystems0)
-			throws CodeMapperException {
+        throws CodeMapperException {
 
-		if (cuis.isEmpty() || codingSystems0.isEmpty())
-			return new TreeMap<>();
-		else {
+        if (cuis.isEmpty() || codingSystems0.isEmpty())
+            return new TreeMap<>();
 
-			// Translate extended coding systems to normal coding systems
-			Set<String> codingSystems = new HashSet<>();
-			List<String> extAbbrs = new LinkedList<>();
-			for (String abbr: codingSystems0)
-				if (extCodingSystems.containsKey(abbr)) {
-					extAbbrs.add(abbr);
-					codingSystems.addAll(extCodingSystems.get(abbr).getReferenceCodingSystems());
-				}
-				else
-					codingSystems.add(abbr);
+        // Translate extended coding systems to normal coding systems
+        Set<String> codingSystems = new HashSet<>();
+        List<String> extAbbrs = new LinkedList<>();
+        for (String abbr: codingSystems0)
+            if (extCodingSystems.containsKey(abbr)) {
+                extAbbrs.add(abbr);
+                codingSystems.addAll(extCodingSystems.get(abbr).getReferenceCodingSystems());
+            }
+            else
+                codingSystems.add(abbr);
 
-			String queryFmt =
-				  	"SELECT DISTINCT cui, sab, code, str, tty "
-					+ "FROM MRCONSO "
-					+ "WHERE cui IN (%s) AND sab IN (%s) ORDER BY cui, sab, code, str";
-			String query = String.format(queryFmt,
-					Utils.sqlPlaceholders(cuis.size()),
-					Utils.sqlPlaceholders(codingSystems.size()));
+        String queryFmt =
+            "SELECT DISTINCT cui, sab, code, str, tty "
+            + "FROM MRCONSO "
+            + "WHERE cui IN (%s) "
+            + "AND sab IN (%s) "
+            + "AND suppress != 'Y'"
+            + "AND tty NOT IN (%s)"
+            + "ORDER BY cui, sab, code, str";
+        String query = String.format(queryFmt,
+                                     Utils.sqlPlaceholders(cuis.size()),
+                                     Utils.sqlPlaceholders(codingSystems.size()),
+                                     Utils.sqlPlaceholders(ignoreTermTypes.size()));
 
-			try (Connection connection = connectionPool.getConnection();
-			     PreparedStatement statement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionPool.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
 
-				int offset = 1;
+            int offset = 1;
 
-				for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
-					statement.setString(offset, iter.next());
+            for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
+                statement.setString(offset, iter.next());
 
-				for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
-					statement.setString(offset, iter.next());
+            for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
+                statement.setString(offset, iter.next());
 
-                logger.trace(statement);
-				ResultSet result = statement.executeQuery();
+            for (Iterator<String> iter = ignoreTermTypes.iterator(); iter.hasNext(); offset++)
+                statement.setString(offset, iter.next());
+            
+            logger.trace(statement);
+            ResultSet result = statement.executeQuery();
 
-				Map<String, List<SourceConcept>> sourceConcepts = new TreeMap<>();
-				String lastCui = null, lastSab = null, lastCode = null;
-				SourceConcept currentSourceConcept = null;
-				while (result.next()) {
-					String cui = result.getString(1);
-					String sab = result.getString(2);
-					String code = result.getString(3);
-					String str = result.getString(4);
-					String tty = result.getString(5);
-					if (!cui.equals(lastCui) || !sab.equals(lastSab) || !code.equals(lastCode)) {
-						currentSourceConcept = new SourceConcept();
-						currentSourceConcept.setCui(cui);
-						currentSourceConcept.setCodingSystem(sab);
-						currentSourceConcept.setId(code);
-						currentSourceConcept.setPreferredTerm(str);
-						if (!sourceConcepts.containsKey(cui))
-							sourceConcepts.put(cui, new LinkedList<SourceConcept>());
-						sourceConcepts.get(cui).add(currentSourceConcept);
-					}
-					if ("PT".equals(tty))
-						currentSourceConcept.setPreferredTerm(str);
-					lastCui = cui;
-					lastSab = sab;
-					lastCode = code;
-				}
+            Map<String, List<SourceConcept>> sourceConcepts = new TreeMap<>();
+            String lastCui = null, lastSab = null, lastCode = null;
+            SourceConcept currentSourceConcept = null;
+            while (result.next()) {
+                String cui = result.getString(1);
+                String sab = result.getString(2);
+                String code = result.getString(3);
+                String str = result.getString(4);
+                String tty = result.getString(5);
+                if (!cui.equals(lastCui) || !sab.equals(lastSab) || !code.equals(lastCode)) {
+                    currentSourceConcept = new SourceConcept();
+                    currentSourceConcept.setCui(cui);
+                    currentSourceConcept.setCodingSystem(sab);
+                    currentSourceConcept.setId(code);
+                    currentSourceConcept.setPreferredTerm(str);
+                    if (!sourceConcepts.containsKey(cui))
+                        sourceConcepts.put(cui, new LinkedList<SourceConcept>());
+                    sourceConcepts.get(cui).add(currentSourceConcept);
+                }
+                if ("PT".equals(tty))
+                    currentSourceConcept.setPreferredTerm(str);
+                lastCui = cui;
+                lastSab = sab;
+                lastCode = code;
+            }
 
-				// Create extended source codes
-				for (String extAbbr: extAbbrs) {
+            // Create extended source codes
+            for (String extAbbr: extAbbrs) {
 
-					ExtCodingSystem extCodingSystem = extCodingSystems.get(extAbbr);
+                ExtCodingSystem extCodingSystem = extCodingSystems.get(extAbbr);
 
-					// Get reference source concepts
-					Map<String, List<SourceConcept>> referenceSourceConcepts = new HashMap<>();
-					for (String cui: sourceConcepts.keySet()) {
-						referenceSourceConcepts.put(cui, new LinkedList<SourceConcept>());
-						for (SourceConcept sourceConcept: sourceConcepts.get(cui))
-							if (extCodingSystem.getReferenceCodingSystems().contains(sourceConcept.getCodingSystem()))
-								referenceSourceConcepts.get(cui).add(sourceConcept);
-					}
+                // Get reference source concepts
+                Map<String, List<SourceConcept>> referenceSourceConcepts = new HashMap<>();
+                for (String cui: sourceConcepts.keySet()) {
+                    referenceSourceConcepts.put(cui, new LinkedList<SourceConcept>());
+                    for (SourceConcept sourceConcept: sourceConcepts.get(cui))
+                        if (extCodingSystem.getReferenceCodingSystems().contains(sourceConcept.getCodingSystem()))
+                            referenceSourceConcepts.get(cui).add(sourceConcept);
+                }
 
-					// Map reference to extended source concepts
-					Map<String, Map<String, List<SourceConcept>>> extSourceConcepts =
-							extCodingSystem.mapCodes(referenceSourceConcepts);
+                // Map reference to extended source concepts
+                Map<String, Map<String, List<SourceConcept>>> extSourceConcepts =
+                    extCodingSystem.mapCodes(referenceSourceConcepts);
 
-					// Insert extended source concepts
-					for (String cui: sourceConcepts.keySet())
-					    if (extSourceConcepts.containsKey(cui)) {
-					        Set<SourceConcept> extSourceConceptsForCui = new HashSet<>();
-							for (List<SourceConcept> extSourceConceptForCui: extSourceConcepts.get(cui).values())
-								extSourceConceptsForCui.addAll(extSourceConceptForCui);
-							sourceConcepts.get(cui).addAll(extSourceConceptsForCui);
-					    }
+                // Insert extended source concepts
+                for (String cui: sourceConcepts.keySet())
+                    if (extSourceConcepts.containsKey(cui)) {
+                        Set<SourceConcept> extSourceConceptsForCui = new HashSet<>();
+                        for (List<SourceConcept> extSourceConceptForCui: extSourceConcepts.get(cui).values())
+                            extSourceConceptsForCui.addAll(extSourceConceptForCui);
+                        sourceConcepts.get(cui).addAll(extSourceConceptsForCui);
+                    }
 
-					// Remove reference source concepts
-                    for (String cui: sourceConcepts.keySet())
-                        for (SourceConcept sourceConcept: new LinkedList<>(sourceConcepts.get(cui)))
-                            if (!codingSystems0.contains(sourceConcept.getCodingSystem()))
-                                sourceConcepts.get(cui).remove(sourceConcept);
-				}
+                // Remove reference source concepts
+                for (String cui: sourceConcepts.keySet())
+                    for (SourceConcept sourceConcept: new LinkedList<>(sourceConcepts.get(cui)))
+                        if (!codingSystems0.contains(sourceConcept.getCodingSystem()))
+                            sourceConcepts.get(cui).remove(sourceConcept);
+            }
 
-				Set<String> missings = new TreeSet<>(cuis);
-				missings.removeAll(sourceConcepts.keySet());
-				for (String missing : missings)
-					logger.warn("No UMLS concept found for CUI " + missing);
-				return sourceConcepts;
-			} catch (SQLException e) {
-				throw CodeMapperException.server("Cannot execute query for source concepts", e);
-			}
-		}
-	}
+            Set<String> missings = new TreeSet<>(cuis);
+            missings.removeAll(sourceConcepts.keySet());
+            for (String missing : missings)
+                logger.warn("No UMLS concept found for CUI " + missing);
+            return sourceConcepts;
+        } catch (SQLException e) {
+            throw CodeMapperException.server("Cannot execute query for source concepts", e);
+        }
+    }
 
 	/**
  		UMLS2014AB_CoMap> select rel, count(rel) as count from MRREL group by rel order by count desc;
@@ -657,7 +665,7 @@ public class UmlsApi  {
 		else {
 
 			cuis = new LinkedList<>(new TreeSet<>(cuis)); // unique CUIs
-
+			
 	        Map<String, List<SourceConcept>> sourceConcepts = getSourceConcepts(cuis, codingSystems);
 	        Map<String, String> preferredNames = getPreferredNames(cuis);
 	        Map<String, String> definitions = getDefinitions(cuis);

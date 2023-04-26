@@ -93,3 +93,8 @@ CREATE TABLE mrconso (
   cvf      int,
   dummy    char(1)
 );
+drop table if exists transitiveclosure;
+create table transitiveclosure (
+sup char(9) not null,
+sub char(9) not null
+);

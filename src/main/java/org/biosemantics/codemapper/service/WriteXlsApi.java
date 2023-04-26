@@ -23,6 +23,8 @@ import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -221,6 +223,8 @@ public class WriteXlsApi implements WriteApis.Api {
                 }
 		rowIx++;
 		setTextRow(sheet.createRow(rowIx++), "Case definition created with ADVANCE Code Mapper");
+		OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+		setTextRow(sheet.createRow(rowIx++), "Downloaded at UTC " + now);
 		setTextRow(sheet.createRow(rowIx++),
 				"Concepts, history, comments and original wording of the case definitions are in separate sheets.");
 

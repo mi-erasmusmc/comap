@@ -7,9 +7,18 @@ Next
 May 8, 2023
 ----
 
+Logic change:
+
 - exclude terms when their types are classified as obsolete, entry_term, or
   attribute in
-  https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/abbreviations.html#tty_class
+  <https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/abbreviations.html#tty_class>
+
+Bugfix:
+
+- exclude unselected codes from download
+
+Feature:
+
 - include creation date in Excel download
 
 April 10, 2023

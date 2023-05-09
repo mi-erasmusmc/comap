@@ -265,6 +265,7 @@ public class WriteXlsApi implements WriteApis.Api {
 				org.biosemantics.codemapper.ClientState.SourceConcept[] sourceConcepts = concept.codes.get(codingSystem).clone();
 				Arrays.sort(sourceConcepts, Comparator.comparing(c -> c.id));
 				for (ClientState.SourceConcept sourceConcept : sourceConcepts) {
+					if (!sourceConcept.selected) continue;
 					if (!printedCodes.contains(sourceConcept.id)) {
 						setTextRow(sheet.createRow(rowIx++),
 								codingSystem, sourceConcept.id, sourceConcept.preferredTerm,

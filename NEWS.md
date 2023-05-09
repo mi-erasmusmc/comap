@@ -4,14 +4,12 @@
 Next
 ----
 
-May 2, 2023
+May 8, 2023
 ----
 
-- exclude obsolete terms: The UMLS defines concepts and associates equivalent
-  codes from different coding systems to the unique concepts. The rows in the
-  CodeMapper application correspond to the UMLS concepts, and the cells display
-  the connected codes. Until now, CodeMapper included all connected codes. Now,
-  codes that are indicated as obsolete by the UMLS term type (TTY) are excluded.
+- exclude terms when their types are classified as obsolete, entry_term, or
+  attribute in
+  https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/abbreviations.html#tty_class
 - include creation date in Excel download
 
 April 10, 2023

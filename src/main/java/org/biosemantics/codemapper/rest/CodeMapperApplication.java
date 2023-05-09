@@ -66,6 +66,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static Logger logger = LogManager.getLogger(CodeMapperApplication.class);
 
 	private static final String CODE_MAPPER_PROPERTIES = "/code-mapper.properties";
+	private static final String CODE_MAPPER_CONFIG_PROPERTIES = "/code-mapper-config.properties";
 
 	// Property names
 	private static final String AVAILABLE_CODING_SYSTEMS = "available-coding-systems";
@@ -85,6 +86,7 @@ public class CodeMapperApplication extends ResourceConfig {
 	private static final String IGNORE_TERM_TYPES = "ignore-term-types";
 
 	private static Properties properties;
+	private static Properties propertiesConfig;
 	private static String peregrineResourceUrl;
 	private static String umlsVersion;
 	private static UmlsApi umlsApi;
@@ -102,6 +104,13 @@ public class CodeMapperApplication extends ResourceConfig {
 	    	properties.load(CodeMapperApplication.class.getResourceAsStream(CODE_MAPPER_PROPERTIES));
 	    } catch (IOException e) {
 	    	logger.error("Cannot load " + CODE_MAPPER_PROPERTIES);
+	    	e.printStackTrace();
+	    }
+	    propertiesConfig = new Properties();
+	    try {
+	    	propertiesConfig.load(CodeMapperApplication.class.getResourceAsStream(CODE_MAPPER_CONFIG_PROPERTIES));
+	    } catch (IOException e) {
+	    	logger.error("Cannot load " + CODE_MAPPER_CONFIG_PROPERTIES);
 	    	e.printStackTrace();
 	    }
 	}
@@ -143,18 +152,18 @@ public class CodeMapperApplication extends ResourceConfig {
             return;
         }
 
-		String availableCodingSystemsStr = properties.getProperty(AVAILABLE_CODING_SYSTEMS);
+		String availableCodingSystemsStr = propertiesConfig.getProperty(AVAILABLE_CODING_SYSTEMS);
 		List<String> availableCodingSystems = null;
 		if (availableCodingSystemsStr != null)
 			availableCodingSystems = Arrays.asList(availableCodingSystemsStr.split(",\\s*"));
 
 		List<String> codingSystemsWithDefinition = Arrays
-				.asList(properties.getProperty(CODING_SYSTEMS_WITH_DEFINITION).split(",\\s*"));
+				.asList(propertiesConfig.getProperty(CODING_SYSTEMS_WITH_DEFINITION).split(",\\s*"));
 
-		peregrineResourceUrl = properties.getProperty(PEREGRINE_RESOURCE_URL);
-		umlsVersion = properties.getProperty(CODEMAPPER_UMLS_VERSION);
+		peregrineResourceUrl = propertiesConfig.getProperty(PEREGRINE_RESOURCE_URL);
+		umlsVersion = propertiesConfig.getProperty(CODEMAPPER_UMLS_VERSION);
 
-		Set<String> ignoreTermTypes = new HashSet<>(Arrays.asList(properties.getProperty(IGNORE_TERM_TYPES).split(",\\s*")));
+		Set<String> ignoreTermTypes = new HashSet<>(Arrays.asList(propertiesConfig.getProperty(IGNORE_TERM_TYPES).split(",\\s*")));
 		
 		umlsApi = new UmlsApi(umlsConnectionPool, availableCodingSystems, codingSystemsWithDefinition, ignoreTermTypes);
 
@@ -194,8 +203,8 @@ public class CodeMapperApplication extends ResourceConfig {
         return DataSources.unpooledDataSource(uri, username, password);
 	}
 	
-	public static String getProp(String str) {
-		return properties.getProperty(str);
+	public static String getPropConfig(String str) {
+		return propertiesConfig.getProperty(str);
 	}
 
 	public static String getPeregrineResourceUrl() {

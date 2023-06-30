@@ -246,7 +246,10 @@ for i, row in data.iterrows():
 
 
 
-data = data["event_abbreviation,coding_system,code,code_name,concept,concept_name".split(",")]
+data = (
+    data["coding_system,code,code_name,concept,concept_name".split(",")] # event_abbreviation
+    .drop_duplicates()
+)
 
 data["dedup_reason"] = ""
 data["dedup_code"] = ""
@@ -289,11 +292,20 @@ with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rc
                 data.at[i, "dedup_ttys"]      = cat.row["ttys"]
                 data.at[i, "dedup_ignore"]    = "ignore" if ignore else ""
             if cat.names_by_code is not None:
-                data.at[i, 'dedup_names'] = '|'.join(r['str'] for r in cat.names_by_code)
+                data.at[i, 'dedup_names'] = '|'.join(
+                    f"{r['code']}:{r['str']}"
+                    for r in cat.names_by_code
+                )
             if cat.codes_by_name is not None:
-                data.at[i, 'dedup_codes'] = '|'.join(r['code'] for r in cat.codes_by_name)
+                data.at[i, 'dedup_codes'] = '|'.join(
+                    f"{r['code']}:{r['str']}"
+                    for r in cat.codes_by_name
+                )
             if cat.synonyms is not None:
-                data.at[i, 'dedup_synonyms'] = '|'.join(f"{r['sab']}:{r['code']}:{r['str']}" for r in cat.synonyms)
+                data.at[i, 'dedup_synonyms'] = '|'.join(
+                    f"{r['sab']}:{r['code']}:{r['str']}"
+                    for r in cat.synonyms
+                )
             if cat.comment is not None:
                 data.at[i, 'dedup_comment'] = cat.comment
 

@@ -59,7 +59,7 @@ def sab_test(coding_system, prefix=""):
         return f'{prefix}sab = %s'
 
 # CUI, STR, CODE, TTYS (on sab and str)
-def codes_for_name(cursor, sab, str):
+def codes_by_name(cursor, sab, str):
     query = f"""
     select cui, str, code, string_agg(tty,',') as ttys
     from mrconso
@@ -71,7 +71,7 @@ def codes_for_name(cursor, sab, str):
     return [dict(r) for r in cursor.fetchall()]
 
 # CUI, STR, CODE, TTYS (on sab and codes)
-def names_for_codes(cursor, sab, codes):
+def names_by_codes(cursor, sab, codes):
     query = f"""
     select cui, str, code, string_agg(tty,',') as ttys
     from mrconso
@@ -85,7 +85,7 @@ def names_for_codes(cursor, sab, codes):
 # CUI, STR, CODE, TTYS (on sab, code or str)
 def synonyms_for_code_or_str(cursor, sab, code, str):
     query = f"""
-    select distinct m2.cui, m2.str, m2.code, m1.tty as ttys
+    select distinct m2.cui, m2.sab, m2.str, m2.code, m1.tty as ttys
     from mrconso m1
     inner join mrconso m2
     on m1.cui = m2.cui
@@ -147,8 +147,8 @@ class Categorization:
     def __init__(self):
         self.cat = None
         self.row = None
-        self.names = None
-        self.codes = None
+        self.names_by_code = None
+        self.codes_by_name = None
         self.synonyms = None
         self.comment = None
     def __str__(self):
@@ -163,11 +163,11 @@ def categorize(cursor, cursor_rcd, row):
     else:
         codes = [row.code]
 
-    cat.names = names_for_codes(cursor, row.coding_system, codes)
+    cat.names_by_code = names_by_codes(cursor, row.coding_system, codes)
     try:
-        rows = (r for r in cat.names if term_match(r['str'], row.code_name))
+        rows = (r for r in cat.names_by_code if term_match(r['str'], row.code_name))
         cat.row = next(rows)
-        cat.cat = "CODE_NAME"
+        cat.cat = "NAME_BY_CODE"
         if next(rows, None):
             cat.comment = "not unique"
         return cat
@@ -175,17 +175,17 @@ def categorize(cursor, cursor_rcd, row):
         pass
 
     names_sab = 'RCD' if is_rcd2 else row.coding_system
-    cat.codes = codes_for_name(cursor, names_sab, row.code_name)
+    cat.codes_by_name = codes_by_name(cursor, names_sab, row.code_name)
     if is_rcd2:
-        cat.codes = rcd3_to_rcd2_names(cursor_rcd, cat.codes)
+        cat.codes_by_name = rcd3_to_rcd2_names(cursor_rcd, cat.codes_by_name)
 
     try:
         rows = (
-            r for r in cat.codes for code in codes
+            r for r in cat.codes_by_name for code in codes
             if code_match(r['code'], code, row.coding_system)
         )
         cat.row = next(rows)
-        cat.cat = "CODE"
+        cat.cat = "CODE_BY_NAME"
         if next(rows, None):
             cat.comment = "not unique"
         return cat
@@ -193,9 +193,9 @@ def categorize(cursor, cursor_rcd, row):
         pass
 
     try:
-        rows = (r for r in cat.codes if r['cui'] == row.concept)
+        rows = (r for r in cat.codes_by_name if r['cui'] == row.concept)
         cat.row = next(rows)
-        cat.cat = "CUI_CODE"
+        cat.cat = "CUI_BY_CODE"
         if next(rows, None):
             cat.comment = "not unique"
         return cat
@@ -203,9 +203,9 @@ def categorize(cursor, cursor_rcd, row):
         pass
 
     try:
-        rows = (r for r in cat.names if r['cui'] == row.concept)
+        rows = (r for r in cat.names_by_code if r['cui'] == row.concept)
         cat.row = next(rows)
-        cat.cat = "CUI_CODE_NAME"
+        cat.cat = "CUI_BY_NAME"
         if next(rows, None):
             cat.comment = "not unique"
         return cat
@@ -220,7 +220,7 @@ def categorize(cursor, cursor_rcd, row):
             or code_match(r['syn_code'], row.code, row.coding_system)
         )
         cat.row = next(rows)
-        cat.cat = "synonym"
+        cat.cat = "SYNONYM"
         if next(rows, None):
             cat.comment = "not unique"
         return cat
@@ -243,6 +243,10 @@ for i, row in data.iterrows():
     if 'E+' in row.code:
         code = '{:.0f}'.format(float(row.code))
         data.at[i, 'code'] = code
+
+
+
+data = data["event_abbreviation,coding_system,code,code_name,concept,concept_name".split(",")]
 
 data["dedup_reason"] = ""
 data["dedup_code"] = ""
@@ -273,23 +277,23 @@ with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rc
                 data.at[i, "dedup_reason"]       = "???"
             else:
                 ignore = any(tty in IGNORE_TTYS for tty in cat.row["ttys"].split(","))
-                diff = []
+                changed = []
                 if row.code != cat.row["code"]:
-                    diff.append("code")
+                    changed.append("code")
                 if row.code_name != cat.row["str"]:
-                    diff.append("code_name")
+                    changed.append("code_name")
                 data.at[i, "dedup_reason"]    = cat.cat
                 data.at[i, "dedup_code"]      = cat.row["code"]
                 data.at[i, "dedup_code_name"] = cat.row["str"]
-                data.at[i, "dedup_diff"] = '|'.join(diff) if diff else '-'
+                data.at[i, "dedup_changed"]   = '|'.join(changed) if changed else '-'
                 data.at[i, "dedup_ttys"]      = cat.row["ttys"]
                 data.at[i, "dedup_ignore"]    = "ignore" if ignore else ""
-            if cat.names is not None:
-                data.at[i, 'dedup_names'] = '|'.join(r['str'] for r in cat.names)
-            if cat.codes is not None:
-                data.at[i, 'dedup_codes'] = '|'.join(r['code'] for r in cat.codes)
+            if cat.names_by_code is not None:
+                data.at[i, 'dedup_names'] = '|'.join(r['str'] for r in cat.names_by_code)
+            if cat.codes_by_name is not None:
+                data.at[i, 'dedup_codes'] = '|'.join(r['code'] for r in cat.codes_by_name)
             if cat.synonyms is not None:
-                data.at[i, 'dedup_synonyms'] = '|'.join(f"{r['code']}:{r['str']}" for r in cat.synonyms)
+                data.at[i, 'dedup_synonyms'] = '|'.join(f"{r['sab']}:{r['code']}:{r['str']}" for r in cat.synonyms)
             if cat.comment is not None:
                 data.at[i, 'dedup_comment'] = cat.comment
 
@@ -297,6 +301,8 @@ conn.close()
 
 print(
     data[data.dedup_reason != ""]
+    ["coding_system code code_name concept concept_name dedup_reason".split()]
+    .drop_duplicates()
     .dedup_reason
     .value_counts().to_frame("dedup_reason")
     .assign(percentage=lambda df: df.dedup_reason / df.dedup_reason.sum())

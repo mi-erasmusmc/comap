@@ -167,7 +167,7 @@ def categorize(cursor, cursor_rcd, row):
     try:
         rows = (r for r in cat.names if term_match(r['str'], row.code_name))
         cat.row = next(rows)
-        cat.cat = "code_name"
+        cat.cat = "CODE_NAME"
         if next(rows, None):
             cat.comment = "not unique"
         return cat
@@ -185,7 +185,7 @@ def categorize(cursor, cursor_rcd, row):
             if code_match(r['code'], code, row.coding_system)
         )
         cat.row = next(rows)
-        cat.cat = "code"
+        cat.cat = "CODE"
         if next(rows, None):
             cat.comment = "not unique"
         return cat
@@ -195,7 +195,7 @@ def categorize(cursor, cursor_rcd, row):
     try:
         rows = (r for r in cat.codes if r['cui'] == row.concept)
         cat.row = next(rows)
-        cat.cat = "cui_code"
+        cat.cat = "CUI_CODE"
         if next(rows, None):
             cat.comment = "not unique"
         return cat
@@ -205,7 +205,7 @@ def categorize(cursor, cursor_rcd, row):
     try:
         rows = (r for r in cat.names if r['cui'] == row.concept)
         cat.row = next(rows)
-        cat.cat = "cui_code_name"
+        cat.cat = "CUI_CODE_NAME"
         if next(rows, None):
             cat.comment = "not unique"
         return cat
@@ -250,8 +250,10 @@ data["dedup_code_name"] = ""
 data["dedup_diff"] = ""
 data["dedup_ttys"] = ""
 data["dedup_ignore"] = ""
-data["dedup_by_code"] = ""
-data["dedup_by_code_name"] = ""
+data["dedup_names"] = ""
+data["dedup_codes"] = ""
+data["dedup_synonyms"] = ""
+data["dedup_comment"] = ""
 
 hist = {}
 count = 0
@@ -271,23 +273,25 @@ with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rc
                 data.at[i, "dedup_reason"]       = "???"
             else:
                 ignore = any(tty in IGNORE_TTYS for tty in cat.row["ttys"].split(","))
-                data.at[i, "dedup_reason"]    = cat.cat
-                data.at[i, "dedup_code"]      = cat.row["code"]
-                data.at[i, "dedup_code_name"] = cat.row["str"]
-                data.at[i, "dedup_ttys"]      = cat.row["ttys"]
-                data.at[i, "dedup_ignore"]    = "ignore" if ignore else ""
                 diff = []
                 if row.code != cat.row["code"]:
                     diff.append("code")
                 if row.code_name != cat.row["str"]:
                     diff.append("code_name")
-                data.at[i, "dedup_diff"] = ','.join(diff) if diff else '-'
+                data.at[i, "dedup_reason"]    = cat.cat
+                data.at[i, "dedup_code"]      = cat.row["code"]
+                data.at[i, "dedup_code_name"] = cat.row["str"]
+                data.at[i, "dedup_diff"] = '|'.join(diff) if diff else '-'
+                data.at[i, "dedup_ttys"]      = cat.row["ttys"]
+                data.at[i, "dedup_ignore"]    = "ignore" if ignore else ""
             if cat.names is not None:
-                data.at[i, 'dedup_names_by_code'] = ','.join(r['str'] for r in cat.names)
+                data.at[i, 'dedup_names'] = '|'.join(r['str'] for r in cat.names)
             if cat.codes is not None:
-                data.at[i, 'dedup_codes_by_name'] = ','.join(r['code'] for r in cat.codes)
+                data.at[i, 'dedup_codes'] = '|'.join(r['code'] for r in cat.codes)
             if cat.synonyms is not None:
-                data.at[i, 'dedup_synonyms'] = ','.join(f"{r['code']}:{r['str']}" for r in cat.synonyms)
+                data.at[i, 'dedup_synonyms'] = '|'.join(f"{r['code']}:{r['str']}" for r in cat.synonyms)
+            if cat.comment is not None:
+                data.at[i, 'dedup_comment'] = cat.comment
 
 conn.close()
 

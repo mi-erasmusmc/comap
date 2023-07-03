@@ -348,11 +348,13 @@ def dedup(data, cursor, cursor_rcd):
         if cat.comment is not None:
             data.at[i, 'dedup_comment'] = cat.comment
 
+    print()
     print(
         data
         .dedup_result
-        .value_counts().to_frame()
-        .assign(percentage=lambda df: df.dedup_result / df.dedup_result.sum())
+        .value_counts()
+        .to_frame()
+        .assign(percentage=lambda df: df['count'] / df['count'].sum())
     )
     print()
     print(

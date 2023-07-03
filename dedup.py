@@ -313,7 +313,7 @@ def dedup(data, cursor, cursor_rcd):
     data["dedup_code"] = "-"
     data["dedup_code_name"] = "-"
     data["dedup_coding_system"] = "-"
-    data["dedup_diff"] = "-"
+    data["dedup_changed"] = "-"
     data["dedup_ttys"] = "-"
     data["dedup_ignore"] = "-"
     data["dedup_names_by_code"] = "-"

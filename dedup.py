@@ -183,6 +183,17 @@ def rcd3_to_rcd2_names(cursor, name_codes):
         for v2 in v2_codes.get(r['code'], [])
     ]
 
+def in_coding_system(cursor, code, str):
+    query = """
+    select cui, sab, str, code, string_agg(tty,',') as ttys
+    from mrconso
+    where code = %s
+    and str = %s
+    group by cui, sab, str, code
+    """
+    cursor.execute(query, (code, str))
+    return [dict(r) for r in cursor.fetchall()]
+
 class Categorization:
     def __init__(self):
         self.result = None
@@ -204,20 +215,14 @@ def categorize(cursor, cursor_rcd, row):
         return cat
 
     is_rcd2 = row.coding_system == 'RCD2'
-    # if is_rcd2:
-    #     names_sab = 'RCD'
-    #     codes = rcd2_to_rcd3(cursor_rcd, row.code)
-    # else:
-    #     names_sab = row.coding_system
-    #     codes = [row.code]
 
     if is_rcd2:
         cat.names_by_code = names_by_codes_rcd2(cursor, cursor_rcd, row.code)
     else:
         cat.names_by_code = names_by_codes(cursor, row.coding_system, row.code)
 
+    rows = (r for r in cat.names_by_code if term_match(r['str'], row.code_name))
     try:
-        rows = (r for r in cat.names_by_code if term_match(r['str'], row.code_name))
         cat.row = next(rows)
         cat.result = "NAME_BY_CODE"
         if next(rows, None):
@@ -231,11 +236,11 @@ def categorize(cursor, cursor_rcd, row):
     else:
         cat.codes_by_name = codes_by_name(cursor, row.coding_system, row.code_name)
 
+    rows = (
+        r for r in cat.codes_by_name
+        if code_match(r['code'], row.code, row.coding_system)
+    )
     try:
-        rows = (
-            r for r in cat.codes_by_name
-            if code_match(r['code'], row.code, row.coding_system)
-        )
         cat.row = next(rows)
         cat.result = "CODE_BY_NAME"
         if next(rows, None):
@@ -248,8 +253,8 @@ def categorize(cursor, cursor_rcd, row):
     code_cuis = {r['cui'] for r in cat.names_by_code}
 
     if row.concept:
+        rows = (r for r in cat.codes_by_name if r['cui'] == row.concept)
         try:
-            rows = (r for r in cat.codes_by_name if r['cui'] == row.concept)
             cat.row = next(rows)
             cat.result = "CUI_BY_CODE"
             if next(rows, None):
@@ -268,12 +273,22 @@ def categorize(cursor, cursor_rcd, row):
         except:
             pass
 
-        if name_cuis and code_cuis:
-            cat.result = "NONE_CONCEPT_SAME_CUI"
-            return cat
 
-    elif name_cuis and code_cuis:
-        cat.result = "NONE_NO_CONCEPT_SAME_CUI"
+    rows = (r for r in in_coding_system(cursor, row.code, row.code_name))
+    try:
+        cat.row = next(rows)
+        if next(rows, None):
+            cat.comment = "not unique"
+        cat.result = "OTHER_CODING_SYSTEM"
+        return cat
+    except:
+        pass
+
+    if name_cuis and code_cuis:
+        if row.concept:
+            cat.result = "NONE_CONCEPT_SAME_CUI"
+        else:
+            cat.result = "NONE_NO_CONCEPT_SAME_CUI"
         return cat
 
     cat.result = "NONE"
@@ -293,15 +308,16 @@ def read_duplication_issues(filename):
     )
 
 def dedup(data, cursor, cursor_rcd):
-    data["dedup_result"] = ""
-    data["dedup_comment"] = ""
-    data["dedup_code"] = ""
-    data["dedup_code_name"] = ""
-    data["dedup_diff"] = ""
-    data["dedup_ttys"] = ""
-    data["dedup_ignore"] = ""
-    data["dedup_names_by_code"] = ""
-    data["dedup_codes_by_name"] = ""
+    data["dedup_result"] = "-"
+    data["dedup_comment"] = "-"
+    data["dedup_code"] = "-"
+    data["dedup_code_name"] = "-"
+    data["dedup_coding_system"] = "-"
+    data["dedup_diff"] = "-"
+    data["dedup_ttys"] = "-"
+    data["dedup_ignore"] = "-"
+    data["dedup_names_by_code"] = "-"
+    data["dedup_codes_by_name"] = "-"
 
     hist = {}
     count = 0
@@ -326,12 +342,17 @@ def dedup(data, cursor, cursor_rcd):
                 changed.append("code")
             if row.code_name != cat.row["str"]:
                 changed.append("code_name")
-            data.at[i, "dedup_result"]    = cat.result
-            data.at[i, "dedup_code"]      = cat.row["code"]
-            data.at[i, "dedup_code_name"] = cat.row["str"]
-            data.at[i, "dedup_changed"]   = '|'.join(changed) if changed else '-'
-            data.at[i, "dedup_ttys"]      = cat.row.get("ttys", "?")
-            data.at[i, "dedup_ignore"]    = ignore
+            if "sab" in cat.row and row.coding_system != cat.row["sab"]:
+                changed.append("coding_system")
+            data.at[i, "dedup_result"]            = cat.result
+            data.at[i, "dedup_code"]              = cat.row["code"]
+            data.at[i, "dedup_code_name"]         = cat.row["str"]
+            if "sab" in cat.row:
+                data.at[i, "dedup_coding_system"] = cat.row["sab"]
+            if changed:
+                data.at[i, "dedup_changed"]       = '|'.join(changed)
+            data.at[i, "dedup_ttys"]              = cat.row.get("ttys", "?")
+            data.at[i, "dedup_ignore"]            = ignore
 
         if cat.names_by_code is not None:
             data.at[i, 'dedup_names_by_code'] = '|'.join(

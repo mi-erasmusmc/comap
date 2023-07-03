@@ -5,49 +5,30 @@ import psycopg2.extras
 from collections import namedtuple
 from unidecode import unidecode
 
-# create table duplication_issues (
-#     event_definition text,
-#     coding_system text,
-#     code_name text,
-#     concept text,
-#     concept_name text,
-#     tags text,
-#     system text,
-#     event_abbreviation text,
-#     type text,
-#     code_rounding_issue text,
-#     code_issue_dot text,
-#     code text,
-#     variable_name text,
-#     dup text,
-#     issue text
-# );
-
 def norm_str(str, wildchar):
-    return unidecode(
-        str
-        .replace("'", wildchar)
-        .replace(",", wildchar)
-        .replace("/", wildchar)
-    )
+    str = (str
+           .replace("'", wildchar)
+           .replace(",", wildchar)
+           .replace("/", wildchar))
+    return unidecode(str)
+
+def term_norm(str):
+    str = (str
+           .replace("kidney", "KIDNEY")
+           .replace("renal", "KIDNEY"))
+    return norm_str(str, "-")
 
 def term_match(str1, str2):
-    def norm(str):
-        return norm_str(
-            str
-            .replace("kidney", "KIDNEY")
-            .replace("renal", "KIDNEY"),
-            "-"
-        )
-    return norm(str1) == norm(str2)
+    return term_norm(str1) == term_norm(str2)
+
+def code_norm(code, coding_system):
+    if coding_system == 'SNOMEDCT_US' or coding_system == 'SCTSPA':
+        if len(code) == 17 and code[-2] == '0':
+            return code[:-1] + '0'
+    return code.strip('0').rstrip('.')
 
 def code_match(code1, code2, coding_system):
-    def norm(code, coding_system):
-        if coding_system == 'SNOMEDCT_US' or coding_system == 'SCTSPA':
-            if len(code) == 17 and code[-2] == '0':
-                return code[:-1] + '0'
-        return code.strip('0').rstrip('.')
-    return norm(code1, coding_system) == norm(code2, coding_system)
+    return code_norm(code1, coding_system) == code_norm(code2, coding_system)
 
 def sab_lang(sab):
     return "SPA" if sab == 'SCTSPA' else "ENG"
@@ -96,7 +77,7 @@ def synonyms_for_code_or_str(cursor, sab, code, str):
     cursor.execute(query, (sab, code, str.replace('-', '_'), sab_lang(sab)))
     return [dict(r) for r in cursor.fetchall()]
 
-# list(ctv3_conceptid) (on v2 code)
+# v2_conceptid => list(ctv3_conceptid)
 def rcd2_to_rcd3(cursor, code):
     query = f"""
     select v2_conceptid, ctv3_conceptid
@@ -111,7 +92,7 @@ def rcd2_to_rcd3(cursor, code):
     cursor.execute(query, (code,))
     return [r['ctv3_conceptid'] for r in cursor.fetchall()]
 
-# {ctv3_conceptid -> list(v2_conceptid)} (on ctv3 codes)
+# list(ctv3_conceptid) => {ctv3_conceptid: list(v2_conceptid)}
 def rcd3_to_rcd2(cursor, codes):
     if not codes:
         return {}
@@ -132,8 +113,7 @@ def rcd3_to_rcd2(cursor, codes):
     return res
     
 
-# name_codes: [{'code': ctv3_conceptid, ...}]
-# returns [{'code': v2_conceptid, ...}]
+# [{'code': ctv3_conceptid, ...}] => [{'code': v2_conceptid, ...}]
 def rcd3_to_rcd2_names(cursor, name_codes):
     ctv3_codes = set(r['code'] for r in name_codes)
     v2_codes = rcd3_to_rcd2(cursor, ctv3_codes)
@@ -145,36 +125,42 @@ def rcd3_to_rcd2_names(cursor, name_codes):
 
 class Categorization:
     def __init__(self):
-        self.cat = None
+        self.result = None
         self.row = None
         self.names_by_code = None
         self.codes_by_name = None
         self.synonyms = None
         self.comment = None
     def __str__(self):
-        return f"{self.cat}"
+        return self.result
 
 # row: {'coding_system': sab, 'code_name': str}
 def categorize(cursor, cursor_rcd, row):
-    cat = Categorization()
-    is_rcd2 = row.coding_system == 'RCD2'
+    is_rcd2 = False # row.coding_system == 'RCD2'
     if is_rcd2:
+        names_sab = 'RCD'
         codes = rcd2_to_rcd3(cursor_rcd, row.code)
     else:
+        names_sab = row.coding_system
         codes = [row.code]
+
+    cat = Categorization()
+
+    if row.coding_system == "MEDCODEID":
+        cat.comment = "CUSTOM"
+        return cat
 
     cat.names_by_code = names_by_codes(cursor, row.coding_system, codes)
     try:
         rows = (r for r in cat.names_by_code if term_match(r['str'], row.code_name))
         cat.row = next(rows)
-        cat.cat = "NAME_BY_CODE"
+        cat.result = "NAME_BY_CODE"
         if next(rows, None):
             cat.comment = "not unique"
         return cat
     except:
         pass
 
-    names_sab = 'RCD' if is_rcd2 else row.coding_system
     cat.codes_by_name = codes_by_name(cursor, names_sab, row.code_name)
     if is_rcd2:
         cat.codes_by_name = rcd3_to_rcd2_names(cursor_rcd, cat.codes_by_name)
@@ -185,138 +171,158 @@ def categorize(cursor, cursor_rcd, row):
             if code_match(r['code'], code, row.coding_system)
         )
         cat.row = next(rows)
-        cat.cat = "CODE_BY_NAME"
+        cat.result = "CODE_BY_NAME"
         if next(rows, None):
             cat.comment = "not unique"
         return cat
     except:
         pass
 
-    try:
-        rows = (r for r in cat.codes_by_name if r['cui'] == row.concept)
-        cat.row = next(rows)
-        cat.cat = "CUI_BY_CODE"
-        if next(rows, None):
-            cat.comment = "not unique"
-        return cat
-    except:
-        pass
+    if row.concept:
+        try:
+            rows = (r for r in cat.codes_by_name if r['cui'] == row.concept)
+            cat.row = next(rows)
+            cat.result = "CUI_BY_CODE"
+            if next(rows, None):
+                cat.comment = "not unique"
+            return cat
+        except:
+            pass
 
-    try:
-        rows = (r for r in cat.names_by_code if r['cui'] == row.concept)
-        cat.row = next(rows)
-        cat.cat = "CUI_BY_NAME"
-        if next(rows, None):
-            cat.comment = "not unique"
-        return cat
-    except:
-        pass
+        try:
+            rows = (r for r in cat.names_by_code if r['cui'] == row.concept)
+            cat.row = next(rows)
+            cat.result = "CUI_BY_NAME"
+            if next(rows, None):
+                cat.comment = "not unique"
+            return cat
+        except:
+            pass
 
-    cat.synonyms = synonyms_for_code_or_str(cursor, row.coding_system, row.code, row.code_name)
-    try:
-        rows = (
-            r for r in cat.synonyms
-            if term_match(r['syn_str'], row.code_name)
-            or code_match(r['syn_code'], row.code, row.coding_system)
-        )
-        cat.row = next(rows)
-        cat.cat = "SYNONYM"
-        if next(rows, None):
-            cat.comment = "not unique"
+    name_cuis = {r['cui'] for r in cat.codes_by_name}
+    code_cuis = {r['cui'] for r in cat.names_by_code}
+    if name_cuis and code_cuis:
+        cat.comment = "SAME_CUI"
         return cat
-    except:
-        pass
+
+    # # TODO row.code
+    # cat.synonyms = synonyms_for_code_or_str(cursor, row.coding_system, row.code, row.code_name)
+    # try:
+    #     rows = (
+    #         r for r in cat.synonyms
+    #         if term_match(r['syn_str'], row.code_name)
+    #         or code_match(r['syn_code'], row.code, row.coding_system)
+    #     )
+    #     cat.row = next(rows)
+    #     cat.result = "SYNONYM"
+    #     if next(rows, None):
+    #         cat.comment = "not unique"
+    #     return cat
+    # except:
+    #     pass
 
     return cat
 
-IGNORE_TTYS = set("AA,AD,AM,AS,AT,CE,EP,ES,ETAL,ETCF,ETCLIN,ET,EX,GT,IS,IT,LLTJKN1,LLTJKN,LLT,LO,MP,MTH_ET,MTH_IS,MTH_LLT,MTH_LO,MTH_OAF,MTH_OAP,MTH_OAS,MTH_OET,MTH_OET,MTH_OF,MTH_OL,MTH_OL,MTH_OPN,MTH_OP,OAF,OAM,OAM,OAP,OAS,OA,OET,OET,OF,OLC,OLG,OLJKN1,OLJKN1,OLJKN,OLJKN,OL,OL,OM,OM,ONP,OOSN,OPN,OP,PCE,PEP,PHENO_ET,PQ,PXQ,PXQ,SCALE,TQ,XQ".split(","))
+IGNORE_TTYS = set("AA AD AM AS AT CE EP ES ETAL ETCF ETCLIN ET EX GT IS IT LLTJKN1 LLTJKN LLT LO MP MTH_ET MTH_IS MTH_LLT MTH_LO MTH_OAF MTH_OAP MTH_OAS MTH_OET MTH_OET MTH_OF MTH_OL MTH_OL MTH_OPN MTH_OP OAF OAM OAM OAP OAS OA OET OET OF OLC OLG OLJKN1 OLJKN1 OLJKN OLJKN OL OL OM OM ONP OOSN OPN OP PCE PEP PHENO_ET PQ PXQ PXQ SCALE TQ XQ".split())
+
+def read_duplication_issues(filename):
+    data = pd.read_csv(filename, dtype=str)
+    for i, row in data.iterrows():
+        if 'E+' in row.code:
+            code = '{:.0f}'.format(float(row.code))
+            data.at[i, 'code'] = code
+    return (
+        data["coding_system,code,code_name,concept,concept_name".split(",")] # event_abbreviation
+        .drop_duplicates()
+    )
+
+def dedup(data, cursor, cursor_rcd):
+    data["dedup_result"] = ""
+    data["dedup_comment"] = ""
+    data["dedup_code"] = ""
+    data["dedup_code_name"] = ""
+    data["dedup_diff"] = ""
+    data["dedup_ttys"] = ""
+    data["dedup_ignore"] = ""
+    data["dedup_names_by_code"] = ""
+    data["dedup_codes_by_name"] = ""
+
+    hist = {}
+    count = 0
+    for i, row in data.iterrows():
+        # if count == 100:
+        #     break
+        # if row['coding_system'] != 'RCD2':
+        #     continue
+        count += 1
+        if count % 100 == 0:
+            print(".", end="", flush=True)
+        cat = categorize(cursor, cursor_rcd, row)
+
+        if cat.result is None:
+            data.at[i, "dedup_result"]       = "NONE"
+        else:
+            ignore = any(tty in IGNORE_TTYS for tty in cat.row["ttys"].split(","))
+            changed = []
+            if row.code != cat.row["code"]:
+                changed.append("code")
+            if row.code_name != cat.row["str"]:
+                changed.append("code_name")
+            data.at[i, "dedup_result"]    = cat.result
+            data.at[i, "dedup_code"]      = cat.row["code"]
+            data.at[i, "dedup_code_name"] = cat.row["str"]
+            data.at[i, "dedup_changed"]   = '|'.join(changed) if changed else '-'
+            data.at[i, "dedup_ttys"]      = cat.row["ttys"]
+            data.at[i, "dedup_ignore"]    = "ignore" if ignore else ""
+
+        if cat.names_by_code is not None:
+            data.at[i, 'dedup_names_by_code'] = '|'.join(
+                r['str'] # f"{r['code']}:{r['str']}"
+                for r in cat.names_by_code
+            )
+
+        if cat.codes_by_name is not None:
+            data.at[i, 'dedup_codes_by_name'] = '|'.join(
+                r['code'] # f"{r['code']}:{r['str']}"
+                for r in cat.codes_by_name
+            )
+
+        if cat.comment is not None:
+            data.at[i, 'dedup_comment'] = cat.comment
+
+    data1 = (
+        data[(data.dedup_result != "") &
+                (data.dedup_comment != "CUSTOM") &
+                (data.dedup_comment != "SAME_CUI")]
+        ["coding_system code code_name concept concept_name dedup_result".split()]
+        .drop_duplicates()
+    )
+    print(
+        data1
+        .dedup_result
+        .value_counts().to_frame("dedup_result")
+        .assign(percentage=lambda df: df.dedup_result / df.dedup_result.sum())
+    )
+    print(
+        data1[data1.dedup_result == "NONE"]
+        .coding_system
+        .value_counts()
+        .to_frame()
+    )
+
+    return data
+
+def main():
+    input_filename = sys.argv[1]
+    output_filename = sys.argv[2]
+    data = read_duplication_issues(input_filename)
+    with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            data = dedup(data, cursor, cursor_rcd)
+    data.to_csv(output_filename, index=False)
 
 conn = psycopg2.connect(database="umls2023aa")   
 conn_rcd = psycopg2.connect(database="umls-ext-mappings")   
 
-input_filename = sys.argv[1]
-output_filename = sys.argv[2]
-
-data = pd.read_csv(input_filename, dtype=str)
-
-for i, row in data.iterrows():
-    if 'E+' in row.code:
-        code = '{:.0f}'.format(float(row.code))
-        data.at[i, 'code'] = code
-
-
-
-data = (
-    data["coding_system,code,code_name,concept,concept_name".split(",")] # event_abbreviation
-    .drop_duplicates()
-)
-
-data["dedup_reason"] = ""
-data["dedup_code"] = ""
-data["dedup_code_name"] = ""
-data["dedup_diff"] = ""
-data["dedup_ttys"] = ""
-data["dedup_ignore"] = ""
-data["dedup_names"] = ""
-data["dedup_codes"] = ""
-data["dedup_synonyms"] = ""
-data["dedup_comment"] = ""
-
-hist = {}
-count = 0
-with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
-    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-        for i, row in data.iterrows():
-            # if count == 20:
-            #     break
-            # if row['coding_system'] != 'RCD2':
-            #     continue
-            count += 1
-            if count % 100 == 0:
-                print(".", end="", flush=True)
-            cat = categorize(cursor, cursor_rcd, row)
-
-            if cat.cat is None:
-                data.at[i, "dedup_reason"]       = "???"
-            else:
-                ignore = any(tty in IGNORE_TTYS for tty in cat.row["ttys"].split(","))
-                changed = []
-                if row.code != cat.row["code"]:
-                    changed.append("code")
-                if row.code_name != cat.row["str"]:
-                    changed.append("code_name")
-                data.at[i, "dedup_reason"]    = cat.cat
-                data.at[i, "dedup_code"]      = cat.row["code"]
-                data.at[i, "dedup_code_name"] = cat.row["str"]
-                data.at[i, "dedup_changed"]   = '|'.join(changed) if changed else '-'
-                data.at[i, "dedup_ttys"]      = cat.row["ttys"]
-                data.at[i, "dedup_ignore"]    = "ignore" if ignore else ""
-            if cat.names_by_code is not None:
-                data.at[i, 'dedup_names'] = '|'.join(
-                    f"{r['code']}:{r['str']}"
-                    for r in cat.names_by_code
-                )
-            if cat.codes_by_name is not None:
-                data.at[i, 'dedup_codes'] = '|'.join(
-                    f"{r['code']}:{r['str']}"
-                    for r in cat.codes_by_name
-                )
-            if cat.synonyms is not None:
-                data.at[i, 'dedup_synonyms'] = '|'.join(
-                    f"{r['sab']}:{r['code']}:{r['str']}"
-                    for r in cat.synonyms
-                )
-            if cat.comment is not None:
-                data.at[i, 'dedup_comment'] = cat.comment
-
-conn.close()
-
-print(
-    data[data.dedup_reason != ""]
-    ["coding_system code code_name concept concept_name dedup_reason".split()]
-    .drop_duplicates()
-    .dedup_reason
-    .value_counts().to_frame("dedup_reason")
-    .assign(percentage=lambda df: df.dedup_reason / df.dedup_reason.sum())
-)
-data.to_csv(output_filename, index=False)
+if __name__ == "__main__":
+    main()

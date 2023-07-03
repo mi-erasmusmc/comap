@@ -5,30 +5,40 @@ import psycopg2.extras
 from collections import namedtuple
 from unidecode import unidecode
 
-def norm_str(str, wildchar):
-    str = (str
-           .replace("'", wildchar)
-           .replace(",", wildchar)
-           .replace("/", wildchar))
+def norm_str(str, wildcard):
+    if wildcard:
+        str = (str
+            .replace("-", wildcard)
+            .replace("'", wildcard)
+            .replace(",", wildcard)
+            .replace("/", wildcard))
     return unidecode(str)
 
 def term_norm(str):
     str = (str
            .replace("kidney", "KIDNEY")
            .replace("renal", "KIDNEY"))
-    return norm_str(str, "-")
+    return norm_str(str, "_")
 
 def term_match(str1, str2):
     return term_norm(str1) == term_norm(str2)
 
 def code_norm(code, coding_system):
     if coding_system == 'SNOMEDCT_US' or coding_system == 'SCTSPA':
-        if len(code) == 17 and code[-2] == '0':
+        if len(code) == 17 and code.endswith("00"):
             return code[:-1] + '0'
     return code.strip('0').rstrip('.')
 
 def code_match(code1, code2, coding_system):
-    return code_norm(code1, coding_system) == code_norm(code2, coding_system)
+    match = code_norm(code1, coding_system) == code_norm(code2, coding_system)
+    if match:
+        return True
+    if coding_system == 'SNOMEDCT_US' or coding_system == 'SCTSPA':
+        if len(code2) == 17 and code2.endswith('00'):
+            code2 = code2.rstrip('0')
+            code1 = code1[:len(code2)]
+        return code1 == code2
+    return False
 
 def sab_lang(sab):
     return "SPA" if sab == 'SCTSPA' else "ENG"
@@ -234,6 +244,9 @@ def categorize(cursor, cursor_rcd, row):
     except:
         pass
 
+    name_cuis = {r['cui'] for r in cat.codes_by_name}
+    code_cuis = {r['cui'] for r in cat.names_by_code}
+
     if row.concept:
         try:
             rows = (r for r in cat.codes_by_name if r['cui'] == row.concept)
@@ -255,27 +268,13 @@ def categorize(cursor, cursor_rcd, row):
         except:
             pass
 
-    name_cuis = {r['cui'] for r in cat.codes_by_name}
-    code_cuis = {r['cui'] for r in cat.names_by_code}
-    if name_cuis and code_cuis:
-        cat.result = "NONE_SAME_CUI"
-        return cat
+        if name_cuis and code_cuis:
+            cat.result = "NONE_CONCEPT_SAME_CUI"
+            return cat
 
-    # # TODO row.code
-    # cat.synonyms = synonyms_for_code_or_str(cursor, row.coding_system, row.code, row.code_name)
-    # try:
-    #     rows = (
-    #         r for r in cat.synonyms
-    #         if term_match(r['syn_str'], row.code_name)
-    #         or code_match(r['syn_code'], row.code, row.coding_system)
-    #     )
-    #     cat.row = next(rows)
-    #     cat.result = "SYNONYM"
-    #     if next(rows, None):
-    #         cat.comment = "not unique"
-    #     return cat
-    # except:
-    #     pass
+    elif name_cuis and code_cuis:
+        cat.result = "NONE_NO_CONCEPT_SAME_CUI"
+        return cat
 
     cat.result = "NONE"
     return cat
@@ -352,8 +351,14 @@ def dedup(data, cursor, cursor_rcd):
     print(
         data
         .dedup_result
-        .value_counts().to_frame("dedup_result")
+        .value_counts().to_frame()
         .assign(percentage=lambda df: df.dedup_result / df.dedup_result.sum())
+    )
+    print()
+    print(
+        data[data.dedup_result == 'NONE']
+        .coding_system
+        .value_counts().to_frame()
     )
 
     return data

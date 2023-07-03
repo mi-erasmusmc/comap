@@ -51,17 +51,64 @@ def codes_by_name(cursor, sab, str):
     cursor.execute(query, (sab, norm_str(str, '_')))
     return [dict(r) for r in cursor.fetchall()]
 
+def codes_by_name_rcd2(cursor, cursor_rcd, str):
+    query = f"""
+    select distinct code
+    from corev2
+    where description = %s
+    """
+    cursor_rcd.execute(query, (str, ))
+    codes_v2 = [r['code'] for r in cursor_rcd.fetchall()]
+
+    codes_ctv3 = rcd2_to_rcd3(cursor_rcd, codes_v2)
+    codes_ctv3 = [c for cs in codes_ctv3.values() for c in cs]
+
+    cuis = cuis_of_codes(cursor, "RCD", codes_ctv3)
+
+    return [
+        {'cui': cui, 'code': code, 'str': str}
+        for code in codes_v2 for cui in cuis
+    ]
+
+def cuis_of_codes(cursor, sab, codes):
+    query = f"""
+    select distinct cui
+    from mrconso
+    where sab = %s
+    and code = any(%s)
+    """
+    cursor.execute(query, (sab, codes))
+    return [r["cui"] for r in cursor.fetchall()]
+
 # CUI, STR, CODE, TTYS (on sab and codes)
-def names_by_codes(cursor, sab, codes):
+def names_by_codes(cursor, sab, code):
     query = f"""
     select cui, str, code, string_agg(tty,',') as ttys
     from mrconso
     where {sab_test(sab)}
-    and code = any(%s)
+    and code = %s
     group by cui, str, code
     """
-    cursor.execute(query, (sab, list(codes)))
+    cursor.execute(query, (sab, code))
     return [dict(r) for r in cursor.fetchall()]
+
+def names_by_codes_rcd2(cursor, cursor_rcd, code):
+    query = f"""
+    select distinct description
+    from corev2
+    where code = %s
+    """
+    cursor_rcd.execute(query, (code,))
+    strs = [r['description'] for r in cursor_rcd.fetchall()]
+
+    codes_ctv3 = rcd2_to_rcd3(cursor_rcd, list(code))
+    codes_ctv3 = [c for cs in codes_ctv3.values() for c in cs]
+    cuis = cuis_of_codes(cursor, "RCD", codes_ctv3)
+
+    return [
+        {'cui': cui, 'str': str, 'code': code}
+        for str in strs for cui in cuis
+    ]
 
 # CUI, STR, CODE, TTYS (on sab, code or str)
 def synonyms_for_code_or_str(cursor, sab, code, str):
@@ -77,20 +124,23 @@ def synonyms_for_code_or_str(cursor, sab, code, str):
     cursor.execute(query, (sab, code, str.replace('-', '_'), sab_lang(sab)))
     return [dict(r) for r in cursor.fetchall()]
 
-# v2_conceptid => list(ctv3_conceptid)
-def rcd2_to_rcd3(cursor, code):
+# list(v2_conceptid) => {v2_conceptid: list(ctv3_conceptid)}
+def rcd2_to_rcd3(cursor, codes):
     query = f"""
-    select v2_conceptid, ctv3_conceptid
+    select distinct v2_conceptid, ctv3_conceptid
     from ctv3rctmap_uk_20161001
-    where v2_conceptid = %s
+    where v2_conceptid = any(%s)
     and maptyp != 'n'
     and mapstatus = 1
     and isassured = 1
     and v2_conceptid not in ('_DRUG', '_NONE')
     order by v2_conceptid
     """
-    cursor.execute(query, (code,))
-    return [r['ctv3_conceptid'] for r in cursor.fetchall()]
+    cursor.execute(query, (codes,))
+    res = {}
+    for r in cursor.fetchall():
+        res.setdefault(r['v2_conceptid'], []).append(r['ctv3_conceptid'])
+    return res
 
 # list(ctv3_conceptid) => {ctv3_conceptid: list(v2_conceptid)}
 def rcd3_to_rcd2(cursor, codes):
@@ -134,23 +184,28 @@ class Categorization:
     def __str__(self):
         return self.result
 
-# row: {'coding_system': sab, 'code_name': str}
+# row: {'coding_system': sab, 'code': str, 'code_name': str}
 def categorize(cursor, cursor_rcd, row):
-    is_rcd2 = False # row.coding_system == 'RCD2'
-    if is_rcd2:
-        names_sab = 'RCD'
-        codes = rcd2_to_rcd3(cursor_rcd, row.code)
-    else:
-        names_sab = row.coding_system
-        codes = [row.code]
 
     cat = Categorization()
 
     if row.coding_system == "MEDCODEID":
-        cat.comment = "CUSTOM"
+        cat.result = "NONE_CUSTOM"
         return cat
 
-    cat.names_by_code = names_by_codes(cursor, row.coding_system, codes)
+    is_rcd2 = row.coding_system == 'RCD2'
+    # if is_rcd2:
+    #     names_sab = 'RCD'
+    #     codes = rcd2_to_rcd3(cursor_rcd, row.code)
+    # else:
+    #     names_sab = row.coding_system
+    #     codes = [row.code]
+
+    if is_rcd2:
+        cat.names_by_code = names_by_codes_rcd2(cursor, cursor_rcd, row.code)
+    else:
+        cat.names_by_code = names_by_codes(cursor, row.coding_system, row.code)
+
     try:
         rows = (r for r in cat.names_by_code if term_match(r['str'], row.code_name))
         cat.row = next(rows)
@@ -161,14 +216,15 @@ def categorize(cursor, cursor_rcd, row):
     except:
         pass
 
-    cat.codes_by_name = codes_by_name(cursor, names_sab, row.code_name)
     if is_rcd2:
-        cat.codes_by_name = rcd3_to_rcd2_names(cursor_rcd, cat.codes_by_name)
+        cat.codes_by_name = codes_by_name_rcd2(cursor, cursor_rcd, row.code_name)
+    else:
+        cat.codes_by_name = codes_by_name(cursor, row.coding_system, row.code_name)
 
     try:
         rows = (
-            r for r in cat.codes_by_name for code in codes
-            if code_match(r['code'], code, row.coding_system)
+            r for r in cat.codes_by_name
+            if code_match(r['code'], row.code, row.coding_system)
         )
         cat.row = next(rows)
         cat.result = "CODE_BY_NAME"
@@ -202,7 +258,7 @@ def categorize(cursor, cursor_rcd, row):
     name_cuis = {r['cui'] for r in cat.codes_by_name}
     code_cuis = {r['cui'] for r in cat.names_by_code}
     if name_cuis and code_cuis:
-        cat.comment = "SAME_CUI"
+        cat.result = "NONE_SAME_CUI"
         return cat
 
     # # TODO row.code
@@ -221,6 +277,7 @@ def categorize(cursor, cursor_rcd, row):
     # except:
     #     pass
 
+    cat.result = "NONE"
     return cat
 
 IGNORE_TTYS = set("AA AD AM AS AT CE EP ES ETAL ETCF ETCLIN ET EX GT IS IT LLTJKN1 LLTJKN LLT LO MP MTH_ET MTH_IS MTH_LLT MTH_LO MTH_OAF MTH_OAP MTH_OAS MTH_OET MTH_OET MTH_OF MTH_OL MTH_OL MTH_OPN MTH_OP OAF OAM OAM OAP OAS OA OET OET OF OLC OLG OLJKN1 OLJKN1 OLJKN OLJKN OL OL OM OM ONP OOSN OPN OP PCE PEP PHENO_ET PQ PXQ PXQ SCALE TQ XQ".split())
@@ -250,7 +307,7 @@ def dedup(data, cursor, cursor_rcd):
     hist = {}
     count = 0
     for i, row in data.iterrows():
-        # if count == 100:
+        # if count == 500:
         #     break
         # if row['coding_system'] != 'RCD2':
         #     continue
@@ -259,10 +316,12 @@ def dedup(data, cursor, cursor_rcd):
             print(".", end="", flush=True)
         cat = categorize(cursor, cursor_rcd, row)
 
-        if cat.result is None:
-            data.at[i, "dedup_result"]       = "NONE"
+        if cat.result.startswith("NONE"):
+            data.at[i, "dedup_result"]       = cat.result
         else:
-            ignore = any(tty in IGNORE_TTYS for tty in cat.row["ttys"].split(","))
+            ignore = "?"
+            if "ttys" in cat.row:
+                ignore = "Y" if any(tty in IGNORE_TTYS for tty in cat.row["ttys"].split(",")) else "N"
             changed = []
             if row.code != cat.row["code"]:
                 changed.append("code")
@@ -272,8 +331,8 @@ def dedup(data, cursor, cursor_rcd):
             data.at[i, "dedup_code"]      = cat.row["code"]
             data.at[i, "dedup_code_name"] = cat.row["str"]
             data.at[i, "dedup_changed"]   = '|'.join(changed) if changed else '-'
-            data.at[i, "dedup_ttys"]      = cat.row["ttys"]
-            data.at[i, "dedup_ignore"]    = "ignore" if ignore else ""
+            data.at[i, "dedup_ttys"]      = cat.row.get("ttys", "?")
+            data.at[i, "dedup_ignore"]    = ignore
 
         if cat.names_by_code is not None:
             data.at[i, 'dedup_names_by_code'] = '|'.join(
@@ -290,24 +349,11 @@ def dedup(data, cursor, cursor_rcd):
         if cat.comment is not None:
             data.at[i, 'dedup_comment'] = cat.comment
 
-    data1 = (
-        data[(data.dedup_result != "") &
-                (data.dedup_comment != "CUSTOM") &
-                (data.dedup_comment != "SAME_CUI")]
-        ["coding_system code code_name concept concept_name dedup_result".split()]
-        .drop_duplicates()
-    )
     print(
-        data1
+        data
         .dedup_result
         .value_counts().to_frame("dedup_result")
         .assign(percentage=lambda df: df.dedup_result / df.dedup_result.sum())
-    )
-    print(
-        data1[data1.dedup_result == "NONE"]
-        .coding_system
-        .value_counts()
-        .to_frame()
     )
 
     return data

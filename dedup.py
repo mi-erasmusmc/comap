@@ -68,27 +68,30 @@ def codes_by_name_rcd2(cursor, cursor_rcd, str):
     where description = %s
     """
     cursor_rcd.execute(query, (str, ))
-    codes_v2 = [r['code'] for r in cursor_rcd.fetchall()]
-
-    codes_ctv3 = rcd2_to_rcd3(cursor_rcd, codes_v2)
-    codes_ctv3 = [c for cs in codes_ctv3.values() for c in cs]
-
-    cuis = cuis_of_codes(cursor, "RCD", codes_ctv3)
-
+    codes_v2 = [r['code'] for r in cursor_rcd.fetchall()]      # [v2]
+    codes_ctv3 = rcd2_to_rcd3(cursor_rcd, codes_v2)            # {v2: [ctv3]}
+    codes_ctv3 = [c for cs in codes_ctv3.values() for c in cs] # [ctv3]
+    concepts = concepts_of_codes(cursor, "RCD", codes_ctv3)    # {ctv3: {cui, ttys}}
     return [
-        {'cui': cui, 'code': code, 'str': str}
-        for code in codes_v2 for cui in cuis
+        {**r, 'code': v2, 'str': str}
+        for v2 in codes_v2
+        for ctv3 in codes_ctv3
+        for r in concepts.get(ctv3, [])
     ]
 
-def cuis_of_codes(cursor, sab, codes):
+def concepts_of_codes(cursor, sab, codes):
     query = f"""
-    select distinct cui
+    select distinct code, cui, string_agg(tty, ',') as ttys
     from mrconso
     where sab = %s
     and code = any(%s)
+    group by code, cui
     """
     cursor.execute(query, (sab, codes))
-    return [r["cui"] for r in cursor.fetchall()]
+    res = {}
+    for r in cursor.fetchall():
+        res.setdefault(r['code'], []).append({'cui': r['cui'], 'ttys': r['ttys']})
+    return res
 
 # CUI, STR, CODE, TTYS (on sab and codes)
 def names_by_codes(cursor, sab, code):
@@ -109,15 +112,15 @@ def names_by_codes_rcd2(cursor, cursor_rcd, code):
     where code = %s
     """
     cursor_rcd.execute(query, (code,))
-    strs = [r['description'] for r in cursor_rcd.fetchall()]
-
-    codes_ctv3 = rcd2_to_rcd3(cursor_rcd, list(code))
-    codes_ctv3 = [c for cs in codes_ctv3.values() for c in cs]
-    cuis = cuis_of_codes(cursor, "RCD", codes_ctv3)
-
+    strs = [r['description'] for r in cursor_rcd.fetchall()]   # [str]
+    codes_ctv3 = rcd2_to_rcd3(cursor_rcd, list(code))          # {v2: [ctv3]}
+    codes_ctv3 = [c for cs in codes_ctv3.values() for c in cs] # [ctv3]
+    concepts = concepts_of_codes(cursor, "RCD", codes_ctv3)    # {ctv3: {cui, ttys}}
     return [
-        {'cui': cui, 'str': str, 'code': code}
-        for str in strs for cui in cuis
+        {**c, 'str': str, 'code': code}
+        for str in strs
+        for ctv3 in codes_ctv3
+        for c in concepts[ctv3]
     ]
 
 # CUI, STR, CODE, TTYS (on sab, code or str)
@@ -337,6 +340,7 @@ def dedup(data, cursor, cursor_rcd):
             ignore = "?"
             if "ttys" in cat.row:
                 ignore = "Y" if any(tty in IGNORE_TTYS for tty in cat.row["ttys"].split(",")) else "N"
+            coding_system = cat.row["sab"] if "sab" in cat.row else row['coding_system']
             changed = []
             if row.code != cat.row["code"]:
                 changed.append("code")
@@ -344,15 +348,14 @@ def dedup(data, cursor, cursor_rcd):
                 changed.append("code_name")
             if "sab" in cat.row and row.coding_system != cat.row["sab"]:
                 changed.append("coding_system")
-            data.at[i, "dedup_result"]            = cat.result
-            data.at[i, "dedup_code"]              = cat.row["code"]
-            data.at[i, "dedup_code_name"]         = cat.row["str"]
-            if "sab" in cat.row:
-                data.at[i, "dedup_coding_system"] = cat.row["sab"]
+            data.at[i, "dedup_result"]        = cat.result
+            data.at[i, "dedup_code"]          = cat.row["code"]
+            data.at[i, "dedup_code_name"]     = cat.row["str"]
+            data.at[i, "dedup_coding_system"] = coding_system
             if changed:
-                data.at[i, "dedup_changed"]       = '|'.join(changed)
-            data.at[i, "dedup_ttys"]              = cat.row.get("ttys", "?")
-            data.at[i, "dedup_ignore"]            = ignore
+                data.at[i, "dedup_changed"]   = '|'.join(changed)
+            data.at[i, "dedup_ttys"]          = cat.row.get("ttys", "?")
+            data.at[i, "dedup_ignore"]        = ignore
 
         if cat.names_by_code is not None:
             data.at[i, 'dedup_names_by_code'] = '|'.join(

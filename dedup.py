@@ -289,7 +289,7 @@ def categorize(cursor, cursor_rcd, row):
 
     if name_cuis and code_cuis:
         if row.concept:
-            cat.result = "NONE_CONCEPT_SAME_CUI"
+            cat.result = "NONE_SAME_CUI"
         else:
             cat.result = "NONE_NO_CONCEPT_SAME_CUI"
         return cat

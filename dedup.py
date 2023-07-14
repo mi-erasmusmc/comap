@@ -4,6 +4,7 @@ import psycopg2
 import psycopg2.extras
 from collections import namedtuple
 from unidecode import unidecode
+from nltk.tokenize import word_tokenize
 
 def norm_str(str, wildcard):
     if wildcard:
@@ -22,6 +23,24 @@ def term_norm(str):
 
 def term_match(str1, str2):
     return term_norm(str1) == term_norm(str2)
+
+def tok_match(tok1, tok2):
+    return (
+        tok1 == tok2 or
+        tok1.startswith(tok2) or
+        tok2.startswith(tok1) or
+        nltk.edit_distance(tok1, tok2) / max(len(tok1), len(tok2)) < 0.25
+    )
+
+def term_match_abbr(str1, str2):
+    toks1 = [t for t in word_tokenize(str1) if t.isalpha()]
+    toks2 = [t for t in word_tokenize(str2) if t.isalpha()]
+    if len(toks1) != len(toks2) or len(toks1) == 1:
+        return False
+    for (tok1, tok2) in zip(toks1, toks2):
+        if not tok_match(tok1, tok2):
+            return False
+    return True
 
 def code_norm(code, coding_system):
     if coding_system == 'SNOMEDCT_US' or coding_system == 'SCTSPA':
@@ -283,6 +302,16 @@ def categorize(cursor, cursor_rcd, row):
         if next(rows, None):
             cat.comment = "not unique"
         cat.result = "OTHER_CODING_SYSTEM"
+        return cat
+    except:
+        pass
+
+    rows = (r for r in cat.names_by_code if term_match_abbr(r['str'], row.code_name))
+    try:
+        cat.row = next(rows)
+        cat.result = "NAME_BY_CODE_ABBR"
+        if next(rows, None):
+            cat.comment = "not unique"
         return cat
     except:
         pass

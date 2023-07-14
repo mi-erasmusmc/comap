@@ -4,6 +4,7 @@ import psycopg2
 import psycopg2.extras
 from collections import namedtuple
 from unidecode import unidecode
+import nltk
 from nltk.tokenize import word_tokenize
 
 def norm_str(str, wildcard):
@@ -37,12 +38,43 @@ def tok_match(tok1, tok2):
 def term_match_abbr(str1, str2):
     toks1 = [t for t in word_tokenize(str1) if t.isalpha()]
     toks2 = [t for t in word_tokenize(str2) if t.isalpha()]
-    if len(toks1) != len(toks2) or len(toks1) == 1:
-        return False
-    for (tok1, tok2) in zip(toks1, toks2):
-        if not tok_match(tok1, tok2):
-            return False
-    return True
+    n1 = len(toks1)
+    n2 = len(toks2)
+    jumps = 0
+    ix1 = 0
+    ix2 = 0
+    while True:
+        end1 = ix1 == len(toks1)
+        end2 = ix2 == len(toks2)
+        if end1 or end2:
+            # number of remaining tokens plus jumps less than threshold
+            return (
+                (len(toks1) - ix1) +
+                (len(toks2) - ix2) +
+                jumps < max(n1, n2) / 4
+            )
+        tok1 = toks1[ix1]
+        tok2 = toks2[ix2]
+        if tok_match(tok1, tok2):
+            # print("Ok", tok1, tok2)
+            ix1 +=1
+            ix2 +=1
+        else:
+            if ix2+1 < len(toks2) and tok_match(tok1, toks2[ix2+1]):
+                # jump over tok2
+                # print("J2", tok1, tok2)
+                jumps += 1
+                ix2 += 1
+            elif ix1+1 < len(toks1) and tok_match(toks1[ix1+1], tok2):
+                # jump over tok1
+                # print("J1", tok1, tok2)
+                jumps += 1
+                ix1 += 1
+            else:
+                # print("NO", tok1, tok2)
+                return False
+            ix1 += 1
+            ix2 += 1
 
 def code_norm(code, coding_system):
     if coding_system == 'SNOMEDCT_US' or coding_system == 'SCTSPA':

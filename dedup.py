@@ -25,11 +25,13 @@ def term_match(str1, str2):
     return term_norm(str1) == term_norm(str2)
 
 def tok_match(tok1, tok2):
+    n1 = len(tok1)
+    n2 = len(tok2)
     return (
         tok1 == tok2 or
         tok1.startswith(tok2) or
         tok2.startswith(tok1) or
-        nltk.edit_distance(tok1, tok2) / max(len(tok1), len(tok2)) < 0.25
+        nltk.edit_distance(tok1, tok2) <= (max(n1, n2) - min(n1, n2))
     )
 
 def term_match_abbr(str1, str2):

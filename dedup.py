@@ -4,6 +4,7 @@ import psycopg2
 import psycopg2.extras
 from collections import namedtuple
 from unidecode import unidecode
+from glob import glob
 import nltk
 from nltk.tokenize import word_tokenize
 
@@ -362,17 +363,6 @@ def categorize(cursor, cursor_rcd, row):
 
 IGNORE_TTYS = set("AA AD AM AS AT CE EP ES ETAL ETCF ETCLIN ET EX GT IS IT LLTJKN1 LLTJKN LLT LO MP MTH_ET MTH_IS MTH_LLT MTH_LO MTH_OAF MTH_OAP MTH_OAS MTH_OET MTH_OET MTH_OF MTH_OL MTH_OL MTH_OPN MTH_OP OAF OAM OAM OAP OAS OA OET OET OF OLC OLG OLJKN1 OLJKN1 OLJKN OLJKN OL OL OM OM ONP OOSN OPN OP PCE PEP PHENO_ET PQ PXQ PXQ SCALE TQ XQ".split())
 
-def read_duplication_issues(filename):
-    data = pd.read_csv(filename, dtype=str)
-    for i, row in data.iterrows():
-        if 'E+' in row.code:
-            code = '{:.0f}'.format(float(row.code))
-            data.at[i, 'code'] = code
-    return (
-        data["coding_system,code,code_name,concept,concept_name".split(",")] # event_abbreviation
-        .drop_duplicates()
-    )
-
 def dedup(data, cursor, cursor_rcd):
     data["dedup_result"] = "-"
     data["dedup_comment"] = "-"
@@ -452,17 +442,78 @@ def dedup(data, cursor, cursor_rcd):
 
     return data
 
-def main():
+def replace_scientific_notation(data):
+    def f(code):
+        if 'E+' in code:
+            return '{:.0f}'.format(float(code))
+        return code
+    code = data.code.map(f)
+    return data.assign(code=code)
+
+def dedup_one(data, cursor, cursor_rcd):
+    data = replace_scientific_notation(data)
+    data = (
+        data["coding_system,code,code_name,concept,concept_name".split(",")] # event_abbreviation
+        .drop_duplicates()
+    )
+    data = dedup(data, cursor, cursor_rcd)
+    return data
+
+def main_dedup_one(cursor, cursor_rcd):
     input_filename = sys.argv[1]
     output_filename = sys.argv[2]
-    data = read_duplication_issues(input_filename)
-    with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-            data = dedup(data, cursor, cursor_rcd)
+    data = pd.read_csv(input_filename, dtype=str)
+    data = dedup_one(data, cursor, cursor_rcd)
     data.to_csv(output_filename, index=False)
 
-conn = psycopg2.connect(database="umls2023aa")   
-conn_rcd = psycopg2.connect(database="umls-ext-mappings")   
-
 if __name__ == "__main__":
-    main()
+    conn = psycopg2.connect(database="umls2023aa")   
+    conn_rcd = psycopg2.connect(database="umls-ext-mappings")   
+    with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            main_dedup_one(cursor, cursor_rcd)
+
+COLUMN_MAPPING = (
+    ["Coding system", "Code", "Code name", "Concept", "Concept name"],
+    ["coding_system", "code", "code_name", "concept", "concept_name"],
+)
+
+def dedup_two(data, cursor, cursor_rcd):
+    data = replace_scientific_notation(data)
+    data = data.rename(dict(zip(*COLUMN_MAPPING)), axis=1)
+    data = dedup(data, cursor, cursor_rcd)
+    data = data.rename(dict(zip(*reversed(COLUMN_MAPPING))), axis=1)
+    return data
+
+def main_dedup_all():
+    in_dirname = sys.argv[1]
+    out_dirname = sys.argv[2]
+    datas = read_all(in_dirname)
+    with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            for (name, data) in datas:
+                print("-", name)
+                data = dedup_two(data, cursor, cursor_rcd)
+                data.to_excel(f"{out_dirname}/{name}.xlsx")
+        
+def read_all(dirname):
+    dfs = []
+    for f in glob(f"{dirname}/*/*.xlsx"):
+        print(f)
+        for i in range(0, 99):
+            try:
+                df = pd.read_excel(f, sheet_name=i)
+            except ValueError:
+                print("- NOT FOUND")
+                break
+            df.rename(lambda s: s.strip(), axis=1, inplace=True)
+            if not df.columns.empty and df.columns[0] == "Coding system":
+                if not all(c in df.columns for c in ["Coding system", "Code", "Code name", "Concept", "Concept name"]):
+                    print("-", ', '.join(df.columns))
+                name = f[f.rindex('/')+1:f.rindex('.')]
+                dfs.append((name, df))
+                break
+    return dfs
+
+def dedup(data):
+    replace_scientific_notation(data)

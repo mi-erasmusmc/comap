@@ -459,47 +459,22 @@ def dedup_one(data, cursor, cursor_rcd):
     data = dedup(data, cursor, cursor_rcd)
     return data
 
-def main_dedup_one(cursor, cursor_rcd):
-    input_filename = sys.argv[1]
-    output_filename = sys.argv[2]
+def main_dedup_one(input_filename, output_filename, conn, conn_rcd):
     data = pd.read_csv(input_filename, dtype=str)
-    data = dedup_one(data, cursor, cursor_rcd)
+    with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            data = dedup_one(data, cursor, cursor_rcd)
     data.to_csv(output_filename, index=False)
 
 if __name__ == "__main__":
     conn = psycopg2.connect(database="umls2023aa")   
     conn_rcd = psycopg2.connect(database="umls-ext-mappings")   
-    with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-            main_dedup_one(cursor, cursor_rcd)
+    main_dedup_one(sys.argv[1], sys.argv[2], conn, conn_rcd)
 
-COLUMN_MAPPING = (
-    ["Coding system", "Code", "Code name", "Concept", "Concept name"],
-    ["coding_system", "code", "code_name", "concept", "concept_name"],
-)
-
-def dedup_two(data, cursor, cursor_rcd):
-    data = replace_scientific_notation(data)
-    data = data.rename(dict(zip(*COLUMN_MAPPING)), axis=1)
-    data = dedup(data, cursor, cursor_rcd)
-    data = data.rename(dict(zip(*reversed(COLUMN_MAPPING))), axis=1)
-    return data
-
-def main_dedup_all():
-    in_dirname = sys.argv[1]
-    out_dirname = sys.argv[2]
-    datas = read_all(in_dirname)
-    with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-            for (name, data) in datas:
-                print("-", name)
-                data = dedup_two(data, cursor, cursor_rcd)
-                data.to_excel(f"{out_dirname}/{name}.xlsx")
-        
 def read_all(dirname):
     dfs = []
-    for f in glob(f"{dirname}/*/*.xlsx"):
-        print(f)
+    for f in sorted(glob(f"{dirname}/*/*.xlsx")):
+        print("-", f)
         for i in range(0, 99):
             try:
                 df = pd.read_excel(f, sheet_name=i)
@@ -515,5 +490,23 @@ def read_all(dirname):
                 break
     return dfs
 
-def dedup(data):
-    replace_scientific_notation(data)
+COLUMN_MAPPING = (
+    ["Coding system", "Code", "Code name", "Concept", "Concept name"],
+    ["coding_system", "code", "code_name", "concept", "concept_name"],
+)
+        
+def dedup_two(data, conn, conn_rcd):
+    data = replace_scientific_notation(data)
+    data = data.rename(dict(zip(*COLUMN_MAPPING)), axis=1)
+    with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            data = dedup(data, cursor, cursor_rcd)
+    data = data.rename(dict(zip(*reversed(COLUMN_MAPPING))), axis=1)
+    return data
+
+def main_dedup_two(in_dirname, out_dirname, conn, conn_rcd):
+    datas = read_all(in_dirname)
+    for (name, data) in datas:
+        print("-", name)
+        data = dedup_two(data, conn, conn_rcd)
+        data.to_excel(f"{out_dirname}/{name}.xlsx")

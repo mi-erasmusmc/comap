@@ -12,7 +12,7 @@ class User(models.Model):
 
     class Meta:
         ordering = ['username']
-        db_table = '"code-mapper"."users"'
+        db_table = 'users'
 
 
 class Project(models.Model):
@@ -25,7 +25,7 @@ class Project(models.Model):
 
     class Meta:
         ordering = ['name']
-        db_table = '"code-mapper"."projects"'
+        db_table = 'projects'
 
 
 class Member(models.Model):
@@ -38,7 +38,7 @@ class Member(models.Model):
         return "{} - {}".format(self.project.name, self.user.username)
 
     class Meta:
-        db_table = '"code-mapper"."users_projects"'
+        db_table = 'users_projects'
         unique_together = (("user", "project"),)
         ordering = ['project', 'user']
 
@@ -53,5 +53,5 @@ class Mapping(models.Model):
         return "{} ({})".format(self.name, self.project.name)
 
     class Meta:
-        db_table = '"code-mapper"."case_definitions"'
+        db_table = 'case_definitions'
         ordering = ['project', 'name']

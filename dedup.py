@@ -474,7 +474,7 @@ if __name__ == "__main__":
 def read_all(dirname):
     dfs = []
     for f in sorted(glob(f"{dirname}/*/*.xlsx")):
-        print("-", f)
+        print(".", end="", flush=True)
         for i in range(0, 99):
             try:
                 df = pd.read_excel(f, sheet_name=i)
@@ -488,6 +488,7 @@ def read_all(dirname):
                 name = f[f.rindex('/')+1:f.rindex('.')]
                 dfs.append((name, df))
                 break
+    print()
     return dfs
 
 COLUMN_MAPPING = (

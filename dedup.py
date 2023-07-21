@@ -425,6 +425,25 @@ def dedup(data, cursor, cursor_rcd):
         if cat.comment is not None:
             data.at[i, 'dedup_comment'] = cat.comment
 
+    return data
+
+def replace_scientific_notation(data):
+    def f(code):
+        if 'E+' in code:
+            return '{:.0f}'.format(float(code))
+        return code
+    return data.assign(code=data.code.map(f))
+
+def dedup_one(data, cursor, cursor_rcd):
+    data = replace_scientific_notation(data)
+    data = (
+        data["coding_system,code,code_name,concept,concept_name".split(",")] # event_abbreviation
+        .drop_duplicates()
+    )
+    data = dedup(data, cursor, cursor_rcd)
+    return data
+
+def summarize(data):
     print()
     print(
         data
@@ -439,25 +458,7 @@ def dedup(data, cursor, cursor_rcd):
         .coding_system
         .value_counts().to_frame()
     )
-
-    return data
-
-def replace_scientific_notation(data):
-    def f(code):
-        if 'E+' in code:
-            return '{:.0f}'.format(float(code))
-        return code
-    code = data.code.map(f)
-    return data.assign(code=code)
-
-def dedup_one(data, cursor, cursor_rcd):
-    data = replace_scientific_notation(data)
-    data = (
-        data["coding_system,code,code_name,concept,concept_name".split(",")] # event_abbreviation
-        .drop_duplicates()
-    )
-    data = dedup(data, cursor, cursor_rcd)
-    return data
+    
 
 def main_dedup_one(input_filename, output_filename, conn, conn_rcd):
     data = pd.read_csv(input_filename, dtype=str)
@@ -465,19 +466,17 @@ def main_dedup_one(input_filename, output_filename, conn, conn_rcd):
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
             data = dedup_one(data, cursor, cursor_rcd)
     data.to_csv(output_filename, index=False)
-
-if __name__ == "__main__":
-    conn = psycopg2.connect(database="umls2023aa")   
-    conn_rcd = psycopg2.connect(database="umls-ext-mappings")   
-    main_dedup_one(sys.argv[1], sys.argv[2], conn, conn_rcd)
+    summarize(data)
 
 def read_all(dirname):
     dfs = []
     for f in sorted(glob(f"{dirname}/*/*.xlsx")):
+        if len(dfs) == 3:
+            break
         print(".", end="", flush=True)
         for i in range(0, 99):
             try:
-                df = pd.read_excel(f, sheet_name=i)
+                df = pd.read_excel(f, dtype=str, sheet_name=i)
             except ValueError:
                 print("- NOT FOUND")
                 break
@@ -497,8 +496,8 @@ COLUMN_MAPPING = (
 )
         
 def dedup_two(data, conn, conn_rcd):
+    data = data.rename(dict(zip(*COLUMN_MAPPING)), axis=1).fillna('')
     data = replace_scientific_notation(data)
-    data = data.rename(dict(zip(*COLUMN_MAPPING)), axis=1)
     with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
             data = dedup(data, cursor, cursor_rcd)
@@ -507,7 +506,21 @@ def dedup_two(data, conn, conn_rcd):
 
 def main_dedup_two(in_dirname, out_dirname, conn, conn_rcd):
     datas = read_all(in_dirname)
-    for (name, data) in datas:
-        print("-", name)
+    dedup_datas = []
+    code_count = 0
+    code_count_total = sum(len(data) for (_, data) in datas)
+    for (ix, (name, data)) in enumerate(datas):
+        print()
+        print(f"- {name} {ix}/{len(datas)} {code_count}/{code_count_total}")
         data = dedup_two(data, conn, conn_rcd)
         data.to_excel(f"{out_dirname}/{name}.xlsx")
+        dedup_datas.append(data)
+        code_count += len(data)
+    dedup_data = pd.concat(dedup_datas).rename(dict(zip(*COLUMN_MAPPING)), axis=1)
+    summarize(dedup_data)
+
+if __name__ == "__main__":
+    conn = psycopg2.connect(database="umls2023aa")   
+    conn_rcd = psycopg2.connect(database="umls-ext-mappings")   
+    # main_dedup_one(sys.argv[1], sys.argv[2], conn, conn_rcd)
+    main_dedup_two(sys.argv[1], sys.argv[2], conn, conn_rcd)

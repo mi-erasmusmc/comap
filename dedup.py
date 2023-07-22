@@ -267,18 +267,18 @@ def categorize(cursor, cursor_rcd, row):
 
     cat = Categorization()
 
-    if row.coding_system == "MEDCODEID":
+    if row['coding_system'] == "MEDCODEID":
         cat.result = "NONE_CUSTOM"
         return cat
 
-    is_rcd2 = row.coding_system == 'RCD2'
+    is_rcd2 = row['coding_system'] == 'RCD2'
 
     if is_rcd2:
-        cat.names_by_code = names_by_codes_rcd2(cursor, cursor_rcd, row.code)
+        cat.names_by_code = names_by_codes_rcd2(cursor, cursor_rcd, row['code'])
     else:
-        cat.names_by_code = names_by_codes(cursor, row.coding_system, row.code)
+        cat.names_by_code = names_by_codes(cursor, row['coding_system'], row['code'])
 
-    rows = (r for r in cat.names_by_code if term_match(r['str'], row.code_name))
+    rows = (r for r in cat.names_by_code if term_match(r['str'], row['code_name']))
     try:
         cat.row = next(rows)
         cat.result = "NAME_BY_CODE"
@@ -289,13 +289,13 @@ def categorize(cursor, cursor_rcd, row):
         pass
 
     if is_rcd2:
-        cat.codes_by_name = codes_by_name_rcd2(cursor, cursor_rcd, row.code_name)
+        cat.codes_by_name = codes_by_name_rcd2(cursor, cursor_rcd, row['code_name'])
     else:
-        cat.codes_by_name = codes_by_name(cursor, row.coding_system, row.code_name)
+        cat.codes_by_name = codes_by_name(cursor, row['coding_system'], row['code_name'])
 
     rows = (
         r for r in cat.codes_by_name
-        if code_match(r['code'], row.code, row.coding_system)
+        if code_match(r['code'], row['code'], row['coding_system'])
     )
     try:
         cat.row = next(rows)
@@ -309,8 +309,8 @@ def categorize(cursor, cursor_rcd, row):
     name_cuis = {r['cui'] for r in cat.codes_by_name}
     code_cuis = {r['cui'] for r in cat.names_by_code}
 
-    if row.concept:
-        rows = (r for r in cat.codes_by_name if r['cui'] == row.concept)
+    if row['concept']:
+        rows = (r for r in cat.codes_by_name if r['cui'] == row['concept'])
         try:
             cat.row = next(rows)
             cat.result = "CUI_BY_CODE"
@@ -321,7 +321,7 @@ def categorize(cursor, cursor_rcd, row):
             pass
 
         try:
-            rows = (r for r in cat.names_by_code if r['cui'] == row.concept)
+            rows = (r for r in cat.names_by_code if r['cui'] == row['concept'])
             cat.row = next(rows)
             cat.result = "CUI_BY_NAME"
             if next(rows, None):
@@ -331,7 +331,7 @@ def categorize(cursor, cursor_rcd, row):
             pass
 
 
-    rows = (r for r in in_coding_system(cursor, row.code, row.code_name))
+    rows = (r for r in in_coding_system(cursor, row['code'], row['code_name']))
     try:
         cat.row = next(rows)
         if next(rows, None):
@@ -341,7 +341,7 @@ def categorize(cursor, cursor_rcd, row):
     except:
         pass
 
-    rows = (r for r in cat.names_by_code if term_match_abbr(r['str'], row.code_name))
+    rows = (r for r in cat.names_by_code if term_match_abbr(r['str'], row['code_name']))
     try:
         cat.row = next(rows)
         cat.result = "NAME_BY_CODE_ABBR"
@@ -352,7 +352,7 @@ def categorize(cursor, cursor_rcd, row):
         pass
 
     if name_cuis and code_cuis:
-        if row.concept:
+        if row['concept']:
             cat.result = "NONE_SAME_CUI"
         else:
             cat.result = "NONE_NO_CONCEPT_SAME_CUI"
@@ -362,6 +362,8 @@ def categorize(cursor, cursor_rcd, row):
     return cat
 
 IGNORE_TTYS = set("AA AD AM AS AT CE EP ES ETAL ETCF ETCLIN ET EX GT IS IT LLTJKN1 LLTJKN LLT LO MP MTH_ET MTH_IS MTH_LLT MTH_LO MTH_OAF MTH_OAP MTH_OAS MTH_OET MTH_OET MTH_OF MTH_OL MTH_OL MTH_OPN MTH_OP OAF OAM OAM OAP OAS OA OET OET OF OLC OLG OLJKN1 OLJKN1 OLJKN OLJKN OL OL OM OM ONP OOSN OPN OP PCE PEP PHENO_ET PQ PXQ PXQ SCALE TQ XQ".split())
+
+CAT_MEM = {}
 
 def dedup(data, cursor, cursor_rcd):
     data["dedup_result"] = "-"
@@ -385,7 +387,12 @@ def dedup(data, cursor, cursor_rcd):
         count += 1
         if count % 100 == 0:
             print(".", end="", flush=True)
-        cat = categorize(cursor, cursor_rcd, row)
+        key = f"{row.coding_system}-{row.code}-{row.code_name}-{row.concept}-{row.concept_name}"
+        try:
+            cat = CAT_MEM[key]
+        except:
+            cat = categorize(cursor, cursor_rcd, row)
+            CAT_MEM[key] = cat
 
         if cat.result.startswith("NONE"):
             data.at[i, "dedup_result"]       = cat.result
@@ -427,15 +434,19 @@ def dedup(data, cursor, cursor_rcd):
 
     return data
 
-def replace_scientific_notation(data):
+def preprocess(data):
     def f(code):
         if 'E+' in code:
             return '{:.0f}'.format(float(code))
         return code
-    return data.assign(code=data.code.map(f))
+    return (
+        data
+        .assign(code=data.code.map(f))
+        .apply(lambda x: x.str.strip())
+    )
 
 def dedup_one(data, cursor, cursor_rcd):
-    data = replace_scientific_notation(data)
+    data = preprocess(data)
     data = (
         data["coding_system,code,code_name,concept,concept_name".split(",")] # event_abbreviation
         .drop_duplicates()
@@ -468,10 +479,10 @@ def main_dedup_one(input_filename, output_filename, conn, conn_rcd):
     data.to_csv(output_filename, index=False)
     summarize(data)
 
-def read_all(dirname):
+def read_all(dirname, max):
     dfs = []
     for f in sorted(glob(f"{dirname}/*/*.xlsx")):
-        if len(dfs) == 3:
+        if len(dfs) == max:
             break
         print(".", end="", flush=True)
         for i in range(0, 99):
@@ -494,18 +505,31 @@ COLUMN_MAPPING = (
     ["Coding system", "Code", "Code name", "Concept", "Concept name"],
     ["coding_system", "code", "code_name", "concept", "concept_name"],
 )
+
+DEDUP_COLS = [
+    "dedup_result",
+    "dedup_comment",
+    "dedup_code",
+    "dedup_code_name",
+    "dedup_coding_system",
+    "dedup_changed",
+    "dedup_ttys",
+    "dedup_ignore",
+    "dedup_names_by_code",
+    "dedup_codes_by_name",
+]
         
 def dedup_two(data, conn, conn_rcd):
     data = data.rename(dict(zip(*COLUMN_MAPPING)), axis=1).fillna('')
-    data = replace_scientific_notation(data)
+    data = preprocess(data)
     with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
             data = dedup(data, cursor, cursor_rcd)
     data = data.rename(dict(zip(*reversed(COLUMN_MAPPING))), axis=1)
     return data
 
-def main_dedup_two(in_dirname, out_dirname, conn, conn_rcd):
-    datas = read_all(in_dirname)
+def main_dedup_two(in_dirname, out_dirname, conn, conn_rcd, max):
+    datas = read_all(in_dirname, max)
     dedup_datas = []
     code_count = 0
     code_count_total = sum(len(data) for (_, data) in datas)
@@ -514,13 +538,18 @@ def main_dedup_two(in_dirname, out_dirname, conn, conn_rcd):
         print(f"- {name} {ix}/{len(datas)} {code_count}/{code_count_total}")
         data = dedup_two(data, conn, conn_rcd)
         data.to_excel(f"{out_dirname}/{name}.xlsx")
-        dedup_datas.append(data)
+        dedup_datas.append(data[COLUMN_MAPPING[0] + DEDUP_COLS].reset_index(drop=True))
         code_count += len(data)
     dedup_data = pd.concat(dedup_datas).rename(dict(zip(*COLUMN_MAPPING)), axis=1)
     summarize(dedup_data)
+    dedup_data.to_csv(f"{out_dirname}/all.csv", index=False)
 
 if __name__ == "__main__":
     conn = psycopg2.connect(database="umls2023aa")   
     conn_rcd = psycopg2.connect(database="umls-ext-mappings")   
     # main_dedup_one(sys.argv[1], sys.argv[2], conn, conn_rcd)
-    main_dedup_two(sys.argv[1], sys.argv[2], conn, conn_rcd)
+    try:
+        max = int(sys.argv[3])
+    except:
+        max = None
+    main_dedup_two(sys.argv[1], sys.argv[2], conn, conn_rcd, max)

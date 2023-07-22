@@ -402,9 +402,9 @@ def dedup(data, cursor, cursor_rcd):
                 ignore = "Y" if any(tty in IGNORE_TTYS for tty in cat.row["ttys"].split(",")) else "N"
             coding_system = cat.row["sab"] if "sab" in cat.row else row['coding_system']
             changed = []
-            if row.code != cat.row["code"]:
+            if row.dedup_original_code != cat.row["code"]:
                 changed.append("code")
-            if row.code_name != cat.row["str"]:
+            if row.dedup_original_code_name != cat.row["str"]:
                 changed.append("code_name")
             if "sab" in cat.row and row.coding_system != cat.row["sab"]:
                 changed.append("coding_system")
@@ -439,20 +439,32 @@ def preprocess(data):
         if 'E+' in code:
             return '{:.0f}'.format(float(code))
         return code
+    data = data.fillna('')
+    original_code = data.code.copy()
+    original_code_name = data.code_name.copy()
     return (
         data
         .assign(code=data.code.map(f))
         .apply(lambda x: x.str.strip())
+        .assign(dedup_original_code=original_code)
+        .assign(dedup_original_code_name=original_code_name)
+    )
+
+def postprocess(data):
+    return (
+        data
+        .assign(code=data.dedup_original_code)
+        .assign(code_name=data.dedup_original_code_name)
     )
 
 def dedup_one(data, cursor, cursor_rcd):
     data = preprocess(data)
     data = (
-        data["coding_system,code,code_name,concept,concept_name".split(",")] # event_abbreviation
+        data["coding_system,code,code_name,concept,concept_name,original_code,original_code_name".split(",")] # event_abbreviation
         .drop_duplicates()
     )
     data = dedup(data, cursor, cursor_rcd)
-    return data
+    return postprocess(data)
 
 def summarize(data):
     print()
@@ -507,6 +519,8 @@ COLUMN_MAPPING = (
 )
 
 DEDUP_COLS = [
+    "dedup_original_code",
+    "dedup_original_code_name",
     "dedup_result",
     "dedup_comment",
     "dedup_code",
@@ -520,13 +534,14 @@ DEDUP_COLS = [
 ]
         
 def dedup_two(data, conn, conn_rcd):
-    data = data.rename(dict(zip(*COLUMN_MAPPING)), axis=1).fillna('')
-    data = preprocess(data)
+    data = preprocess(data.rename(dict(zip(*COLUMN_MAPPING)), axis=1))
     with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
             data = dedup(data, cursor, cursor_rcd)
-    data = data.rename(dict(zip(*reversed(COLUMN_MAPPING))), axis=1)
-    return data
+    return (
+        postprocess(data)
+        .rename(dict(zip(*reversed(COLUMN_MAPPING))), axis=1)
+    )
 
 def main_dedup_two(in_dirname, out_dirname, conn, conn_rcd, max):
     datas = read_all(in_dirname, max)

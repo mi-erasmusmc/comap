@@ -2,6 +2,8 @@ import sys
 import pandas as pd
 import psycopg2
 import psycopg2.extras
+import pickle
+import multiprocessing as mp
 from collections import namedtuple
 from unidecode import unidecode
 from glob import glob
@@ -9,6 +11,30 @@ from nltk import edit_distance
 from nltk.tokenize import word_tokenize
 
 SEP = "-',/"
+
+COLUMN_MAPPING = (
+    ["Coding system", "Code", "Code name", "Concept", "Concept name"],
+    ["coding_system", "code", "code_name", "concept", "concept_name"],
+)
+
+KEY_COLUMNS = 'coding_system code code_name concept concept_name'.split()
+
+DEDUP_COLS = [
+    "dedup_original_code",
+    "dedup_original_code_name",
+    "dedup_result",
+    "dedup_comment",
+    "dedup_code",
+    "dedup_code_name",
+    "dedup_coding_system",
+    "dedup_changed",
+    "dedup_ttys",
+    "dedup_ignore",
+    "dedup_names_by_code",
+    "dedup_codes_by_name",
+]
+
+CODING_SYSTEMS = set("IR ALT AOD AOT ATC BI CCC CCPSS CCS CCSR_ICD10CM CCSR_ICD10PCS CDCREC CDT CHV COSTAR CPM CPT CPTSP CSP CST CVX DDB DMDICD10 DMDUMD DRUGBANK DSM-5 DXP FMA GO GS HCDT HCPCS HCPT HGNC HL7V2.5 HL7V3.0 HPO ICD10 ICD10AE ICD10AM ICD10AMAE ICD10CM ICD10DUT ICD10PCS ICD9CM ICF ICF-CY ICNP ICPC ICPC2EDUT ICPC2EENG ICPC2ICD10DUT ICPC2ICD10ENG ICPC2P ICPCBAQ ICPCDAN ICPCDUT ICPCFIN ICPCFRE ICPCGER ICPCHEB ICPCHUN ICPCITA ICPCNOR ICPCPOR ICPCSPA ICPCSWE JABL KCD5 LCH LCH_NW LNC LNC-DE-AT LNC-DE-DE LNC-EL-GR LNC-ES-AR LNC-ES-ES LNC-ES-MX LNC-ET-EE LNC-FR-BE LNC-FR-CA LNC-FR-FR LNC-IT-IT LNC-KO-KR LNC-NL-NL LNC-PL-PL LNC-PT-BR LNC-RU-RU LNC-TR-TR LNC-UK-UA LNC-ZH-CN MCM MDR MDRARA MDRBPO MDRCZE MDRDUT MDRFRE MDRGER MDRGRE MDRHUN MDRITA MDRJPN MDRKOR MDRLAV MDRPOL MDRPOR MDRRUS MDRSPA MDRSWE MED-RT MEDCIN MEDLINEPLUS MEDLINEPLUS_SPA MMSL MMX MSH MSHCZE MSHDUT MSHFIN MSHFRE MSHGER MSHITA MSHJPN MSHLAV MSHNOR MSHPOL MSHPOR MSHRUS MSHSCR MSHSPA MSHSWE MTH MTHCMSFRF MTHICD9 MTHICPC2EAE MTHICPC2ICD10AE MTHMST MTHMSTFRE MTHMSTITA MTHSPL MVX NANDA-I NCBI NCI NDDF NEU NIC NOC NUCCHCPT OMIM OMS ORPHANET PCDS PDQ PNDS PPAC PSY QMR RAM RCD RCDAE RCDSA RCDSY RXNORM SCTSPA SNM SNMI SNOMEDCT_US SNOMEDCT_VET SOP SPN SRC TKMT ULT UMD USP USPMG UWDA VANDF WHO WHOFRE WHOGER WHOPOR WHOSPA".split() + ["RCD2", "ICD10/CM"])
 
 def norm_str(str, wildcard):
     if wildcard:
@@ -255,7 +281,15 @@ def in_coding_system(cursor, code, str):
     cursor.execute(query, (code, str))
     return [dict(r) for r in cursor.fetchall()]
 
+def known_coding_systems(cursor):
+    query = """
+    select distinct sab from mrconso
+    """
+    cursor.execute(query)
+    return [r['sab'] for r in cursor.fetchall()] + EXTRA_VOCABULARIES
+
 class Categorization:
+
     def __init__(self):
         self.result = None
         self.row = None
@@ -263,16 +297,30 @@ class Categorization:
         self.codes_by_name = None
         self.synonyms = None
         self.comment = None
+
     def __str__(self):
         return self.result
+
+    def to_record(self):
+        return {
+            'dedup_result': self.result,
+            'dedup_row': self.row,
+            'dedup_names_by_code': self.names_by_code,
+            'dedup_codes_by_name': self.codes_by_name,
+            'dedup_comment': self.comment,
+        }
 
 # row: {'coding_system': sab, 'code': str, 'code_name': str}
 def categorize(cursor, cursor_rcd, row):
 
     cat = Categorization()
 
-    if row['coding_system'] == "MEDCODEID":
-        cat.result = "NONE_CUSTOM"
+    if not row['code'] or row['code'] == '-':
+        cat.result = "NONE_NO_CODE"
+        return cat
+
+    if pd.isna(row['coding_system']) or row['coding_system'].strip() not in CODING_SYSTEMS:
+        cat.result = "NONE_CODING_SYSTEM"
         return cat
 
     is_rcd2 = row['coding_system'] == 'RCD2'
@@ -367,6 +415,8 @@ def categorize(cursor, cursor_rcd, row):
 
 IGNORE_TTYS = set("AA AD AM AS AT CE EP ES ETAL ETCF ETCLIN ET EX GT IS IT LLTJKN1 LLTJKN LLT LO MP MTH_ET MTH_IS MTH_LLT MTH_LO MTH_OAF MTH_OAP MTH_OAS MTH_OET MTH_OET MTH_OF MTH_OL MTH_OL MTH_OPN MTH_OP OAF OAM OAM OAP OAS OA OET OET OF OLC OLG OLJKN1 OLJKN1 OLJKN OLJKN OL OL OM OM ONP OOSN OPN OP PCE PEP PHENO_ET PQ PXQ PXQ SCALE TQ XQ".split())
 
+CACHE = {}
+
 def dedup(data, cursor, cursor_rcd):
     data["dedup_result"] = "-"
     data["dedup_comment"] = "-"
@@ -390,7 +440,13 @@ def dedup(data, cursor, cursor_rcd):
         if count % 100 == 0:
             print(".", end="", flush=True)
 
-        cat = categorize(cursor, cursor_rcd, row)
+        global CACHE
+        key = '-'.join(row[c] for c in KEY_COLUMNS)
+        try:
+            cat = CACHE[key]
+        except:
+            cat = categorize(cursor, cursor_rcd, row)
+            CACHE[key] = cat
 
         if cat.result.startswith("NONE"):
             data.at[i, "dedup_result"]       = cat.result
@@ -465,7 +521,7 @@ def dedup_one(data, cursor, cursor_rcd):
     return postprocess(data)
 
 def summarize(data):
-    data = data[data.code != '-']
+    data = data[KEY_COLUMNS + DEDUP_COLS].drop_duplicates()
     print()
     print(
         data
@@ -480,7 +536,17 @@ def summarize(data):
         .coding_system
         .value_counts().to_frame()
     )
-    
+    # print()
+    # print(
+    #     data[data.dedup_result.str.startswith('NONE')]
+    #     .fillna(0)
+    #     .groupby(['coding_system', 'dedup_result'])
+    #     .size()
+    #     .reset_index()
+    #     .pivot(columns='dedup_result', index='coding_system', values=applymap)
+    #     .sort_values(by='NONE', ascending=False)
+    #     .lambda(0 f: f"{f:.0f}" if f else "")
+    # )
 
 def main_dedup_one(input_filename, output_filename, conn, conn_rcd):
     data = pd.read_csv(input_filename, dtype=str)
@@ -511,26 +577,6 @@ def read_all(dirname, max):
                 break
     print()
     return dfs
-
-COLUMN_MAPPING = (
-    ["Coding system", "Code", "Code name", "Concept", "Concept name"],
-    ["coding_system", "code", "code_name", "concept", "concept_name"],
-)
-
-DEDUP_COLS = [
-    "dedup_original_code",
-    "dedup_original_code_name",
-    "dedup_result",
-    "dedup_comment",
-    "dedup_code",
-    "dedup_code_name",
-    "dedup_coding_system",
-    "dedup_changed",
-    "dedup_ttys",
-    "dedup_ignore",
-    "dedup_names_by_code",
-    "dedup_codes_by_name",
-]
         
 def dedup_two(data, conn, conn_rcd):
     data = preprocess(data.rename(dict(zip(*COLUMN_MAPPING)), axis=1))
@@ -542,8 +588,7 @@ def dedup_two(data, conn, conn_rcd):
         .rename(dict(zip(*reversed(COLUMN_MAPPING))), axis=1)
     )
 
-def main_dedup_two(in_dirname, out_dirname, conn, conn_rcd, max):
-    datas = read_all(in_dirname, max)
+def main_dedup_two(datas, out_dirname, conn, conn_rcd):
     dedup_datas = []
     code_count = 0
     code_count_total = sum(len(data) for (_, data) in datas)
@@ -558,12 +603,61 @@ def main_dedup_two(in_dirname, out_dirname, conn, conn_rcd, max):
     summarize(dedup_data)
     dedup_data.to_csv(f"{out_dirname}/all.csv", index=False)
 
-if __name__ == "__main__":
+def init_pool():
+    global conn
+    global conn_rcd
     conn = psycopg2.connect(database="umls2023aa")   
     conn_rcd = psycopg2.connect(database="umls-ext-mappings")   
-    # main_dedup_one(sys.argv[1], sys.argv[2], conn, conn_rcd)
+
+def dedup_three(row):
+    global conn
+    global conn_rcd
+    with conn_rcd.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor_rcd:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+            cat = categorize(cursor, cursor_rcd, row)
+    return row | cat.to_record()
+
+def main_dedup_three(datas, out_dirname):
+    datas = (
+        pd.concat([
+            preprocess(
+                data.rename(dict(zip(*COLUMN_MAPPING)), axis=1)
+                ['coding_system code code_name concept concept_name'.split()]
+            )
+            for (_, data) in datas
+        ], axis=1) 
+        .drop_duplicates()
+    )
+    with mp.Pool(initializer=init_pool) as pool:
+        dedup_data = pool.map(dedup_three, datas.to_dict('records'))
+        # pool.join()
+    dedup_data = pd.DataFrame.from_records(dedup_data)
+    print(dedup_data)
+    dedup_data.to_csv(f"{out_dirname}/all.csv", index=False)
+    summarize(dedup_data)
+
+if __name__ == "__main__":
+    in_dirname = sys.argv[1]
+    out_dirname = sys.argv[2]
     try:
         max = int(sys.argv[3])
     except:
         max = None
-    main_dedup_two(sys.argv[1], sys.argv[2], conn, conn_rcd, max)
+
+    if max is None:
+        with open("data.pickle", 'rb') as f:
+            datas = pickle.load(f)
+    else:
+        datas = read_all(in_dirname, max)
+    # with open("data.pickle", 'wb') as f:
+    #     pickle.dump(datas, f)
+    #     print("Pickled", f)
+
+    # main_dedup_three(datas, out_dirname)
+
+    conn = psycopg2.connect(database="umls2023aa")   
+    conn_rcd = psycopg2.connect(database="umls-ext-mappings")   
+
+    main_dedup_two(datas, out_dirname, conn, conn_rcd)
+
+    # main_dedup_one(in_dirname, out_dirname, conn, conn_rcd)

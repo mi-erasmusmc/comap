@@ -5,16 +5,15 @@ import psycopg2.extras
 from collections import namedtuple
 from unidecode import unidecode
 from glob import glob
-import nltk
+from nltk import edit_distance
 from nltk.tokenize import word_tokenize
+
+SEP = "-',/"
 
 def norm_str(str, wildcard):
     if wildcard:
-        str = (str
-            .replace("-", wildcard)
-            .replace("'", wildcard)
-            .replace(",", wildcard)
-            .replace("/", wildcard))
+        for s in SEP:
+            str = str.replace(s, wildcard)
     return unidecode(str)
 
 def term_norm(str):
@@ -33,12 +32,17 @@ def tok_match(tok1, tok2):
         tok1 == tok2 or
         tok1.startswith(tok2) or
         tok2.startswith(tok1) or
-        nltk.edit_distance(tok1, tok2) <= (max(n1, n2) - min(n1, n2))
+        edit_distance(tok1, tok2) <= (max(n1, n2) - min(n1, n2))
     )
 
+def abbr_prep(str):
+    for s in SEP:
+        str = str.replace(s, ' ')
+    return str.lower()
+
 def term_match_abbr(str1, str2):
-    toks1 = [t for t in word_tokenize(str1) if t.isalpha()]
-    toks2 = [t for t in word_tokenize(str2) if t.isalpha()]
+    toks1 = [t for t in word_tokenize(abbr_prep(str1)) if t.isalpha()]
+    toks2 = [t for t in word_tokenize(abbr_prep(str2)) if t.isalpha()]
     n1 = len(toks1)
     n2 = len(toks2)
     jumps = 0
@@ -363,8 +367,6 @@ def categorize(cursor, cursor_rcd, row):
 
 IGNORE_TTYS = set("AA AD AM AS AT CE EP ES ETAL ETCF ETCLIN ET EX GT IS IT LLTJKN1 LLTJKN LLT LO MP MTH_ET MTH_IS MTH_LLT MTH_LO MTH_OAF MTH_OAP MTH_OAS MTH_OET MTH_OET MTH_OF MTH_OL MTH_OL MTH_OPN MTH_OP OAF OAM OAM OAP OAS OA OET OET OF OLC OLG OLJKN1 OLJKN1 OLJKN OLJKN OL OL OM OM ONP OOSN OPN OP PCE PEP PHENO_ET PQ PXQ PXQ SCALE TQ XQ".split())
 
-CAT_MEM = {}
-
 def dedup(data, cursor, cursor_rcd):
     data["dedup_result"] = "-"
     data["dedup_comment"] = "-"
@@ -387,12 +389,8 @@ def dedup(data, cursor, cursor_rcd):
         count += 1
         if count % 100 == 0:
             print(".", end="", flush=True)
-        key = f"{row.coding_system}-{row.code}-{row.code_name}-{row.concept}-{row.concept_name}"
-        try:
-            cat = CAT_MEM[key]
-        except:
-            cat = categorize(cursor, cursor_rcd, row)
-            CAT_MEM[key] = cat
+
+        cat = categorize(cursor, cursor_rcd, row)
 
         if cat.result.startswith("NONE"):
             data.at[i, "dedup_result"]       = cat.result
@@ -467,6 +465,7 @@ def dedup_one(data, cursor, cursor_rcd):
     return postprocess(data)
 
 def summarize(data):
+    data = data[data.code != '-']
     print()
     print(
         data

@@ -34,6 +34,21 @@ DEDUP_COLS = [
     "dedup_codes_by_name",
 ]
 
+RESULT_DETAILS = {
+    "CODE_BY_NAME"             : "code by code name",
+    "CUI_BY_CODE"              : "concept confirmed by code",
+    "CUI_BY_NAME"              : "concept confirmed by code name",
+    "NAME_BY_CODE"             : "code name by code",
+    "NONE"                     : "nothing found",
+    "NONE_CODING_SYSTEM"       : "unknown coding system",
+    "NONE_SAME_CUI"            : "no match for code concepts and code name concept",
+    "NONE_NO_CODE"             : "no code in input",
+    "NONE_NO_CONCEPT_SAME_CUI" : "no concept, code and code name match",
+    "OTHER_CODING_SYSTEM"      : "coding system",
+}
+
+IGNORE_TTYS = set("AA AD AM AS AT CE EP ES ETAL ETCF ETCLIN ET EX GT IS IT LLTJKN1 LLTJKN LLT LO MP MTH_ET MTH_IS MTH_LLT MTH_LO MTH_OAF MTH_OAP MTH_OAS MTH_OET MTH_OET MTH_OF MTH_OL MTH_OL MTH_OPN MTH_OP OAF OAM OAM OAP OAS OA OET OET OF OLC OLG OLJKN1 OLJKN1 OLJKN OLJKN OL OL OM OM ONP OOSN OPN OP PCE PEP PHENO_ET PQ PXQ PXQ SCALE TQ XQ".split())
+
 CODING_SYSTEMS = set("IR ALT AOD AOT ATC BI CCC CCPSS CCS CCSR_ICD10CM CCSR_ICD10PCS CDCREC CDT CHV COSTAR CPM CPT CPTSP CSP CST CVX DDB DMDICD10 DMDUMD DRUGBANK DSM-5 DXP FMA GO GS HCDT HCPCS HCPT HGNC HL7V2.5 HL7V3.0 HPO ICD10 ICD10AE ICD10AM ICD10AMAE ICD10CM ICD10DUT ICD10PCS ICD9CM ICF ICF-CY ICNP ICPC ICPC2EDUT ICPC2EENG ICPC2ICD10DUT ICPC2ICD10ENG ICPC2P ICPCBAQ ICPCDAN ICPCDUT ICPCFIN ICPCFRE ICPCGER ICPCHEB ICPCHUN ICPCITA ICPCNOR ICPCPOR ICPCSPA ICPCSWE JABL KCD5 LCH LCH_NW LNC LNC-DE-AT LNC-DE-DE LNC-EL-GR LNC-ES-AR LNC-ES-ES LNC-ES-MX LNC-ET-EE LNC-FR-BE LNC-FR-CA LNC-FR-FR LNC-IT-IT LNC-KO-KR LNC-NL-NL LNC-PL-PL LNC-PT-BR LNC-RU-RU LNC-TR-TR LNC-UK-UA LNC-ZH-CN MCM MDR MDRARA MDRBPO MDRCZE MDRDUT MDRFRE MDRGER MDRGRE MDRHUN MDRITA MDRJPN MDRKOR MDRLAV MDRPOL MDRPOR MDRRUS MDRSPA MDRSWE MED-RT MEDCIN MEDLINEPLUS MEDLINEPLUS_SPA MMSL MMX MSH MSHCZE MSHDUT MSHFIN MSHFRE MSHGER MSHITA MSHJPN MSHLAV MSHNOR MSHPOL MSHPOR MSHRUS MSHSCR MSHSPA MSHSWE MTH MTHCMSFRF MTHICD9 MTHICPC2EAE MTHICPC2ICD10AE MTHMST MTHMSTFRE MTHMSTITA MTHSPL MVX NANDA-I NCBI NCI NDDF NEU NIC NOC NUCCHCPT OMIM OMS ORPHANET PCDS PDQ PNDS PPAC PSY QMR RAM RCD RCDAE RCDSA RCDSY RXNORM SCTSPA SNM SNMI SNOMEDCT_US SNOMEDCT_VET SOP SPN SRC TKMT ULT UMD USP USPMG UWDA VANDF WHO WHOFRE WHOGER WHOPOR WHOSPA".split() + ["RCD2", "ICD10/CM"])
 
 def norm_str(str, wildcard):
@@ -413,8 +428,6 @@ def categorize(cursor, cursor_rcd, row):
     cat.result = "NONE"
     return cat
 
-IGNORE_TTYS = set("AA AD AM AS AT CE EP ES ETAL ETCF ETCLIN ET EX GT IS IT LLTJKN1 LLTJKN LLT LO MP MTH_ET MTH_IS MTH_LLT MTH_LO MTH_OAF MTH_OAP MTH_OAS MTH_OET MTH_OET MTH_OF MTH_OL MTH_OL MTH_OPN MTH_OP OAF OAM OAM OAP OAS OA OET OET OF OLC OLG OLJKN1 OLJKN1 OLJKN OLJKN OL OL OM OM ONP OOSN OPN OP PCE PEP PHENO_ET PQ PXQ PXQ SCALE TQ XQ".split())
-
 CACHE = {}
 
 def dedup(data, cursor, cursor_rcd):
@@ -514,7 +527,8 @@ def postprocess(data):
 def dedup_one(data, cursor, cursor_rcd):
     data = preprocess(data)
     data = (
-        data["coding_system,code,code_name,concept,concept_name,original_code,original_code_name".split(",")] # event_abbreviation
+        data[
+            "coding_system,code,code_name,concept,concept_name,dedup_original_code,dedup_original_code_name".split(",")] # event_abbreviation
         .drop_duplicates()
     )
     data = dedup(data, cursor, cursor_rcd)
@@ -588,6 +602,32 @@ def dedup_two(data, conn, conn_rcd):
         .rename(dict(zip(*reversed(COLUMN_MAPPING))), axis=1)
     )
 
+YES_NO = {'N': 'No', 'Y': 'Yes'}
+
+def dedup_modify(data):
+    data["Dedup result"] = ""
+    data["Dedup ignore"] = "?"
+    data["Dedup before"] = ""
+    for i, row in data.iterrows():
+        details = RESULT_DETAILS[row["dedup_result"]]
+        if row["dedup_result"].startswith("NONE"):
+            data.at[i, "Dedup result"] = f'None - {details}'
+        else:
+            data.at[i, "Code"] = row["dedup_code"]
+            data.at[i, "Code name"] = row["dedup_code_name"]
+            data.at[i, "Coding system"] = row["dedup_coding_system"]
+            data.at[i, "Dedup ignore"] = YES_NO[row["dedup_ignore"]]
+            if row["dedup_changed"] == '-':
+                data.at[i, "Dedup result"] = f'Confirmed - {details}'
+            else:
+                data.at[i, "Dedup result"] = f'Corrected - {details}'
+                data.at[i, "Dedup before"] = '|'.join([
+                    row["Coding system"],
+                    row["dedup_original_code"],
+                    row["dedup_original_code_name"],
+                ])
+    data.drop(DEDUP_COLS, axis=1, inplace=True)
+
 def main_dedup_two(datas, out_dirname, conn, conn_rcd):
     dedup_datas = []
     code_count = 0
@@ -595,10 +635,12 @@ def main_dedup_two(datas, out_dirname, conn, conn_rcd):
     for (ix, (name, data)) in enumerate(datas):
         print()
         print(f"- {name} {ix}/{len(datas)} {code_count}/{code_count_total}")
-        data = dedup_two(data, conn, conn_rcd)
-        data.to_excel(f"{out_dirname}/{name}.xlsx")
-        dedup_datas.append(data[COLUMN_MAPPING[0] + DEDUP_COLS].reset_index(drop=True))
+        data = dedup_two(data, conn, conn_rcd) 
         code_count += len(data)
+        data.to_csv(f"{out_dirname}/{name}.csv", index=False)
+        dedup_datas.append(data[COLUMN_MAPPING[0] + DEDUP_COLS].reset_index(drop=True))
+        dedup_modify(data)
+        data.to_excel(f"{out_dirname}/{name}.xlsx", index=False)
     dedup_data = pd.concat(dedup_datas).rename(dict(zip(*COLUMN_MAPPING)), axis=1)
     summarize(dedup_data)
     dedup_data.to_csv(f"{out_dirname}/all.csv", index=False)
@@ -637,6 +679,8 @@ def main_dedup_three(datas, out_dirname):
     summarize(dedup_data)
 
 if __name__ == "__main__":
+    conn = psycopg2.connect(database="umls2023aa")   
+    conn_rcd = psycopg2.connect(database="umls-ext-mappings")   
     in_dirname = sys.argv[1]
     out_dirname = sys.argv[2]
     try:
@@ -649,15 +693,11 @@ if __name__ == "__main__":
             datas = pickle.load(f)
     else:
         datas = read_all(in_dirname, max)
-    # with open("data.pickle", 'wb') as f:
-    #     pickle.dump(datas, f)
-    #     print("Pickled", f)
-
-    # main_dedup_three(datas, out_dirname)
-
-    conn = psycopg2.connect(database="umls2023aa")   
-    conn_rcd = psycopg2.connect(database="umls-ext-mappings")   
+        # with open("data.pickle", 'wb') as f:
+        #     pickle.dump(datas, f)
+        #     print("Pickled", f)
 
     main_dedup_two(datas, out_dirname, conn, conn_rcd)
 
     # main_dedup_one(in_dirname, out_dirname, conn, conn_rcd)
+    # main_dedup_three(datas, out_dirname)

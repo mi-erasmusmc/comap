@@ -1,4 +1,6 @@
 import sys
+import shutil
+import os
 import pandas as pd
 import psycopg2
 import psycopg2.extras
@@ -35,16 +37,17 @@ DEDUP_COLS = [
 ]
 
 RESULT_DETAILS = {
+    "BY_CODE_AND_NAME"         : "code and code name match",
     "CODE_BY_NAME"             : "code by code name",
-    "CUI_BY_CODE"              : "concept confirmed by code",
-    "CUI_BY_NAME"              : "concept confirmed by code name",
+    "CODE_BY_CUI"              : "code by concept",
+    "CODE_NAME_BY_CUI"         : "code name by concept",
     "NAME_BY_CODE"             : "code name by code",
     "NONE"                     : "nothing found",
-    "NONE_CODING_SYSTEM"       : "unknown coding system",
-    "NONE_SAME_CUI"            : "no match for code concepts and code name concept",
-    "NONE_NO_CODE"             : "no code in input",
-    "NONE_NO_CONCEPT_SAME_CUI" : "no concept, code and code name match",
-    "OTHER_CODING_SYSTEM"      : "coding system",
+    "NONE_CODING_SYSTEM"       : "unknown coding system or free text",
+    "NONE_NO_CODE"             : "no code",
+    "NONE_SAME_CUI"            : "code concept and code name concept match but mismatch with concept",
+    "NONE_SAME_CUI_NO_CONCEPT" : "code concept and code name concept match but no concept",
+    "OTHER_CODING_SYSTEM"      : "changed coding system",
 }
 
 IGNORE_TTYS = set("AA AD AM AS AT CE EP ES ETAL ETCF ETCLIN ET EX GT IS IT LLTJKN1 LLTJKN LLT LO MP MTH_ET MTH_IS MTH_LLT MTH_LO MTH_OAF MTH_OAP MTH_OAS MTH_OET MTH_OET MTH_OF MTH_OL MTH_OL MTH_OPN MTH_OP OAF OAM OAM OAP OAS OA OET OET OF OLC OLG OLJKN1 OLJKN1 OLJKN OLJKN OL OL OM OM ONP OOSN OPN OP PCE PEP PHENO_ET PQ PXQ PXQ SCALE TQ XQ".split())
@@ -342,32 +345,37 @@ def categorize(cursor, cursor_rcd, row):
 
     if is_rcd2:
         cat.names_by_code = names_by_codes_rcd2(cursor, cursor_rcd, row['code'])
+        cat.codes_by_name = codes_by_name_rcd2(cursor, cursor_rcd, row['code_name'])
     else:
         cat.names_by_code = names_by_codes(cursor, row['coding_system'], row['code'])
+        cat.codes_by_name = codes_by_name(cursor, row['coding_system'], row['code_name'])
 
-    rows = (r for r in cat.names_by_code if term_match(r['str'], row['code_name']))
+    rows_name_by_code = (
+        r for r in cat.names_by_code
+        if term_match(r['str'], row['code_name'])
+    )
+
+    rows_code_by_name = (
+        r for r in cat.codes_by_name
+        if code_match(r['code'], row['code'], row['coding_system'])
+    )
+
     try:
-        cat.row = next(rows)
-        cat.result = "NAME_BY_CODE"
-        if next(rows, None):
+        cat.row = next(rows_name_by_code)
+        if next(rows_code_by_name, None):
+            cat.result = "BY_CODE_AND_NAME"
+        else:
+            cat.result = "NAME_BY_CODE"
+        if next(rows_name_by_code, None):
             cat.comment = "not unique"
         return cat
     except:
         pass
 
-    if is_rcd2:
-        cat.codes_by_name = codes_by_name_rcd2(cursor, cursor_rcd, row['code_name'])
-    else:
-        cat.codes_by_name = codes_by_name(cursor, row['coding_system'], row['code_name'])
-
-    rows = (
-        r for r in cat.codes_by_name
-        if code_match(r['code'], row['code'], row['coding_system'])
-    )
     try:
-        cat.row = next(rows)
+        cat.row = next(rows_code_by_name)
         cat.result = "CODE_BY_NAME"
-        if next(rows, None):
+        if next(rows_code_by_name, None):
             cat.comment = "not unique"
         return cat
     except:
@@ -380,7 +388,7 @@ def categorize(cursor, cursor_rcd, row):
         rows = (r for r in cat.codes_by_name if r['cui'] == row['concept'])
         try:
             cat.row = next(rows)
-            cat.result = "CUI_BY_CODE"
+            cat.result = "CODE_BY_CUI"
             if next(rows, None):
                 cat.comment = "not unique"
             return cat
@@ -390,7 +398,7 @@ def categorize(cursor, cursor_rcd, row):
         try:
             rows = (r for r in cat.names_by_code if r['cui'] == row['concept'])
             cat.row = next(rows)
-            cat.result = "CUI_BY_NAME"
+            cat.result = "CODE_NAME_BY_CUI"
             if next(rows, None):
                 cat.comment = "not unique"
             return cat
@@ -422,7 +430,7 @@ def categorize(cursor, cursor_rcd, row):
         if row['concept']:
             cat.result = "NONE_SAME_CUI"
         else:
-            cat.result = "NONE_NO_CONCEPT_SAME_CUI"
+            cat.result = "NONE_SAME_CUI_NO_CONCEPT"
         return cat
 
     cat.result = "NONE"
@@ -484,13 +492,13 @@ def dedup(data, cursor, cursor_rcd):
             data.at[i, "dedup_ttys"]          = cat.row.get("ttys", "?")
             data.at[i, "dedup_ignore"]        = ignore
 
-        if cat.names_by_code is not None:
+        if cat.names_by_code:
             data.at[i, 'dedup_names_by_code'] = '|'.join(
                 r['str'] # f"{r['code']}:{r['str']}"
                 for r in cat.names_by_code
             )
 
-        if cat.codes_by_name is not None:
+        if cat.codes_by_name:
             data.at[i, 'dedup_codes_by_name'] = '|'.join(
                 r['code'] # f"{r['code']}:{r['str']}"
                 for r in cat.codes_by_name
@@ -586,8 +594,9 @@ def read_all(dirname, max):
             if not df.columns.empty and df.columns[0] == "Coding system":
                 if not all(c in df.columns for c in ["Coding system", "Code", "Code name", "Concept", "Concept name"]):
                     print("-", ', '.join(df.columns))
+                subdir = f[f.index('/')+1:f.rindex('/')]
                 name = f[f.rindex('/')+1:f.rindex('.')]
-                dfs.append((name, df))
+                dfs.append((subdir, name, df))
                 break
     print()
     return dfs
@@ -604,43 +613,62 @@ def dedup_two(data, conn, conn_rcd):
 
 YES_NO = {'N': 'No', 'Y': 'Yes'}
 
-def dedup_modify(data):
-    data["Dedup result"] = ""
+def dedup_modify_excel(data):
     data["Dedup ignore"] = "?"
-    data["Dedup before"] = ""
+    data["Dedup result"] = "-"
+    data["Dedup details"] = "-"
     for i, row in data.iterrows():
-        details = RESULT_DETAILS[row["dedup_result"]]
-        if row["dedup_result"].startswith("NONE"):
-            data.at[i, "Dedup result"] = f'None - {details}'
+        is_none = row["dedup_result"].startswith("NONE")
+        details_list = []
+        if is_none:
+            result_cat = 'None'
         else:
+            if row["dedup_changed"] == '-':
+                result_cat = 'Confirmed'
+            else:
+                result_cat = 'Corrected'
+                details_list.append(f'Original: {row["Coding system"]}|{row["dedup_original_code"]}|{row["dedup_original_code_name"]}')
             data.at[i, "Code"] = row["dedup_code"]
             data.at[i, "Code name"] = row["dedup_code_name"]
             data.at[i, "Coding system"] = row["dedup_coding_system"]
             data.at[i, "Dedup ignore"] = YES_NO[row["dedup_ignore"]]
-            if row["dedup_changed"] == '-':
-                data.at[i, "Dedup result"] = f'Confirmed - {details}'
-            else:
-                data.at[i, "Dedup result"] = f'Corrected - {details}'
-                data.at[i, "Dedup before"] = '|'.join([
-                    row["Coding system"],
-                    row["dedup_original_code"],
-                    row["dedup_original_code_name"],
-                ])
+        data.at[i, "Dedup result"] = f'{result_cat}: {RESULT_DETAILS[row["dedup_result"]]}'
+        if row["dedup_comment"] != '-':
+            details_list.append(f'Comment: {row["dedup_comment"]}')
+        if is_none or row["dedup_comment"] != '-':
+            if row["dedup_codes_by_name"] != '-':
+                details_list.append(f'Codes by name: {row["dedup_codes_by_name"]}')
+            if row["dedup_names_by_code"] != '-':
+                details_list.append(f'Names by code: {row["dedup_names_by_code"]}')
+        if details_list:
+            data.at[i, "Dedup details"] = ', '.join(details_list)
     data.drop(DEDUP_COLS, axis=1, inplace=True)
 
-def main_dedup_two(datas, out_dirname, conn, conn_rcd):
+def make_backup(in_dirname, out_dirname, subdir, name):
+    # ["Reviews", "Review", "old", "Older versions", "Old", "OLD", "Old versions", "Older files"]
+    backup_dir = f'{out_dirname}/{subdir}/Versions'
+    os.makedirs(backup_dir, exist_ok=True)
+    original = f'{in_dirname}/{subdir}/{name}.xlsx'
+    backup = f'{backup_dir}/{name}-before-dedup.xlsx'
+    shutil.copyfile(original, backup)
+
+def main_dedup_two(in_dirname, out_dirname, datas, conn, conn_rcd):
     dedup_datas = []
     code_count = 0
-    code_count_total = sum(len(data) for (_, data) in datas)
-    for (ix, (name, data)) in enumerate(datas):
+    code_count_total = sum(len(data) for (_, _, data) in datas)
+    for (ix, (subdir, name, data)) in enumerate(datas):
         print()
         print(f"- {name} {ix}/{len(datas)} {code_count}/{code_count_total}")
+        make_backup(in_dirname, out_dirname, subdir, name)
         data = dedup_two(data, conn, conn_rcd) 
+        # data.to_csv(f"{out_dirname}/{subdir}/Versions/{name}-dedup.csv", index=False)
         code_count += len(data)
-        data.to_csv(f"{out_dirname}/{name}.csv", index=False)
-        dedup_datas.append(data[COLUMN_MAPPING[0] + DEDUP_COLS].reset_index(drop=True))
-        dedup_modify(data)
-        data.to_excel(f"{out_dirname}/{name}.xlsx", index=False)
+        dedup_datas.append(
+            data[COLUMN_MAPPING[0] + DEDUP_COLS]
+            .reset_index(drop=True)
+        )
+        dedup_modify_excel(data)
+        data.to_excel(f"{out_dirname}/{subdir}/{name}.xlsx", index=False)
     dedup_data = pd.concat(dedup_datas).rename(dict(zip(*COLUMN_MAPPING)), axis=1)
     summarize(dedup_data)
     dedup_data.to_csv(f"{out_dirname}/all.csv", index=False)
@@ -666,7 +694,7 @@ def main_dedup_three(datas, out_dirname):
                 data.rename(dict(zip(*COLUMN_MAPPING)), axis=1)
                 ['coding_system code code_name concept concept_name'.split()]
             )
-            for (_, data) in datas
+            for (_, _, data) in datas
         ], axis=1) 
         .drop_duplicates()
     )
@@ -688,16 +716,19 @@ if __name__ == "__main__":
     except:
         max = None
 
-    if max is None:
+    if max is None and os.path.exists('data.pickle'):
         with open("data.pickle", 'rb') as f:
             datas = pickle.load(f)
+            print("Unpickled files")
     else:
         datas = read_all(in_dirname, max)
-        # with open("data.pickle", 'wb') as f:
-        #     pickle.dump(datas, f)
-        #     print("Pickled", f)
 
-    main_dedup_two(datas, out_dirname, conn, conn_rcd)
+    if max is None and not os.path.exists('data.pickle'):
+        with open("data.pickle", 'wb') as f:
+            pickle.dump(datas, f)
+            print("Pickled files", f)
+
+    main_dedup_two(in_dirname, out_dirname, datas, conn, conn_rcd)
 
     # main_dedup_one(in_dirname, out_dirname, conn, conn_rcd)
     # main_dedup_three(datas, out_dirname)

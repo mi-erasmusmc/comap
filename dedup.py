@@ -21,6 +21,8 @@ COLUMN_MAPPING = (
 
 KEY_COLUMNS = 'coding_system code code_name concept concept_name'.split()
 
+INPUT_COLUMNS = ["Coding system", "Code", "Code name", "Concept", "Concept name"]
+
 DEDUP_COLS = [
     "dedup_original_code",
     "dedup_original_code_name",
@@ -578,27 +580,41 @@ def main_dedup_one(input_filename, output_filename, conn, conn_rcd):
     data.to_csv(output_filename, index=False)
     summarize(data)
 
+class Data(namedtuple('Data', ['subdir', 'name', 'sheets', 'sheet_names', 'mapping_sheet_name'])):
+
+    def mapping(self):
+        return self.sheets[self.mapping_sheet_name]
+
 def read_all(dirname, max):
     dfs = []
-    for f in sorted(glob(f"{dirname}/*/*.xlsx")):
+    for filename in sorted(glob(f'{dirname}/*/*.xlsx')):
         if len(dfs) == max:
             break
-        print(".", end="", flush=True)
-        for i in range(0, 99):
+        subdir = filename[filename.index('/')+1:filename.rindex('/')]
+        name = filename[filename.rindex('/')+1:filename.rindex('.')]
+        xls = pd.ExcelFile(filename)
+        sheets = pd.read_excel(filename, dtype=str, sheet_name=None)
+        data = Data(subdir, name, sheets, xls.sheet_names, None)
+        for sheet_name in xls.sheet_names:
+            df = (
+                sheets[sheet_name]
+                .rename(lambda s: s.strip(), axis=1)
+            )
             try:
-                df = pd.read_excel(f, dtype=str, sheet_name=i)
-            except ValueError:
-                print("- NOT FOUND")
-                break
-            df.rename(lambda s: s.strip(), axis=1, inplace=True)
-            if not df.columns.empty and df.columns[0] == "Coding system":
-                if not all(c in df.columns for c in ["Coding system", "Code", "Code name", "Concept", "Concept name"]):
-                    print("-", ', '.join(df.columns))
-                subdir = f[f.index('/')+1:f.rindex('/')]
-                name = f[f.rindex('/')+1:f.rindex('.')]
-                dfs.append((subdir, name, df))
-                break
-    print()
+                if (
+                        df.columns[0] == 'Coding system' and
+                        all(c in df.columns for c in INPUT_COLUMNS)
+                ):
+                    if data.mapping_sheet_name is not None:
+                        print(filename, "two sheets with coding systems", data.mapping_sheet_name, sheet_name)
+                    else:
+                        data = data._replace(mapping_sheet_name = sheet_name)
+            except IndexError:
+                pass
+        if data.mapping_sheet_name is None:
+            print("mapping sheet not found in", filename)
+        else:
+            dfs.append(data)
     return dfs
         
 def dedup_two(data, conn, conn_rcd):
@@ -652,23 +668,34 @@ def make_backup(in_dirname, out_dirname, subdir, name):
     backup = f'{backup_dir}/{name}-before-dedup.xlsx'
     shutil.copyfile(original, backup)
 
+def write_dedup(out_dirname, data, mapping):
+    filename = f"{out_dirname}/{data.subdir}/{data.name}.xlsx"
+    with pd.ExcelWriter(filename) as writer:
+        for sheet_name in data.sheet_names:
+            if sheet_name == data.mapping_sheet_name:
+                sheet = mapping
+            else:
+                sheet = data.sheets[sheet_name]
+            sheet.to_excel(writer, sheet_name=sheet_name, index=False)
+
 def main_dedup_two(in_dirname, out_dirname, datas, conn, conn_rcd):
     dedup_datas = []
     code_count = 0
-    code_count_total = sum(len(data) for (_, _, data) in datas)
-    for (ix, (subdir, name, data)) in enumerate(datas):
+    code_count_total = sum(len(data.mapping()) for data in datas)
+    for (ix, data) in enumerate(datas):
         print()
-        print(f"- {name} {ix}/{len(datas)} {code_count}/{code_count_total}")
-        make_backup(in_dirname, out_dirname, subdir, name)
-        data = dedup_two(data, conn, conn_rcd) 
-        # data.to_csv(f"{out_dirname}/{subdir}/Versions/{name}-dedup.csv", index=False)
-        code_count += len(data)
+        print(f"- {data.name} {ix}/{len(datas)} {code_count}/{code_count_total}")
+        make_backup(in_dirname, out_dirname, data.subdir, data.name)
+        mapping = data.mapping()
+        mapping = dedup_two(mapping, conn, conn_rcd) 
+        # data.to_csv(f"{out_dirname}/{data.subdir}/Versions/{data.name}-dedup.csv", index=False)
+        code_count += len(mapping)
         dedup_datas.append(
-            data[COLUMN_MAPPING[0] + DEDUP_COLS]
+            mapping[COLUMN_MAPPING[0] + DEDUP_COLS]
             .reset_index(drop=True)
         )
-        dedup_modify_excel(data)
-        data.to_excel(f"{out_dirname}/{subdir}/{name}.xlsx", index=False)
+        dedup_modify_excel(mapping)
+        write_dedup(out_dirname, data, mapping)
     dedup_data = pd.concat(dedup_datas).rename(dict(zip(*COLUMN_MAPPING)), axis=1)
     summarize(dedup_data)
     dedup_data.to_csv(f"{out_dirname}/all.csv", index=False)
@@ -691,10 +718,10 @@ def main_dedup_three(datas, out_dirname):
     datas = (
         pd.concat([
             preprocess(
-                data.rename(dict(zip(*COLUMN_MAPPING)), axis=1)
+                data.mapping().rename(dict(zip(*COLUMN_MAPPING)), axis=1)
                 ['coding_system code code_name concept concept_name'.split()]
             )
-            for (_, _, data) in datas
+            for data in datas
         ], axis=1) 
         .drop_duplicates()
     )

@@ -594,23 +594,19 @@ def read_all(dirname, max):
         name = filename[filename.rindex('/')+1:filename.rindex('.')]
         xls = pd.ExcelFile(filename)
         sheets = pd.read_excel(filename, dtype=str, sheet_name=None)
-        data = Data(subdir, name, sheets, xls.sheet_names, None)
-        for sheet_name in xls.sheet_names:
-            df = (
-                sheets[sheet_name]
-                .rename(lambda s: s.strip(), axis=1)
-            )
+        data = Data(subdir, name, {}, xls.sheet_names, None)
+        for (sheet_name, df) in sheets.items():
+            df.rename(lambda s: s.strip(), axis=1, inplace=True)
+            data.sheets[sheet_name] = df
             try:
-                if (
-                        df.columns[0] == 'Coding system' and
-                        all(c in df.columns for c in INPUT_COLUMNS)
-                ):
-                    if data.mapping_sheet_name is not None:
-                        print(filename, "two sheets with coding systems", data.mapping_sheet_name, sheet_name)
-                    else:
-                        data = data._replace(mapping_sheet_name = sheet_name)
+                col0 = df.columns[0]
             except IndexError:
-                pass
+                col0 = None
+            if col0 == 'Coding system' and all(c in df.columns for c in INPUT_COLUMNS):
+                if data.mapping_sheet_name is not None:
+                    print(filename, "two sheets with coding systems:", data.mapping_sheet_name, ' and ', sheet_name)
+                else:
+                    data = data._replace(mapping_sheet_name = sheet_name)
         if data.mapping_sheet_name is None:
             print("mapping sheet not found in", filename)
         else:

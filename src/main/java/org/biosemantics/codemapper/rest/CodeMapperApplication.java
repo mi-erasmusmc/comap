@@ -161,7 +161,7 @@ public class CodeMapperApplication extends ResourceConfig {
 				.asList(propertiesConfig.getProperty(CODING_SYSTEMS_WITH_DEFINITION).split(",\\s*"));
 
 		peregrineResourceUrl = propertiesConfig.getProperty(PEREGRINE_RESOURCE_URL);
-		umlsVersion = propertiesConfig.getProperty(CODEMAPPER_UMLS_VERSION);
+		umlsVersion = properties.getProperty(CODEMAPPER_UMLS_VERSION);
 
 		Set<String> ignoreTermTypes = new HashSet<>(Arrays.asList(propertiesConfig.getProperty(IGNORE_TERM_TYPES).split(",\\s*")));
 		
@@ -176,7 +176,7 @@ public class CodeMapperApplication extends ResourceConfig {
 		writeXlsApi = new WriteXlsApi();
 		writeTsvApi = new WriteTsvApi();
 
-		String utsApiKey = properties.getProperty(UTS_API_KEY);
+		String utsApiKey = propertiesConfig.getProperty(UTS_API_KEY);
 		utsApi = new UtsApi(utsApiKey);
 		
 		reviewApi = new ReviewApi(codeMapperConnectionPool);
@@ -203,6 +203,10 @@ public class CodeMapperApplication extends ResourceConfig {
         return DataSources.unpooledDataSource(uri, username, password);
 	}
 	
+        public static String getProp(String str) {
+		return properties.getProperty(str);
+	}
+
 	public static String getPropConfig(String str) {
 		return propertiesConfig.getProperty(str);
 	}

@@ -4,6 +4,12 @@
 Next
 ----
 
+October 4, 2023
+----
+
+- update UMLS to version 2023AA
+- update SNOMED-CT transitive closures to version 202309
+
 May 8, 2023
 ----
 

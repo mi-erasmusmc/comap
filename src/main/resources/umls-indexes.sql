@@ -14,6 +14,6 @@ CREATE INDEX mrrel_ix_aui1 ON mrrel(aui1);
 CREATE INDEX mrrel_ix_aui2 ON mrrel(aui2);
 CREATE INDEX mrrel_ix_rel ON mrrel(rel);
 CREATE INDEX mrrel_ix_rela ON mrrel(rela);
-CREATE INDEX mrrel_ix_sab ON mrrel(sab);
+-- CREATE INDEX mrrel_ix_sab ON mrrel(sab);
 CREATE INDEX mrsab_ix_curver ON mrsab(curver);
 CREATE INDEX mrdef_ix_cui ON mrdef(cui);

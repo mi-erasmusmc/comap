@@ -40,7 +40,7 @@ public class IndexServlet extends HttpServlet {
     {
         req.setCharacterEncoding("UTF-8");
         ServletContext context = getServletContext();
-        context.setAttribute("CODEMAPPER_UMLS_VERSION", CodeMapperApplication.getPropConfig("codemapper-umls-version"));
+        context.setAttribute("CODEMAPPER_UMLS_VERSION", CodeMapperApplication.getProp("codemapper-umls-version"));
         context.setAttribute("CODEMAPPER_CONTACT_EMAIL", CodeMapperApplication.getPropConfig("codemapper-contact-email"));
         context.setAttribute("CODEMAPPER_URL", CodeMapperApplication.getPropConfig("codemapper-url"));
         context.setAttribute("PROJECT_VERSION", CodeMapperApplication.getPropConfig("project.version"));

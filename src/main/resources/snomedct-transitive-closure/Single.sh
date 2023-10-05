@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-if [ $# != 3 ]; then
+if [ $# != 2 ]; then
     echo "Usage: $0 SNOMEDZIP DATABASE, found $#"
     exit 1
 fi
@@ -34,3 +34,5 @@ cat psql_tables.sql \
   | sed "s|{{LANGUAGE}}|$LANGUAGE|" \
   | sed "s|{{TRANSITIVECLOSURE}}|$TRANSITIVECLOSURE|" \
   | sudo -u postgres psql "$DATABASE"
+
+rm -rf "$SNOMEDDIR"

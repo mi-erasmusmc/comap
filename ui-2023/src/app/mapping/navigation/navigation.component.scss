@@ -1,0 +1,8 @@
+.navigation-button > mat-icon {
+    display: none;
+    margin-right: 0;
+}
+
+.navigation-button.active > mat-icon {
+    display: inline-block;
+}

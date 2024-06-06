@@ -1,0 +1,39 @@
+<div>
+</div>
+
+<section class="center-content mat-elevation-z3">
+  <h3>Unsaved steps</h3>
+  <span *ngIf="mapping.undoStack.length == 0">
+    Nothing.
+  </span>
+  <ol>
+    <li *ngFor="let op of mapping.undoStack">
+      {{op[0]}}
+    </li>
+  </ol>
+</section>
+
+<section class="center-content mat-elevation-z3">
+  <h3>Saved versions</h3>
+  <p *ngIf="revisions.length == 0">
+    (An revision from the old CodeMapper might be saved.)
+  </p>
+  <table id="versions-table">
+    <thead>
+      <tr>
+        <th>Version</th>
+        <th>Author</th>
+        <th>Timestamp</th>
+        <th>Summary</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let rev of revisions">
+        <td>{{rev.version}}<span *ngIf="rev.version == version"> (current)</span></td>
+        <td><span class="author">{{rev.author}}</span></td>
+        <td><span class="timestamp" matTooltip="{{rev.timestamp|date:'medium'}}">{{rev.timestamp | date:'mediumDate'}}</span></td>
+        <td><span matTooltip="{{rev.summary}}" matTooltipClass="pre-line-tooltip">{{firstLine(rev.summary)}}</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>

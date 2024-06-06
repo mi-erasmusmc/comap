@@ -1,0 +1,19 @@
+<div class="center-content">
+  <button mat-stroked-button (click)="refresh()">
+    <mat-icon fontIcon="refresh"></mat-icon> Refresh
+  </button>
+  <div
+    *ngFor="let byCui of topics | keyvalue:compareReview"
+    class="topic-by-cui mat-elevation-z3">
+    <ng-template [ngIf]="concepts[byCui.key] !== undefined">
+      <reviews-concept
+        [topicsInfo]="topics[byCui.key]"
+        [cui]="byCui.key"
+        [heading]="concepts[byCui.key].name"
+        [data]="data"
+        [userIsEditor]="userIsEditor"
+        (run)="run.emit($event)">
+      </reviews-concept>
+    </ng-template>
+  </div>
+</div>

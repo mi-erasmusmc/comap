@@ -1,0 +1,46 @@
+<button mat-icon-button [matMenuTriggerFor]="menu">
+  <mat-icon>menu</mat-icon>
+</button>
+<mat-menu #menu="matMenu">
+  <button
+    routerLink="/"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{exact: true}"
+    class="navigation-button"
+    mat-menu-item>
+    <mat-icon>chevron_right</mat-icon>Welcome
+  </button>
+  <button
+    routerLink="/projects"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{exact: true}"
+    class="navigation-button"
+    mat-menu-item>
+    <mat-icon>chevron_right</mat-icon>All projects
+  </button>
+  <button
+    routerLink="/project/VAC4EU"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{exact: true}"
+    class="navigation-button"
+    mat-menu-item>
+    <mat-icon>chevron_right</mat-icon>VAC4EU
+  </button>
+  <button
+    routerLink="/project/Tests"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{exact: true}"
+    class="navigation-button"
+    mat-menu-item>
+    <mat-icon>chevron_right</mat-icon>Tests
+  </button>
+  <ng-content></ng-content>
+  <button
+    routerLink="/news"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{exact: true}"
+    class="navigation-button"
+    mat-menu-item>
+    <mat-icon>chevron_right</mat-icon>News
+  </button>
+</mat-menu>

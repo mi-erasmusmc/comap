@@ -1,0 +1,36 @@
+<mat-toolbar>
+  <app-navigation></app-navigation>
+  <span>CodeMapper: Project {{projectName}}</span>
+  <span class="menu-spacer"></span>
+  <app-loggedin></app-loggedin>
+</mat-toolbar>
+
+<div class="center-content">
+<h2>Events</h2>
+<ul>
+  <li *ngFor="let event of events">
+    <a [routerLink]="['/project', projectName, 'event', event]" mat-button>
+      {{event}}
+    </a>
+  </li>
+  <li>
+    <mat-form-field appearance="fill">
+      <input type="text" placeholder="New event name" [(ngModel)]="newEventName" matInput #nameInput>
+    </mat-form-field>
+    <span matTooltip="Create a new event. Requires a name">
+      <button
+        (click)="createNew(projectName, newEventName)"
+        [disabled]="!newEventName"
+        mat-raised-button>
+        New
+      </button>
+      <button
+        (click)="importNew(projectName, newEventName)"
+        [disabled]="!newEventName"
+        mat-raised-button>
+        Import CSV
+      </button>
+    </span>
+  </li>
+</ul>
+</div>

@@ -1,0 +1,14 @@
+<mat-toolbar>
+  <app-navigation></app-navigation>
+  <span>CodeMapper: Projects</span>
+  <span class="menu-spacer"></span>
+  <app-loggedin></app-loggedin>
+</mat-toolbar>
+
+<ul>
+  <li *ngFor="let project of projectPermissions | keyvalue">
+    <a [routerLink]="['/project', project.key]" mat-button>
+      {{project.key}}
+    </a>
+  </li>
+</ul>

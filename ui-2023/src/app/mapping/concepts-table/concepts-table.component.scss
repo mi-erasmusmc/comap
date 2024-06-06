@@ -1,0 +1,25 @@
+.conceptCode {
+  font-size: small;
+}
+
+.mat-mdc-cell {
+  vertical-align: top;
+}
+
+$pad: calc((var(--mdc-checkbox-state-layer-size) - 18px) / 2);
+
+.code {
+    padding: $pad;
+}
+
+.concept {
+    padding: $pad;
+}
+
+.comment {
+    padding: $pad;
+}
+
+th.select {
+    width: 0px;
+}

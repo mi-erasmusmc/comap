@@ -152,10 +152,16 @@ export class ConceptsComponent implements OnInit {
   //   }
   // }
 
-  expandConcept(concept : Concept, vocIds : VocabularyId[], direction : string, relations : string[], invRelations : string[]) {
-    this.api.expand(concept.id, this.vocIds(), relations, invRelations)
+  broaderConcepts(concept : Concept, vocIds : VocabularyId[]) {
+    this.api.broaderConcepts(concept.id, this.vocIds())
       .subscribe(({ concepts, codes }) =>
-        this.confirmAddConceptsDialog(concepts, codes, `Concepts ${direction} than ${concept.name}`))
+        this.confirmAddConceptsDialog(concepts, codes, `Concepts broader than ${concept.name}`))
+  }
+
+  narrowerConcepts(concept : Concept, vocIds : VocabularyId[]) {
+    this.api.narrowerConcepts(concept.id, this.vocIds())
+      .subscribe(({ concepts, codes }) =>
+        this.confirmAddConceptsDialog(concepts, codes, `Concepts narrower than ${concept.name}`))
   }
 
   showTagsDialog(concepts : Concept[]) {

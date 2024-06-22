@@ -1,36 +1,43 @@
-import { Input, Component, EventEmitter, Output, OnChanges, SimpleChanges } from '@angular/core';
-import { ConceptId, Concept } from '../data';
-import { ReviewData, TopicsByConcept, TopicsInfo, ReviewOperation, Refresh, MarkAsRead, ResolveTopic, NewMessage, NewTopic } from '../review';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { ConceptId, Concept, VocabularyId, CodeId } from '../data';
+import { TopicsInfo, ReviewData, ReviewOperation, NewTopic, NewMessage, ResolveTopic, MarkAsRead } from '../review';
 
 @Component({
   selector: 'reviews',
   templateUrl: './reviews.component.html',
   styleUrls: ['./reviews.component.scss']
 })
-export class ReviewsComponent implements OnChanges {
-  @Input() topics! : TopicsByConcept;
-  @Input() concepts! : { [key : ConceptId] : Concept };
-  @Input() inputDisabled! : boolean;
+export class ReviewsComponent {
+  @Input() topicsInfo! : TopicsInfo;
+  @Input() heading! : string;
+  @Input() cui : ConceptId | null = null;
+  @Input() voc : VocabularyId | null = null;
+  @Input() code : CodeId | null = null;
+  @Input() data! : ReviewData;
   @Input() userIsEditor! : boolean;
-  @Input() data : ReviewData = new ReviewData();
-  @Output() run = new EventEmitter<ReviewOperation>();
-  ngOnChanges(changes : SimpleChanges) : void {
-    let topics : ReviewData | undefined = changes['topics']?.currentValue;
-    if (topics !== undefined) {
-      for (let [id, info] of Object.entries(topics)) {
-        this.data.newTopicHeading[id] ??= "";
-        for (let topicId of Object.keys(info.topics)) {
-          this.data.newMessageText[topicId] ??= "";
-          this.data.topicShowMessages[topicId] ??= info.topics[topicId]!.resolved == null;
-        }
-      }
+  @Output() run : EventEmitter<ReviewOperation> = new EventEmitter<ReviewOperation>();
+  toggleTopicShowMessages(topicId : string) {
+    this.data.topicShowMessages[topicId] = !this.data.topicShowMessages[topicId];
+  }
+  newTopic(heading : string) {
+    if (heading) {
+      this.run.emit(new NewTopic(this.cui, this.voc, this.code, heading, this.data));
     }
   }
-  refresh() {
-    this.run.emit(new Refresh());
+  markAsRead(topicId : string) {
+    this.run.emit(new MarkAsRead(parseInt(topicId)));
   }
-  compareReview(o1 : { key : ConceptId, value : TopicsInfo }, o2 : { key : ConceptId, value : TopicsInfo }) {
-    return o1.key.localeCompare(o2.key);
-    // return (this.concepts[o1.key]?.name ?? "").localeCompare(this.concepts[o2.key]?.name ?? "");
+  resolveTopic(topicId : string) {
+    if (confirm("Mark this discussion as resolved and disable further messages?")) {
+      this.run.emit(new ResolveTopic(parseInt(topicId), this.data));
+    }
+  }
+  newMessage(topicId : string, content : string) {
+    if (content) {
+      this.run.emit(new NewMessage(parseInt(topicId), content, this.data))
+    }
+  }
+  key() {
+    return `${this.cui ?? "-"}/${this.voc ?? "-"}/${this.code ?? "-"}`
   }
 }

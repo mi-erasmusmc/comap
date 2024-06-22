@@ -2,7 +2,7 @@
   <button mat-raised-button color="primary" (click)="close()">Close</button>
 </mat-dialog-actions>
 <mat-dialog-content class="form-fields">
-  <reviews-concept
+  <reviews
     *ngIf="getTopics(); let topics"
     [topicsInfo]="topics"
     [heading]="data.heading"
@@ -12,5 +12,5 @@
     [data]="data.data"
     [userIsEditor]="data.userIsEditor"
     (run)="data.run.emit($event)">
-  </reviews-concept>
+  </reviews>
 </mat-dialog-content>

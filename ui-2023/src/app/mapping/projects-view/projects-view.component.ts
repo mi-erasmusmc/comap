@@ -16,7 +16,6 @@ const DEFAULT_VOCABULARIES = ["ICD10CM", "SNOMEDCT_US"];
   styleUrls: ['./projects-view.component.scss']
 })
 export class ProjectsViewComponent {
-  mappings : { [key : string] : String[] } = {};
   projectPermissions : { [key : string] : Set<ProjectPermissions> } | null = null;
   newNames : { [key : string] : string } = {};
   constructor(
@@ -28,9 +27,6 @@ export class ProjectsViewComponent {
   ) {
     persistency.projectPermissions().subscribe((pp) => {
       this.projectPermissions = pp;
-      this.mappings = {};
-      for (let project of Object.keys(pp)) {
-      }
     });
   }
 }

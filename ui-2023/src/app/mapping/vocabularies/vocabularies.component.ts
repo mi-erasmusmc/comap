@@ -9,7 +9,7 @@ import { Concept, Mapping, Code, Vocabulary } from '../data';
 import * as ops from '../mapping-ops';
 
 @Component({
-  selector: 'mapping-vocabularies',
+  selector: 'vocabularies',
   templateUrl: './vocabularies.component.html',
   styleUrls: ['./vocabularies.component.scss']
 })

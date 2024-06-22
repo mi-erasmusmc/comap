@@ -16,7 +16,6 @@ import org.biosemantics.codemapper.Comment;
 import org.biosemantics.codemapper.MappingData;
 import org.biosemantics.codemapper.MappingData.Code;
 import org.biosemantics.codemapper.MappingData.Concept;
-import org.biosemantics.codemapper.SourceConcept;
 import org.biosemantics.codemapper.descendants.DescendersApi.Descendants;
 
 public class WriteTsvApi {
@@ -51,11 +50,11 @@ public class WriteTsvApi {
   @XmlRootElement
   public static class PreparedCode {
     public Code code;
-    public Collection<SourceConcept> descendants = new LinkedList<>();
+    public Collection<Code> descendants = new LinkedList<>();
     public String comments;
   }
 
-  PreparedMapping prepare(MappingData mapping, Descendants descendants) {
+  PreparedMapping prepare(MappingData mapping, Map<String, Descendants> descendants) {
     PreparedMapping prepared = new PreparedMapping();
     for (String voc : mapping.getVocabularies().keySet()) {
       Map<String, PreparedConcept> vocData =
@@ -66,9 +65,9 @@ public class WriteTsvApi {
         for (String code0 : concept.concept.getCodes().getOrDefault(voc, new LinkedList<>())) {
           Code code1 = mapping.getCodes().get(voc).get(code0);
           if (code1.isEnabled()) {
-            Collection<SourceConcept> codeDescendants =
+            Collection<Code> codeDescendants =
                 descendants
-                    .getOrDefault(voc, new HashMap<>())
+                    .getOrDefault(voc, new Descendants())
                     .getOrDefault(code0, new LinkedList<>());
             PreparedCode code = new PreparedCode();
             code.code = code1;
@@ -112,12 +111,12 @@ public class WriteTsvApi {
               "-");
           writtenCodes.add(code0);
           wroteCode = true;
-          for (SourceConcept code1 : code.descendants) {
+          for (Code code1 : code.descendants) {
             if (disabled.contains(code0)) continue;
             if (writtenCodes.contains(code1.getId())) continue;
             if (conceptCodes.contains(code1.getId())) continue;
             String origin = String.format("Desc: code %s", code0);
-            writeRow(output, voc, code1.getId(), code1.getPreferredTerm(), "-", "-", tag, origin);
+            writeRow(output, voc, code1.getId(), code1.getTerm(), "-", "-", tag, origin);
             writtenCodes.add(code1.getId());
           }
         }
@@ -155,7 +154,7 @@ public class WriteTsvApi {
   public void write(
       OutputStream output,
       MappingData mapping,
-      Descendants descendants,
+      Map<String, Descendants> descendants,
       List<Comment> comments,
       String project,
       String event,

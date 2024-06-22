@@ -1,4 +1,4 @@
-package org.biosemantics.codemapper.rest;
+package org.biosemantics.codemapper.descendants;
 
 import java.sql.Array;
 import java.sql.Connection;
@@ -15,7 +15,6 @@ import javax.sql.DataSource;
 import org.biosemantics.codemapper.CodeMapperException;
 import org.biosemantics.codemapper.SourceConcept;
 import org.biosemantics.codemapper.descendants.DescendersApi.SpecificDescender;
-import org.biosemantics.codemapper.descendants.UmlsDescender;
 
 public class UmlsTCDescender implements SpecificDescender {
 

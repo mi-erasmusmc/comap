@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -13,16 +14,18 @@ import { urlEncodedOptions } from '../app.module';
 })
 export class ApiService {
 
-  private baseUrl : string = environment.apiUrl + "/code-mapper";
-  private autocompleteUrl : string = this.baseUrl + "/autocomplete-code";
-  private searchUtsUrl : string = this.baseUrl + "/search-uts";
-  private conceptsUrl : string = this.baseUrl + "/umls-concepts";
-  private vocabulariesUrl : string = this.baseUrl + "/coding-systems";
-  private reviewUrl : string = environment.apiUrl + '/review';
-  private relatedConceptsUrl : string = this.baseUrl + '/related-concepts';
-  private peregrineIndexUrl : string = environment.peregrineUrl + '/index';
-  public downloadUrl : string = this.baseUrl + "/output-tsv";
-  public downloadJsonUrl : string = this.baseUrl + "/output-json";
+  private baseUrl : string = `${environment.apiUrl}/code-mapper`;
+  private autocompleteUrl : string = `${environment.apiUrl}/code-mapper/autocomplete-code`;
+  private searchUtsUrl : string = `${environment.apiUrl}/code-mapper/search-uts`;
+  private conceptsUrl : string = `${environment.apiUrl}/code-mapper/umls-concepts`;
+  private vocabulariesUrl : string = `${environment.apiUrl}/code-mapper/coding-systems`;
+  private broaderConceptsUrl : string = `${environment.apiUrl}/code-mapper/broader-concepts`;
+  private narrowerConceptsUrl : string = `${environment.apiUrl}/code-mapper/narrower-concepts`;
+  private descendantsUrl : string = `${environment.apiUrl}/code-mapper/descendants`;
+  public downloadUrl : string = `${environment.apiUrl}/code-mapper/output-tsv`;
+  public downloadJsonUrl : string = `${environment.apiUrl}/code-mapper/output-json`;
+  private reviewUrl : string = `${environment.apiUrl}/review`;
+  private peregrineIndexUrl : string = `${environment.peregrineUrl}/index`;
 
   constructor(private http : HttpClient) { }
 
@@ -35,6 +38,14 @@ export class ApiService {
       .pipe(map(concepts => concepts.map(compat.importConcept0)))
   }
 
+  descendants(vocId : string, codes : string[]) : Observable<Descendants> {
+    let params = new HttpParams().append("codingSystem", vocId);
+    for (let code of codes) {
+      params = params.append("codes", code);
+    }
+    return this.http.get<Descendants>(this.descendantsUrl, { params });
+  }
+
   searchUts(query : string, vocIds : VocabularyId[]) : Observable<ConceptsCodes> {
     let body = new URLSearchParams();
     body.append("query", query);
@@ -44,20 +55,24 @@ export class ApiService {
       ))
   }
 
-  expand(conceptId : ConceptId, vocIds : VocabularyId[], rels : string[], invRels : string[]) : Observable<ConceptsCodes> {
+  broaderConcepts(conceptId : ConceptId, vocIds : VocabularyId[]) : Observable<ConceptsCodes> {
     let body = new URLSearchParams();
     body.append("cuis", conceptId);
     for (let vocId of vocIds) {
       body.append("codingSystems", vocId);
     }
-    for (let rel of rels) {
-      body.append("relations", rel);
+    return this.http.post<compat.UmlsConcept[]>(this.broaderConceptsUrl, body, urlEncodedOptions)
+      .pipe(map(res => compat.importConcepts(res)))
+  }
+
+  narrowerConcepts(conceptId : ConceptId, vocIds : VocabularyId[]) : Observable<ConceptsCodes> {
+    let body = new URLSearchParams();
+    body.append("cuis", conceptId);
+    for (let vocId of vocIds) {
+      body.append("codingSystems", vocId);
     }
-    for (let rel of invRels) {
-      body.append("invRelations", rel);
-    }
-    return this.http.post<{ [key : ConceptId] : { [key : string] : compat.UmlsConcept[] } }>(this.relatedConceptsUrl, body, urlEncodedOptions)
-      .pipe(map(res => compat.importConcepts(Object.values(res[conceptId]).flat())))
+    return this.http.post<compat.UmlsConcept[]>(this.narrowerConceptsUrl, body, urlEncodedOptions)
+      .pipe(map(res => compat.importConcepts(res)))
   }
 
   vocabularies() : Observable<Vocabulary[]> {
@@ -226,3 +241,5 @@ export interface ImportedMapping {
   warnings : string[],
   csvContent : string;
 }
+
+export type Descendants = { [key : CodeId] : Code[] }

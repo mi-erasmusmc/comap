@@ -99,13 +99,13 @@ public class CodeMapperResource {
   @GET
   @Path("autocomplete-code")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<UmlsConcept> getCodeCompletions(
+  public Collection<UmlsConcept> getCodeCompletions(
       @Context User user,
       @QueryParam("str") String str,
       @QueryParam("codingSystem") String codingSystem) {
     AuthentificationApi.assertAuthentificated(user);
     try {
-      List<UmlsConcept> res = api.getCodeCompletions(str, codingSystem);
+      Collection<UmlsConcept> res = api.getCodeCompletions(str, codingSystem);
       System.out.println(res);
       return res;
     } catch (CodeMapperException e) {
@@ -168,79 +168,30 @@ public class CodeMapperResource {
   }
 
   @POST
-  @Path("related/hyponyms")
+  @Path("narrower-concepts")
   @Produces(MediaType.APPLICATION_JSON)
-  public Map<String, List<UmlsConcept>> getHyponyms(
+  public Collection<UmlsConcept> getNarrower(
       @FormParam("cuis") List<String> cuis,
       @FormParam("codingSystems") List<String> codingSystems,
-      @Context User user) {
-    AuthentificationApi.assertAuthentificated(user);
-    return getHyponymsOrHypernyms(cuis, codingSystems, true, user);
-  }
-
-  @POST
-  @Path("related/hypernyms")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Map<String, List<UmlsConcept>> getHypernyms(
-      @FormParam("cuis") List<String> cuis,
-      @FormParam("codingSystems") List<String> codingSystems,
-      @Context User user) {
-    AuthentificationApi.assertAuthentificated(user);
-    return getHyponymsOrHypernyms(cuis, codingSystems, false, user);
-  }
-
-  @POST
-  @Path("related-hypernyms-or-hyponyms")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Map<String, List<UmlsConcept>> getHyponymsOrHypernyms(
-      @FormParam("cuis") List<String> cuis,
-      @FormParam("codingSystems") List<String> codingSystems,
-      @FormParam("hyponymsNotHypernyms") boolean hyponymsNotHypernyms,
-      @Context User user) {
-    AuthentificationApi.assertAuthentificated(user);
-    logger.debug(
-        String.format(
-            "Get connected concepts %s of %s (%s)",
-            hyponymsNotHypernyms ? "hypo" : "hyper", cuis, user));
-    if (cuis.isEmpty()) return new TreeMap<>();
-    else {
-      try {
-        return api.getHyponymsOrHypernyms(cuis, codingSystems, hyponymsNotHypernyms);
-      } catch (CodeMapperException e) {
-        throw e.asWebApplicationException();
-      }
-    }
-  }
-
-  @POST
-  @Path("related-concepts")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Map<String, Map<String, List<UmlsConcept>>> getRelated(
-      @FormParam("cuis") List<String> cuis,
-      @FormParam("codingSystems") List<String> codingSystems,
-      @FormParam("relations") List<String> relations,
-      @FormParam("invRelations") List<String> invRelations,
       @Context User user) {
     AuthentificationApi.assertAuthentificated(user);
     try {
-      return api.getRelated(cuis, codingSystems, relations, invRelations);
+      return api.getNarrower(cuis, codingSystems);
     } catch (CodeMapperException e) {
       throw e.asWebApplicationException();
     }
   }
 
   @POST
-  @Path("suggest-concepts")
+  @Path("broader-concepts")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<UmlsConcept> getSimilarConcepts(
+  public Collection<UmlsConcept> getBroader(
       @FormParam("cuis") List<String> cuis,
       @FormParam("codingSystems") List<String> codingSystems,
-      @FormParam("missingCodingSystems") List<String> missingCodingSystems,
-      @FormParam("excludeCuis") List<String> excludeCuis,
       @Context User user) {
     AuthentificationApi.assertAuthentificated(user);
     try {
-      return api.getSimilarConcepts(cuis, missingCodingSystems, codingSystems, excludeCuis);
+      return api.getBroader(cuis, codingSystems);
     } catch (CodeMapperException e) {
       throw e.asWebApplicationException();
     }
@@ -301,7 +252,7 @@ public class CodeMapperResource {
       final MappingRevision revision = persistencyApi.getLatestRevision(project, caseDefinition);
       MappingData data = revision.parseMappingData();
 
-      final Descendants descendants;
+      final Map<String, Descendants> descendants;
       if (includeDescendants) {
         Map<String, Collection<String>> codesByVoc = new HashMap<>();
         for (String voc : data.getVocabularies().keySet()) {
@@ -312,7 +263,7 @@ public class CodeMapperResource {
         }
         descendants = CodeMapperApplication.getDescendantsApi().getDescendantCodes(codesByVoc);
       } else {
-        descendants = new Descendants();
+        descendants = new HashMap<String, Descendants>();
       }
       final List<Comment> comments = persistencyApi.getComments(project, caseDefinition);
       String filename =
@@ -394,7 +345,9 @@ public class CodeMapperResource {
     Map<String, Collection<String>> codesByVoc = new HashMap<>();
     codesByVoc.put(codingSystem, codes);
     try {
-      return CodeMapperApplication.getDescendantsApi().getDescendantCodes(codesByVoc);
+      return CodeMapperApplication.getDescendantsApi()
+          .getDescendantCodes(codesByVoc)
+          .getOrDefault(codingSystem, new Descendants());
     } catch (CodeMapperException e) {
       logger.error("Cannot get descendants", e);
       throw new InternalServerErrorException(e);

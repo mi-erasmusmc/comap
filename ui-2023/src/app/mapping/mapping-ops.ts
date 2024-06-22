@@ -244,14 +244,12 @@ export class AddCustomCode extends Operation {
     console.log("ADD", this);
     let concept = mapping.concepts[this.conceptId];
     expect(concept !== undefined, "invalid CUI for custom code", this.conceptId);
-    if (concept !== undefined) {
-      concept.codes[this.vocId] ??= new Set();
-      concept.codes[this.vocId].add(this.code.id);
-    }
+    concept.codes[this.vocId] ??= new Set();
+    concept.codes[this.vocId].add(this.code.id);
     mapping.codes[this.vocId] ??= {};
     expect(mapping.codes[this.vocId][this.code.id] === undefined);
     mapping.codes[this.vocId][this.code.id] = this.code;
-    return new RemoveCustomCode(this.vocId, this.code.id, this.conceptId);
+    return new RemoveCustomCode(this.vocId, this.code.id);
   }
 }
 
@@ -260,7 +258,6 @@ export class RemoveCustomCode extends Operation {
   constructor(
     readonly vocId : VocabularyId,
     readonly codeId : CodeId,
-    readonly conceptId : ConceptId,
   ) {
     super();
   }
@@ -271,13 +268,16 @@ export class RemoveCustomCode extends Operation {
 
   override run(mapping : Mapping) : Operation | undefined {
     let code = mapping.codes[this.vocId]?.[this.codeId];
-    expect(code !== undefined);
-    expect(code.custom);
-    let concept = mapping.concepts[this.conceptId];
+    expect(code !== undefined && code.custom);
+    let conceptIds = mapping.getConceptsByCode(this.vocId, this.codeId);
+    expect(conceptIds.length == 1, "custom code must be associated to one concept only");
+    let conceptId = conceptIds[0];
+    let concept = mapping.concepts[conceptId];
     expect(concept !== undefined);
     expect(concept.codes[this.vocId] !== undefined);
+    delete mapping.codes[this.vocId][this.codeId];
     concept.codes[this.vocId].delete(this.codeId);
-    return new AddCustomCode(this.vocId, code, this.conceptId);
+    return new AddCustomCode(this.vocId, code, conceptId);
   }
 }
 

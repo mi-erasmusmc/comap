@@ -4,6 +4,7 @@ import { environment } from '../../../src/environments/environment';
 import { filter, map } from 'rxjs/operators';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { urlEncodedOptions } from '../app.module';
+import { PersistencyService, ProjectsPermissions } from './persistency.service';
 
 export enum ProjectPermission {
   Editor, Commentator
@@ -21,6 +22,7 @@ export interface LoginResult {
 }
 
 type UserFunction = (user : User | null | PromiseLike<User | null>) => void;
+type ProjectsFunction = (projects : ProjectsPermissions | PromiseLike<ProjectsPermissions>) => void;
 
 @Injectable({
   providedIn: 'root'
@@ -30,19 +32,25 @@ export class AuthService {
   private url : string = environment.apiUrl + '/authentification'
   private resolveUser! : UserFunction;
   private rejectUser! : UserFunction;
+  private resolveProjects! : ProjectsFunction;
+  private rejectProjects! : ProjectsFunction;
   public redirectUrl : string | null = null;
 
   user : Promise<User | null> | User | null;
+  projects! : Promise<ProjectsPermissions>;
   userIsEditor : boolean = false;
   userSubject : BehaviorSubject<User | null> = new BehaviorSubject(null as User | null);
   private redirectURL : string | null = null
 
-  constructor(private http : HttpClient) {
+  constructor(
+    private http : HttpClient,
+    private persistency : PersistencyService,
+  ) {
     console.log("ENV", environment.name);
     this.user = new Promise((resolve, reject) => {
       this.resolveUser = resolve;
       this.rejectUser = reject;
-    })
+    });
     this.http.get<User | null>(this.url + '/user')
       .subscribe(
         (user) => {
@@ -53,6 +61,13 @@ export class AuthService {
         (err) => {
           this.rejectUser(err);
         });
+    this.projects = new Promise((resolve, reject) => {
+      this.resolveProjects = resolve;
+      this.rejectProjects = reject;
+    });
+    persistency.projectPermissions().subscribe((pps) => {
+      this.resolveProjects(pps);
+    });
   }
 
   login(username : string, password : string) : Observable<{ success : boolean, error : string | undefined, redirectUrl : string | null }> {

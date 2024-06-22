@@ -1,16 +1,7 @@
 <mat-toolbar>
-  <app-navigation>
-    <button
-      *ngIf="projectName != 'VAC4EU' && projectName != 'Tests'"
-      [routerLink]="['/project', projectName]"
-      routerLinkActive="false"
-      [routerLinkActiveOptions]="{exact: true}"
-      class="navigation-button"
-      mat-menu-item>
-      Project {{projectName}}
-    </button>
-  </app-navigation>
-  Codemapper:&nbsp;<span (click)="dump()">{{projectName}} &ndash; {{mappingName}}</span><span *ngIf="fresh" matTooltip="Needs save">*</span>
+  <app-navigation [project]="projectName"></app-navigation>
+  Mapping:&nbsp;<span (click)="dump()">{{mappingName}}<span *ngIf="fresh" matTooltip="Needs save">*</span> ({{projectName}}
+  </span>)
   <ng-container *ngIf="mapping != null">
     <span class="menu-spacer"></span>
     <button
@@ -79,15 +70,15 @@
       (reviewRun)="reviewRun($event)"></concepts>
   </mat-tab>
   <mat-tab label="Codes">
-    <mapping-codes
+    <codes
       *ngIf="!mapping.isEmpty() && mapping.numVocabularies() > 0"
       [mapping]="mapping"
       [allTopics]="allTopics"
       (run)="run($event)"
-      (reviewRun)="reviewRun($event)"></mapping-codes>
+      (reviewRun)="reviewRun($event)"></codes>
   </mat-tab>
   <mat-tab label="Vocabularies">
-    <mapping-vocabularies *ngIf="!mapping.isEmpty()" [mapping]="mapping" (run)="run($event)"></mapping-vocabularies>
+    <vocabularies *ngIf="!mapping.isEmpty()" [mapping]="mapping" (run)="run($event)"></vocabularies>
   </mat-tab>
   <!-- <mat-tab label="Review"> -->
   <!--   <reviews -->

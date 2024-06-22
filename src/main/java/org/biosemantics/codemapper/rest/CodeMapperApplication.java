@@ -45,7 +45,6 @@ import org.biosemantics.codemapper.authentification.AuthentificationApi;
 import org.biosemantics.codemapper.authentification.User;
 import org.biosemantics.codemapper.descendants.DescendersApi;
 import org.biosemantics.codemapper.descendants.DescendersApi.GeneralDescender;
-import org.biosemantics.codemapper.descendants.SnomedTCDescender;
 import org.biosemantics.codemapper.descendants.UmlsDescender;
 import org.biosemantics.codemapper.persistency.PersistencyApi;
 import org.biosemantics.codemapper.review.ReviewApi;
@@ -63,8 +62,6 @@ public class CodeMapperApplication extends ResourceConfig {
   // Property names
   private static final String AVAILABLE_CODING_SYSTEMS = "available-coding-systems";
   private static final String CODE_MAPPER_DB = "code-mapper-db";
-  private static final String SNOMEDCT_US_DB = "snomedct-db-us";
-  private static final String SNOMEDCT_SPA_DB = "snomedct-db-spa";
   private static final String CODEMAPPER_UMLS_VERSION = "codemapper-umls-version";
   private static final String CODEMAPPER_PROJECT_VERSION = "project.version";
   private static final String CODEMAPPER_CONTACT_EMAIL = "codemapper-contact-email";
@@ -122,10 +119,7 @@ public class CodeMapperApplication extends ResourceConfig {
   }
 
   public static void initialize() {
-    DataSource umlsConnectionPool,
-        codeMapperConnectionPool,
-        snomedctUsConnectionPool,
-        snomedctSpaConnectionPool;
+    DataSource umlsConnectionPool, codeMapperConnectionPool;
     NonUmlsTargets nonUmls;
 
     // Try loading the database driver. Necessary, otherwise database connections
@@ -141,8 +135,6 @@ public class CodeMapperApplication extends ResourceConfig {
     try {
       umlsConnectionPool = getConnectionPool(UMLS_DB);
       codeMapperConnectionPool = getConnectionPool(CODE_MAPPER_DB);
-      snomedctUsConnectionPool = getConnectionPool(SNOMEDCT_US_DB);
-      snomedctSpaConnectionPool = getConnectionPool(SNOMEDCT_SPA_DB);
       nonUmls = new NonUmlsTargets(codeMapperConnectionPool);
     } catch (SQLException | CodeMapperException e) {
       logger.error("Cannot create pooled data source");
@@ -191,30 +183,6 @@ public class CodeMapperApplication extends ResourceConfig {
 
     GeneralDescender umlsDescender = new UmlsDescender(umlsConnectionPool);
     descendersApi = new DescendersApi(umlsDescender, nonUmls);
-    // for the followings vocabularies, the transitive closure has been generated
-    for (String sab :
-        Arrays.asList(
-            "ICPC2ICD10DUT",
-            "ICPC2ICD10ENG",
-            "KCD5",
-            "ICPCDUT",
-            "LNC",
-            "ICPC2EDUT",
-            "MSH",
-            "MDR",
-            "RCD",
-            "ICPC2EENG",
-            "ICPC",
-            "MTHICD9",
-            "ICD10",
-            "ICD10CM",
-            "ICPC2P",
-            "RCD2",
-            "ICD9CM")) {
-      descendersApi.add(new UmlsTCDescender(sab, umlsConnectionPool));
-    }
-    descendersApi.add(new SnomedTCDescender("SNOMEDCT_US", snomedctUsConnectionPool));
-    descendersApi.add(new SnomedTCDescender("SCTSPA", snomedctSpaConnectionPool));
   }
 
   public static DataSource getConnectionPool(String prefix) throws SQLException {

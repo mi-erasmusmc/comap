@@ -13,13 +13,13 @@
 Next
 ----
 
-- a complete overhaul of the user interface
-- new tool to remap a mapping using the latest UMLS data
-- new tool to import a mapping from a spreadsheet
-- new pane to view, select, and, tag codes per coding system, and edit custom codes
-- new pane to view coding systems, and create and edit custom coding systems
-- new pane to view the revisions of a mapping
-- integrated non-umls coding systems (ICD10DA, RCD2)
+- complete overhaul of the user interface
+- import a mapping from a CSV file
+- remap a mapping using the latest UMLS data
+- review on codes
+- view, select and tag codes per coding system, and create custom codes
+- view coding systems, and create custom coding systems
+- integrated non-umls coding systems (ICD10DA, RCD2, MEDCODEID)
 
 October 4, 2023
 ----

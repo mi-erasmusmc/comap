@@ -17,14 +17,14 @@
     <mat-card-actions>
       <button
         matTooltip="Expand to concepts that are broader than the selected concept."
-        (click)="expandConcept(selectedConcepts[0], vocIds(), 'broader', ['PAR', 'RB'], ['CHD', 'RN'])"
+        (click)="broaderConcepts(selectedConcepts[0], vocIds())"
         [disabled]="selectedConcepts.length != 1"
         mat-stroked-button>
         Broader
       </button>
       <button
         matTooltip="Expand to concepts that are narrower than the selected concept"
-        (click)="expandConcept(selectedConcepts[0], vocIds(), 'narrower', ['CHD', 'RN'], ['PAR', 'RB'])"
+        (click)="narrowerConcepts(selectedConcepts[0], vocIds())"
         [disabled]="selectedConcepts.length != 1"
         mat-stroked-button>
         Narrower
@@ -53,7 +53,7 @@
         (click)="openDialog(indexer)"
         mat-stroked-button
         matTooltip="Search concepts in free text">
-        In free&#8209;text
+        Free&#8209;text
       </button>
     </mat-card-actions>
   </mat-card>

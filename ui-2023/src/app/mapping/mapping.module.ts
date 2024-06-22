@@ -41,9 +41,8 @@ import { VocabulariesTableComponent } from './vocabularies-table/vocabularies-ta
 import { VocabulariesDialogComponent } from './vocabularies-dialog/vocabularies-dialog.component';
 import { CustomVocabularyDialogComponent } from './custom-vocabulary-dialog/custom-vocabulary-dialog.component';
 import { CodeDialogComponent } from './code-dialog/code-dialog.component';
+import { ReviewsDialogComponent } from './reviews-dialog/reviews-dialog.component';
 import { ReviewsComponent } from './reviews/reviews.component';
-import { ReviewsConceptDialogComponent } from './reviews-concept-dialog/reviews-concept-dialog.component';
-import { ReviewsConceptComponent } from './reviews-concept/reviews-concept.component';
 import { NavigationComponent } from './navigation/navigation.component';
 import { ProjectsViewComponent } from './projects-view/projects-view.component';
 import { LoginFormComponent } from './login-form/login-form.component';
@@ -54,6 +53,8 @@ import { IndexerComponent } from './indexer/indexer.component';
 import { ImportCsvDialogComponent } from './import-csv-dialog/import-csv-dialog.component';
 import { EventsViewComponent } from './events-view/events-view.component';
 import { SortPipe } from './sort.pipe';
+import { CodesDialogComponent } from './codes-dialog/codes-dialog.component';
+import { CodesTableComponent } from './codes-table/codes-table.component';
 
 @NgModule({
   declarations: [
@@ -71,9 +72,8 @@ import { SortPipe } from './sort.pipe';
     VocabulariesTableComponent,
     CodeDialogComponent,
     CustomVocabularyDialogComponent,
+    ReviewsDialogComponent,
     ReviewsComponent,
-    ReviewsConceptDialogComponent,
-    ReviewsConceptComponent,
     NavigationComponent,
     ProjectsViewComponent,
     LoginFormComponent,
@@ -84,6 +84,8 @@ import { SortPipe } from './sort.pipe';
     ImportCsvDialogComponent,
     EventsViewComponent,
     SortPipe,
+    CodesDialogComponent,
+    CodesTableComponent,
   ],
   imports: [
     HttpClientModule,

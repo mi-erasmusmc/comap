@@ -1,8 +1,12 @@
-.navigation-button > mat-icon {
+.navigation-button > mat-icon.marker {
     display: none;
     margin-right: 0;
 }
 
-.navigation-button.active > mat-icon {
+.navigation-button.active > mat-icon.marker {
     display: inline-block;
+}
+
+mat-icon.list {
+    margin-right: 4px;
 }

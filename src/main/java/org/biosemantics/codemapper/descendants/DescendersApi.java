@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.biosemantics.codemapper.CodeMapperException;
@@ -45,16 +46,18 @@ public class DescendersApi {
   }
 
   /* Returns map from root codes to descendant source concepts */
-  public HashMap<String, Collection<SourceConcept>> getCodeDescendants(
-      String codingSystem, Collection<String> codes) throws CodeMapperException {
-    HashMap<String, Collection<SourceConcept>> res = new HashMap<>();
+  public Descendants getCodeDescendants(String codingSystem, Collection<String> codes)
+      throws CodeMapperException {
+    Descendants res = new Descendants();
     if (specificDescenders.containsKey(codingSystem)) {
       Map<String, Collection<SourceConcept>> descendants2 =
           specificDescenders.get(codingSystem).getDescendants(codes);
       for (String code : descendants2.keySet()) {
+        List<Code> descs =
+            descendants2.get(code).stream().map(SourceConcept::toCode).collect(Collectors.toList());
         res.merge(
             code,
-            descendants2.get(code),
+            descs,
             (v1, v2) -> {
               v1.addAll(v2);
               return v1;
@@ -69,9 +72,8 @@ public class DescendersApi {
       Map<String, Collection<Code>> descsByCui = nonUmls.getDescendants(cuis, codingSystem);
       for (String code : cuisByCodes.keySet()) {
         for (String cui : cuisByCodes.get(code)) {
-          Collection<SourceConcept> descs =
+          Collection<Code> descs =
               descsByCui.getOrDefault(cui, Collections.emptyList()).stream()
-                  .map((c) -> c.toSourceConcept(cui, codingSystem))
                   .collect(Collectors.toList());
           if (descs == null) {
             continue;
@@ -84,9 +86,11 @@ public class DescendersApi {
       Map<String, Collection<SourceConcept>> descendants2 =
           generalDescender.getDescendants(codes, codingSystem);
       for (String code : descendants2.keySet()) {
+        List<Code> descs =
+            descendants2.get(code).stream().map(SourceConcept::toCode).collect(Collectors.toList());
         res.merge(
             code,
-            descendants2.get(code),
+            descs,
             (v1, v2) -> {
               v1.addAll(v2);
               return v1;
@@ -96,12 +100,12 @@ public class DescendersApi {
     return res;
   }
 
-  /* Map coding system to root code to descendant source concept */
-  public static class Descendants extends HashMap<String, Map<String, Collection<SourceConcept>>> {
+  /* Codes to descendant codes */
+  public static class Descendants extends HashMap<String, Collection<Code>> {
     private static final long serialVersionUID = 1L;
   }
 
-  public Descendants getDescendants(Map<String, Map<String, Code>> codesByVoc)
+  public Map<String, Descendants> getDescendants(Map<String, Map<String, Code>> codesByVoc)
       throws CodeMapperException {
     Map<String, Collection<String>> codes = new HashMap<>();
     for (String voc : codesByVoc.keySet()) {
@@ -110,9 +114,9 @@ public class DescendersApi {
     return getDescendantCodes(codes);
   }
 
-  public Descendants getDescendantCodes(Map<String, Collection<String>> codesByVoc)
+  public Map<String, Descendants> getDescendantCodes(Map<String, Collection<String>> codesByVoc)
       throws CodeMapperException {
-    Descendants descendants = new Descendants();
+    HashMap<String, Descendants> descendants = new HashMap<>();
     for (String codingSystem : codesByVoc.keySet()) {
       Collection<String> codes = codesByVoc.get(codingSystem);
       descendants.put(codingSystem, getCodeDescendants(codingSystem, codes));

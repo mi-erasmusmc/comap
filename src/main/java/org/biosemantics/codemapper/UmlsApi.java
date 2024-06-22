@@ -72,14 +72,6 @@ public class UmlsApi {
   private static final String CUSTOM_DESCRIPTION =
       "Custom codes that were imported but have not been associated to a concept";
   private static final String CUSTOM_VERSION = "0";
-  private static final List<String> RELATIONS_MORE_GENERAL = Arrays.asList("RB", "PAR");
-  private static final List<String> RELATIONS_MORE_SPECIFIC = Arrays.asList("RN", "CHD");
-  private static final List<String> RELATIONS_MORE_SPECIFIC_OR_GENERAL =
-      Arrays.asList("RN", "RB", "PAR", "CHD");
-  private static final List<String> RELATIONS_LOCAL =
-      Arrays.asList("RL", "SY"); // the relationship is similar or "alike"
-
-  private static final int SIMILAR_CONCEPTS_MAX_DEPTH = 3;
   private static final String CUSTOM_CUI = "C0000000";
 
   private static Logger logger = LogManager.getLogger(UmlsApi.class);
@@ -226,14 +218,17 @@ public class UmlsApi {
     }
   }
 
-  public List<UmlsConcept> getCodeCompletions(String str, String codingSystem)
+  public Collection<UmlsConcept> getCodeCompletions(String str, String codingSystem)
       throws CodeMapperException {
     if (str == null || str.isEmpty()) return new LinkedList<>();
+    Collection<UmlsConcept> res = new LinkedList<>();
     if (codingSystem == null || nonUmls.is(codingSystem)) {
-      return nonUmls.getCodeCompletions(str, codingSystem);
-    } else {
-      return getUmlsCodeCompletions(str, codingSystem);
+      res.addAll(nonUmls.getCodeCompletions(str, codingSystem));
     }
+    if (codingSystem == null || !nonUmls.is(codingSystem)) {
+      res.addAll(getUmlsCodeCompletions(str, codingSystem));
+    }
+    return res;
   }
 
   List<UmlsConcept> getUmlsCodeCompletions(String str, String codingSystem)
@@ -340,38 +335,32 @@ public class UmlsApi {
       ignoreTermTypes = this.ignoreTermTypes;
     }
 
+    logger.debug(
+        String.format(
+            "get source concepts - %s - %s - %s",
+            cuis.stream().collect(Collectors.joining(",")),
+            codingSystems.stream().collect(Collectors.joining(",")),
+            ignoreTermTypes.stream().collect(Collectors.joining(","))));
+
     Map<String, List<SourceConcept>> sourceConcepts =
         nonUmls.getSourceConcepts(cuis, codingSystems);
 
-    String queryFmt =
+    String query =
         "SELECT DISTINCT cui, sab, code, str, tty "
             + "FROM MRCONSO "
-            + "WHERE cui IN (%s) "
-            + "AND sab IN (%s) "
+            + "WHERE cui = ANY(?) "
+            + "AND sab = ANY(?) "
             + "AND suppress != 'Y'"
-            + "AND tty NOT IN (%s)"
+            + "AND tty != ANY(?)"
             + "ORDER BY cui, sab, code, str";
-    String query =
-        String.format(
-            queryFmt,
-            Utils.sqlPlaceholders(cuis.size()),
-            Utils.sqlPlaceholders(codingSystems.size()),
-            Utils.sqlPlaceholders(ignoreTermTypes.size()));
 
     try (Connection connection = connectionPool.getConnection();
         PreparedStatement statement = connection.prepareStatement(query)) {
 
-      int offset = 1;
-
-      for (Iterator<String> iter = cuis.iterator(); iter.hasNext(); offset++)
-        statement.setString(offset, iter.next());
-
-      for (Iterator<String> iter = codingSystems.iterator(); iter.hasNext(); offset++)
-        statement.setString(offset, iter.next());
-
-      for (Iterator<String> iter = ignoreTermTypes.iterator(); iter.hasNext(); offset++)
-        statement.setString(offset, iter.next());
-
+      statement.setArray(1, connection.createArrayOf("VARCHAR", cuis.toArray()));
+      statement.setArray(2, connection.createArrayOf("VARCHAR", codingSystems.toArray()));
+      statement.setArray(3, connection.createArrayOf("VARCHAR", ignoreTermTypes.toArray()));
+      logger.debug(statement);
       ResultSet result = statement.executeQuery();
 
       String lastCui = null, lastSab = null, lastCode = null;
@@ -389,9 +378,9 @@ public class UmlsApi {
           currentSourceConcept.setId(code);
           currentSourceConcept.setTty(tty);
           currentSourceConcept.setPreferredTerm(str);
-          if (!sourceConcepts.containsKey(cui))
-            sourceConcepts.put(cui, new LinkedList<SourceConcept>());
-          sourceConcepts.get(cui).add(currentSourceConcept);
+          sourceConcepts
+              .computeIfAbsent(cui, key -> new LinkedList<SourceConcept>())
+              .add(currentSourceConcept);
         }
         if ("PT".equals(tty)) currentSourceConcept.setPreferredTerm(str);
         lastCui = cui;
@@ -406,6 +395,119 @@ public class UmlsApi {
     } catch (SQLException e) {
       throw CodeMapperException.server("Cannot execute query for source concepts", e);
     }
+  }
+
+  /// returns {cui -> [aui]}
+  private Map<String, Collection<String>> getCuiAuis(
+      Collection<String> sabs, Collection<String> cuis) throws CodeMapperException {
+    String query = "SELECT DISTINCT cui, aui FROM mrconso WHERE sab = ANY(?) AND cui = ANY(?)";
+
+    try (Connection connection = connectionPool.getConnection();
+        PreparedStatement statement = connection.prepareStatement(query)) {
+      statement.setArray(1, connection.createArrayOf("VARCHAR", sabs.toArray()));
+      statement.setArray(2, connection.createArrayOf("VARCHAR", cuis.toArray()));
+      ResultSet set = statement.executeQuery();
+      Map<String, Collection<String>> res = new HashMap<>();
+      while (set.next()) {
+        String cui = set.getString(1);
+        String aui = set.getString(2);
+        res.computeIfAbsent(cui, key -> new HashSet<>()).add(aui);
+      }
+      return res;
+    } catch (SQLException e) {
+      throw CodeMapperException.server("Cannot execute query for cui auis", e);
+    }
+  }
+
+  /// returns {cui -> [aui]}
+  private Map<String, Collection<String>> getAuiCuis(Collection<String> auis)
+      throws CodeMapperException {
+    String query = "SELECT DISTINCT aui, cui FROM mrconso WHERE aui = ANY(?)";
+
+    try (Connection connection = connectionPool.getConnection();
+        PreparedStatement statement = connection.prepareStatement(query)) {
+      statement.setArray(1, connection.createArrayOf("VARCHAR", auis.toArray()));
+      ResultSet set = statement.executeQuery();
+      Map<String, Collection<String>> res = new HashMap<>();
+      while (set.next()) {
+        String aui = set.getString(1);
+        String cui = set.getString(2);
+        res.computeIfAbsent(aui, key -> new HashSet<>()).add(cui);
+      }
+      return res;
+    } catch (SQLException e) {
+      throw CodeMapperException.server("Cannot execute query for cui auis", e);
+    }
+  }
+
+  private Map<String, String> getParentAuis(Collection<String> auis) throws CodeMapperException {
+    String query = "SELECT aui, paui FROM mrhier WHERE aui = ANY(?)";
+    try (Connection connection = connectionPool.getConnection();
+        PreparedStatement statement = connection.prepareStatement(query)) {
+      statement.setArray(1, connection.createArrayOf("VARCHAR", auis.toArray()));
+      ResultSet set = statement.executeQuery();
+      Map<String, String> res = new HashMap<>();
+      while (set.next()) {
+        String aui = set.getString(1);
+        String paui = set.getString(2);
+        res.put(aui, paui);
+      }
+      return res;
+    } catch (SQLException e) {
+      throw CodeMapperException.server("Cannot execute query for parent auis", e);
+    }
+  }
+
+  private Map<String, Collection<String>> getChildAuis(Collection<String> auis)
+      throws CodeMapperException {
+    String query = "SELECT aui, paui FROM mrhier WHERE paui = ANY(?)";
+    try (Connection connection = connectionPool.getConnection();
+        PreparedStatement statement = connection.prepareStatement(query)) {
+      statement.setArray(1, connection.createArrayOf("VARCHAR", auis.toArray()));
+      ResultSet set = statement.executeQuery();
+      Map<String, Collection<String>> res = new HashMap<>();
+      while (set.next()) {
+        String aui = set.getString(1);
+        String paui = set.getString(2);
+        res.computeIfAbsent(paui, key -> new HashSet<>()).add(aui);
+      }
+      return res;
+    } catch (SQLException e) {
+      throw CodeMapperException.server("Cannot execute query for child auis", e);
+    }
+  }
+
+  public Collection<UmlsConcept> getBroader(List<String> cuis, List<String> sabs)
+      throws CodeMapperException {
+    Collection<String> auis =
+        getCuiAuis(sabs, cuis).values().stream()
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
+    Map<String, String> parentAuis = getParentAuis(auis);
+    Collection<String> parentCuis =
+        getAuiCuis(parentAuis.values()).values().stream()
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
+    Map<String, UmlsConcept> concepts = getConcepts(parentCuis, sabs, null);
+    return concepts.values();
+  }
+
+  public Collection<UmlsConcept> getNarrower(List<String> cuis, List<String> sabs)
+      throws CodeMapperException {
+    Collection<String> auis =
+        getCuiAuis(sabs, cuis).values().stream()
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
+    Collection<String> allChildAuis =
+        getChildAuis(auis).values().stream()
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
+    Collection<String> allChildCuis =
+        getAuiCuis(allChildAuis).values().stream()
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
+    Map<String, UmlsConcept> concepts = getConcepts(allChildCuis, sabs, null);
+    return concepts.values();
   }
 
   /**
@@ -423,7 +525,7 @@ public class UmlsApi {
    *     cuis }
    * @throws CodeMapperException
    */
-  public Map<String, Map<String, List<UmlsConcept>>> getRelated(
+  public Map<String, Map<String, List<UmlsConcept>>> getRelated_MRREL(
       List<String> cuis,
       List<String> codingSystems,
       List<String> relations,
@@ -635,104 +737,104 @@ public class UmlsApi {
       return concepts;
     }
   }
+  /*
+    class Node {
+      final String cui;
+      final String relation;
 
-  class Node {
-    final String cui;
-    final String relation;
-
-    public Node(String cui, String relation) {
-      this.cui = cui;
-      this.relation = relation;
-    }
-
-    public String toString() {
-      return String.format("%s/%s", cui, relation);
-    }
-  }
-
-  public List<UmlsConcept> getSimilarConcepts(
-      List<String> cuis,
-      List<String> missingCodingSystems,
-      List<String> codingSystems,
-      List<String> excludeCuis0)
-      throws CodeMapperException {
-
-    if (cuis.isEmpty() || missingCodingSystems.isEmpty()) return Arrays.asList();
-
-    Set<String> excludedCuis = new HashSet<>(excludeCuis0);
-    Map<String, List<Node>> paths = new HashMap<>();
-    for (String cui : cuis) paths.put(cui, new LinkedList<Node>());
-
-    for (int i = 0; i <= SIMILAR_CONCEPTS_MAX_DEPTH; i++) {
-      Set<String> newCuis = new HashSet<>();
-      List<String> resultCuis = new LinkedList<>();
-      Map<String, List<String>> cuisByRel = new HashMap<>();
-      for (String cui : cuis) {
-        String rel = null;
-        List<Node> path = paths.get(cui);
-        if (path.size() > 0)
-          for (Node node : path)
-            if (RELATIONS_MORE_SPECIFIC_OR_GENERAL.contains(node.relation)) {
-              rel = node.relation;
-              break;
-            }
-        if (!cuisByRel.containsKey(rel)) cuisByRel.put(rel, new LinkedList<String>());
-        cuisByRel.get(rel).add(cui);
+      public Node(String cui, String relation) {
+        this.cui = cui;
+        this.relation = relation;
       }
-      Map<String, Map<String, List<UmlsConcept>>> relateds = new HashMap<>();
-      for (String rel0 : cuisByRel.keySet()) {
-        List<String> relations1;
-        if (rel0 == null) {
-          relations1 = new LinkedList<>(RELATIONS_MORE_SPECIFIC_OR_GENERAL);
-          // relations1.addAll(RELATIONS_SIBLING);
-        } else if (RELATIONS_MORE_SPECIFIC.contains(rel0))
-          relations1 = new LinkedList<>(RELATIONS_MORE_SPECIFIC);
-        else if (RELATIONS_MORE_GENERAL.contains(rel0))
-          relations1 = new LinkedList<>(RELATIONS_MORE_GENERAL);
-        else throw new RuntimeException("Impossible relation");
-        relations1.addAll(RELATIONS_LOCAL);
-        Map<String, Map<String, List<UmlsConcept>>> relateds1 =
-            getRelated(
-                cuisByRel.get(rel0),
-                missingCodingSystems,
-                new LinkedList<>(relations1),
-                new LinkedList<>());
-        for (String cui : relateds1.keySet()) {
-          if (!relateds.containsKey(cui))
-            relateds.put(cui, new HashMap<String, List<UmlsConcept>>());
-          for (String rel : relateds1.get(cui).keySet()) {
-            if (!relateds.get(cui).containsKey(rel))
-              relateds.get(cui).put(rel, new LinkedList<UmlsConcept>());
-            relateds.get(cui).get(rel).addAll(relateds1.get(cui).get(rel));
+
+      public String toString() {
+        return String.format("%s/%s", cui, relation);
+      }
+    }
+
+    public List<UmlsConcept> getSimilarConcepts(
+        List<String> cuis,
+        List<String> missingCodingSystems,
+        List<String> codingSystems,
+        List<String> excludeCuis0)
+        throws CodeMapperException {
+
+      if (cuis.isEmpty() || missingCodingSystems.isEmpty()) return Arrays.asList();
+
+      Set<String> excludedCuis = new HashSet<>(excludeCuis0);
+      Map<String, List<Node>> paths = new HashMap<>();
+      for (String cui : cuis) paths.put(cui, new LinkedList<Node>());
+
+      for (int i = 0; i <= SIMILAR_CONCEPTS_MAX_DEPTH; i++) {
+        Set<String> newCuis = new HashSet<>();
+        List<String> resultCuis = new LinkedList<>();
+        Map<String, List<String>> cuisByRel = new HashMap<>();
+        for (String cui : cuis) {
+          String rel = null;
+          List<Node> path = paths.get(cui);
+          if (path.size() > 0)
+            for (Node node : path)
+              if (RELATIONS_MORE_SPECIFIC_OR_GENERAL.contains(node.relation)) {
+                rel = node.relation;
+                break;
+              }
+          if (!cuisByRel.containsKey(rel)) cuisByRel.put(rel, new LinkedList<String>());
+          cuisByRel.get(rel).add(cui);
+        }
+        Map<String, Map<String, List<UmlsConcept>>> relateds = new HashMap<>();
+        for (String rel0 : cuisByRel.keySet()) {
+          List<String> relations1;
+          if (rel0 == null) {
+            relations1 = new LinkedList<>(RELATIONS_MORE_SPECIFIC_OR_GENERAL);
+            // relations1.addAll(RELATIONS_SIBLING);
+          } else if (RELATIONS_MORE_SPECIFIC.contains(rel0))
+            relations1 = new LinkedList<>(RELATIONS_MORE_SPECIFIC);
+          else if (RELATIONS_MORE_GENERAL.contains(rel0))
+            relations1 = new LinkedList<>(RELATIONS_MORE_GENERAL);
+          else throw new RuntimeException("Impossible relation");
+          relations1.addAll(RELATIONS_LOCAL);
+          Map<String, Map<String, List<UmlsConcept>>> relateds1 =
+              getRelated(
+                  cuisByRel.get(rel0),
+                  missingCodingSystems,
+                  new LinkedList<>(relations1),
+                  new LinkedList<>());
+          for (String cui : relateds1.keySet()) {
+            if (!relateds.containsKey(cui))
+              relateds.put(cui, new HashMap<String, List<UmlsConcept>>());
+            for (String rel : relateds1.get(cui).keySet()) {
+              if (!relateds.get(cui).containsKey(rel))
+                relateds.get(cui).put(rel, new LinkedList<UmlsConcept>());
+              relateds.get(cui).get(rel).addAll(relateds1.get(cui).get(rel));
+            }
           }
         }
+        for (String cui : relateds.keySet())
+          for (String rel : relateds.get(cui).keySet())
+            for (UmlsConcept concept : relateds.get(cui).get(rel))
+              if (!excludedCuis.contains(concept.getCui())) {
+                excludedCuis.add(concept.getCui());
+                List<Node> path = new LinkedList<>(paths.get(cui));
+                path.add(new Node(cui, rel));
+                paths.put(concept.getCui(), path);
+                if (!RELATIONS_LOCAL.contains(rel)) newCuis.add(concept.getCui());
+                for (SourceConcept sourceConcept : concept.getSourceConcepts())
+                  if (missingCodingSystems.contains(sourceConcept.getCodingSystem())) {
+                    resultCuis.add(concept.getCui());
+                    break;
+                  }
+              }
+        if (!resultCuis.isEmpty()) {
+          Map<String, UmlsConcept> concepts = getConcepts(resultCuis, codingSystems, null);
+          //                for (UmlsConcept concept: concepts.values())
+          //                    System.out.println(String.format(" - %s: %s", concept,
+          // paths.get(concept.getCui())));
+          return new LinkedList<>(concepts.values());
+        } else cuis = new LinkedList<>(newCuis);
       }
-      for (String cui : relateds.keySet())
-        for (String rel : relateds.get(cui).keySet())
-          for (UmlsConcept concept : relateds.get(cui).get(rel))
-            if (!excludedCuis.contains(concept.getCui())) {
-              excludedCuis.add(concept.getCui());
-              List<Node> path = new LinkedList<>(paths.get(cui));
-              path.add(new Node(cui, rel));
-              paths.put(concept.getCui(), path);
-              if (!RELATIONS_LOCAL.contains(rel)) newCuis.add(concept.getCui());
-              for (SourceConcept sourceConcept : concept.getSourceConcepts())
-                if (missingCodingSystems.contains(sourceConcept.getCodingSystem())) {
-                  resultCuis.add(concept.getCui());
-                  break;
-                }
-            }
-      if (!resultCuis.isEmpty()) {
-        Map<String, UmlsConcept> concepts = getConcepts(resultCuis, codingSystems, null);
-        //                for (UmlsConcept concept: concepts.values())
-        //                    System.out.println(String.format(" - %s: %s", concept,
-        // paths.get(concept.getCui())));
-        return new LinkedList<>(concepts.values());
-      } else cuis = new LinkedList<>(newCuis);
+      return Arrays.asList();
     }
-    return Arrays.asList();
-  }
-
+  */
   public VersionInfo getVersionInfo() {
     return this.versionInfo;
   }

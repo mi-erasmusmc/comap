@@ -1,46 +1,38 @@
-<button mat-icon-button [matMenuTriggerFor]="menu">
+<a mat-icon-button [matMenuTriggerFor]="menu">
   <mat-icon>menu</mat-icon>
-</button>
+</a>
 <mat-menu #menu="matMenu">
-  <button
+  <a
     routerLink="/"
     routerLinkActive="active"
     [routerLinkActiveOptions]="{exact: true}"
     class="navigation-button"
     mat-menu-item>
-    <mat-icon>chevron_right</mat-icon>Welcome
-  </button>
-  <button
+    <mat-icon class="marker">chevron_right</mat-icon>Welcome
+  </a>
+  <a
     routerLink="/projects"
     routerLinkActive="active"
     [routerLinkActiveOptions]="{exact: true}"
     class="navigation-button"
     mat-menu-item>
-    <mat-icon>chevron_right</mat-icon>All projects
-  </button>
-  <button
-    routerLink="/project/VAC4EU"
+    <mat-icon class="marker">chevron_right</mat-icon>All projects
+  </a>
+  <a
+    *ngFor="let proj of projects | async"
+    routerLink="/project/{{proj}}"
     routerLinkActive="active"
     [routerLinkActiveOptions]="{exact: true}"
     class="navigation-button"
     mat-menu-item>
-    <mat-icon>chevron_right</mat-icon>VAC4EU
-  </button>
-  <button
-    routerLink="/project/Tests"
-    routerLinkActive="active"
-    [routerLinkActiveOptions]="{exact: true}"
-    class="navigation-button"
-    mat-menu-item>
-    <mat-icon>chevron_right</mat-icon>Tests
-  </button>
-  <ng-content></ng-content>
-  <button
+    <mat-icon class="list">remove</mat-icon><mat-icon class="marker">chevron_right</mat-icon>{{proj}}
+  </a>
+  <a
     routerLink="/news"
     routerLinkActive="active"
     [routerLinkActiveOptions]="{exact: true}"
     class="navigation-button"
     mat-menu-item>
-    <mat-icon>chevron_right</mat-icon>News
-  </button>
+    <mat-icon class="marker">chevron_right</mat-icon>News
+  </a>
 </mat-menu>

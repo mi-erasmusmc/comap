@@ -3,7 +3,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dial
 import { ConceptId, VocabularyId, CodeId } from '../data';
 import { AllTopics, TopicsInfo, ReviewData, ReviewOperation } from '../review';
 
-export interface ReviewsConceptData {
+export interface ReviewsData {
   heading : string;
   cui : ConceptId | null;
   voc : VocabularyId | null;
@@ -15,14 +15,14 @@ export interface ReviewsConceptData {
 }
 
 @Component({
-  selector: 'app-reviews-concept-dialog',
-  templateUrl: './reviews-concept-dialog.component.html',
-  styleUrls: ['./reviews-concept-dialog.component.scss']
+  selector: 'app-reviews-dialog',
+  templateUrl: './reviews-dialog.component.html',
+  styleUrls: ['./reviews-dialog.component.scss']
 })
-export class ReviewsConceptDialogComponent {
+export class ReviewsDialogComponent {
   constructor(
-    public dialogRef : MatDialogRef<ReviewsConceptDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data : ReviewsConceptData,
+    public dialogRef : MatDialogRef<ReviewsDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data : ReviewsData,
   ) { }
   getTopics() : TopicsInfo {
     let res = null;

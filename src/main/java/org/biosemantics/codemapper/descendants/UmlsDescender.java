@@ -8,10 +8,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,10 +45,11 @@ public class UmlsDescender implements GeneralDescender {
   public Map<String, Collection<SourceConcept>> getDescendants(
       Collection<String> codes, String codingSystem) throws CodeMapperException {
     // {code -> {aui}}
-    Map<String, Collection<String>> auis = getAuis(codingSystem, codes);
+    Map<String, Collection<String>> auis = getCodeAuis(codingSystem, codes);
 
     // {aui -> {aui}}
-    Map<String, Collection<String>> descendantAuis = getDescendantAuis(concat(auis.values()));
+    Map<String, Collection<String>> descendantAuis =
+        getDescendantAuis(codingSystem, concat(auis.values()), true);
 
     // {aui -> SourceConcept}
     Map<String, SourceConcept> concepts =
@@ -52,7 +58,7 @@ public class UmlsDescender implements GeneralDescender {
     // {code -> {SourceConcept}}
     Map<String, Collection<SourceConcept>> res = new HashMap<>();
     for (String code : codes) {
-      Collection<SourceConcept> sourceConcepts = new LinkedList<>();
+      List<SourceConcept> sourceConcepts = new LinkedList<>();
       if (!auis.containsKey(code)) {
         continue;
       }
@@ -67,34 +73,28 @@ public class UmlsDescender implements GeneralDescender {
           sourceConcepts.add(concepts.get(subAui));
         }
       }
+      Collections.sort(sourceConcepts, Comparator.comparing(SourceConcept::getId));
       res.put(code, sourceConcepts);
     }
     return res;
   }
 
   /** Returns a mapping from codes to sets of auis. */
-  private Map<String, Collection<String>> getAuis(String codingSystem, Collection<String> codes)
+  public Map<String, Collection<String>> getCodeAuis(String codingSystem, Collection<String> codes)
       throws CodeMapperException {
-    String query = //
-        "SELECT DISTINCT code, aui FROM mrconso WHERE sab = ? AND code = ANY(?)";
+    String query = "SELECT DISTINCT code, aui FROM mrconso WHERE sab = ? AND code = ANY(?)";
 
     try (Connection connection = connectionPool.getConnection();
         PreparedStatement statement = connection.prepareStatement(query)) {
       statement.setString(1, codingSystem);
-      Array array = connection.createArrayOf("VARCHAR", codes.toArray());
-      statement.setArray(2, array);
-
-      logger.debug(statement);
-      ResultSet set = statement.executeQuery();
+      statement.setArray(2, connection.createArrayOf("VARCHAR", codes.toArray()));
 
       Map<String, Collection<String>> res = new HashMap<>();
+      ResultSet set = statement.executeQuery();
       while (set.next()) {
         String code = set.getString(1);
         String aui = set.getString(2);
-        if (!res.containsKey(code)) {
-          res.put(code, new HashSet<>());
-        }
-        res.get(code).add(aui);
+        res.computeIfAbsent(code, key -> new HashSet<>()).add(aui);
       }
       return res;
     } catch (SQLException e) {
@@ -102,71 +102,40 @@ public class UmlsDescender implements GeneralDescender {
     }
   }
 
-  /** Returns a mapping from super auis to sets of descendant auis. */
-  public Map<String, Collection<String>> getDescendantAuis(Collection<String> auis)
-      throws CodeMapperException {
+  Map<String, Collection<String>> getDescendantAuis(
+      String sab, Collection<String> auis1, boolean includeIndirect) throws CodeMapperException {
+    Set<String> auis = auis1.stream().collect(Collectors.toSet());
     if (auis.isEmpty()) {
       return new HashMap<>();
     }
-
-    String queryFmt = //
-        "WITH RECURSIVE descendants AS (\n"
-            + "    SELECT * FROM (VALUES %s) AS t(path)\n"
-            + "  UNION\n"
-            + "      SELECT * FROM (\n"
-            + "      WITH descendants_inner AS ( SELECT * FROM descendants )\n"
-            + "        SELECT DISTINCT ds.path || r.aui2\n"
-            + "        FROM descendants_inner ds INNER JOIN mrrel r\n"
-            + "        ON ds.path[array_upper(ds.path, 1)] = r.aui1\n"
-            + "        WHERE r.rel = 'CHD' AND r.aui2 IS NOT NULL AND r.aui2 != r.aui1\n"
-            + "      UNION\n"
-            + "        SELECT DISTINCT ds.path || r.aui1\n"
-            + "        FROM descendants_inner ds INNER JOIN mrrel r\n"
-            + "        ON ds.path[array_upper(ds.path, 1)] = r.aui2\n"
-            + "        WHERE r.rel = 'PAR' AND r.aui1 IS NOT NULL AND r.aui1 != r.aui2\n"
-            + "  ) t\n"
-            + ")\n"
-            + "SELECT DISTINCT ds.path FROM descendants ds;\n"
-            + "";
-    // apparently we can't use PreparedStatement.setString in values, so doing it
-    // manually here
-    StringBuffer buf = new StringBuffer();
-    for (String aui : auis) {
-      if (buf.length() > 0) {
-        buf.append(", ");
-      }
-      buf.append(String.format("('{\"%s\"}'::varchar[])", aui));
-    }
-    String query = String.format(queryFmt, buf);
-
+    String query = "SELECT aui, ptra FROM mrhier WHERE sab = ? AND ptra && ?";
     try (Connection connection = connectionPool.getConnection();
         PreparedStatement statement = connection.prepareStatement(query)) {
-
-      logger.debug(statement);
+      statement.setString(1, sab);
+      statement.setArray(2, connection.createArrayOf("VARCHAR", auis.toArray()));
+      Map<String, Collection<String>> res = new HashMap<>();
       ResultSet set = statement.executeQuery();
-
-      Map<String, Collection<String>> descendants = new HashMap<>();
       while (set.next()) {
-        String[] arr = (String[]) set.getArray(1).getArray();
-        if (arr.length > 1) {
-          String superId = arr[0];
-          String subId = arr[arr.length - 1];
-          if (!descendants.containsKey(superId)) {
-            descendants.put(superId, new HashSet<>());
+        String aui = set.getString(1);
+        String[] ptra = (String[]) set.getArray(2).getArray();
+        for (int i = 0; i < ptra.length; i++) {
+          String paui = ptra[i];
+          if (!auis.contains(paui)) {
+            continue;
           }
-          descendants.get(superId).add(subId);
+          res.computeIfAbsent(paui, key -> new HashSet<>()).add(aui);
         }
       }
-      return descendants;
+      return res;
     } catch (SQLException e) {
-      throw CodeMapperException.server("Cannot execute query for descendants", e);
+      logger.debug("ERROR", e);
+      throw CodeMapperException.server("Cannot execute query for decendant auis in mrhier", e);
     }
   }
 
-  public static Map<String, SourceConcept> getConcepts(
-      DataSource connectionPool, Collection<String> auis) throws CodeMapperException {
-    String query = //
-        "SELECT DISTINCT aui, code, str, ispref " + "FROM mrconso WHERE aui = ANY(?)";
+  static Map<String, SourceConcept> getConcepts(DataSource connectionPool, Collection<String> auis)
+      throws CodeMapperException {
+    String query = "SELECT DISTINCT aui, code, str, ispref FROM mrconso WHERE aui = ANY(?)";
 
     try (Connection connection = connectionPool.getConnection();
         PreparedStatement statement = connection.prepareStatement(query)) {

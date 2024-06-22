@@ -21,6 +21,7 @@ package org.biosemantics.codemapper;
 import java.util.Comparator;
 import java.util.Objects;
 import javax.xml.bind.annotation.XmlRootElement;
+import org.biosemantics.codemapper.MappingData.Code;
 
 @XmlRootElement
 public class SourceConcept implements Comparable<SourceConcept> {
@@ -53,6 +54,10 @@ public class SourceConcept implements Comparable<SourceConcept> {
     this.codingSystem = codingSystem;
     this.id = id;
     this.preferredTerm = preferredTerm;
+  }
+
+  public Code toCode() {
+    return new Code(id, preferredTerm, false, true, null);
   }
 
   @Override

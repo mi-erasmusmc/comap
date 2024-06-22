@@ -1,12 +1,12 @@
 import { Input, Component, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { MatDialog, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { SelectionModel } from '@angular/cdk/collections';
-import { ReviewsConceptDialogComponent } from '../reviews-concept-dialog/reviews-concept-dialog.component';
+import { ReviewsDialogComponent } from '../reviews-dialog/reviews-dialog.component';
 import { Concept, Vocabulary, VocabularyId, ConceptId, CodeId, Code } from '../data';
 import { AllTopics, TopicsInfo, ReviewData, ReviewOperation } from '../review';
 import { AuthService } from '../auth.service';
 
-const BASE_COLUMNS = ["select", "concept", "tags", "review"];
+const BASE_COLUMNS = ["select", "concept", "tag", "review"];
 
 function sortConcepts(c1 : Concept, c2 : Concept) : number {
   return (c1.name ?? "").localeCompare(c2.name ?? "");
@@ -19,12 +19,11 @@ function sortConcepts(c1 : Concept, c2 : Concept) : number {
 })
 export class ConceptsTableComponent {
   @Input() concepts : { [key : ConceptId] : Concept } = {};
-  @Input() allTopics! : AllTopics;
+  @Input() allTopics : AllTopics | null = null;
   @Input() codes : { [key : VocabularyId] : { [key : CodeId] : Code } } = {};
   @Input() vocabularies : VocabularyId[] = [];
   @Input() reviewData : ReviewData = new ReviewData();
-  @Input() hideTagsColumn : boolean = false;
-  @Input() hideReviewsColumn : boolean = false;
+  @Input() hideTagColumn : boolean = false;
   @Input() disabled : boolean = false;
   @Input() showCodeTagIndication : boolean = false;
   @Output() reviewRun : EventEmitter<ReviewOperation> = new EventEmitter();
@@ -45,16 +44,16 @@ export class ConceptsTableComponent {
   }
 
   ngOnChanges(changes : SimpleChanges) {
-    if (changes['allTopics'] !== undefined) {
+    if (changes['allTopics']) {
       this.allTopicsObj.allTopics = changes['allTopics'].currentValue;
     }
     this.columns = Object.assign([], BASE_COLUMNS);
     let off = 2;
-    if (this.hideTagsColumn) {
-      this.columns = this.columns.filter(c => c != "tags");
+    if (this.hideTagColumn) {
+      this.columns = this.columns.filter(c => c != "tag");
       off--;
     }
-    if (this.hideReviewsColumn) {
+    if (!this.allTopics) {
       this.columns = this.columns.filter(c => c != "review");
       off--;
     }
@@ -96,9 +95,9 @@ export class ConceptsTableComponent {
   }
 
   showReviews(cui : ConceptId) {
-    const dialogRef = this.dialog.open(ReviewsConceptDialogComponent, {
+    const dialogRef = this.dialog.open(ReviewsDialogComponent, {
       data: {
-        heading: `Concept ${cui}: ${this.concepts[cui].name}`,
+        heading: `Review of oncept ${cui}: ${this.concepts[cui].name}`,
         cui,
         allTopicsObj: this.allTopicsObj,
         data: this.reviewData,

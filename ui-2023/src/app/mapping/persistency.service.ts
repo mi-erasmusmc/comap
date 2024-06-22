@@ -9,6 +9,8 @@ export type ProjectPermission = 'Editor' | 'Commentator';
 
 export type ProjectPermissions = Set<ProjectPermission>;
 
+export type ProjectsPermissions = { [key : string] : Set<ProjectPermissions> }
+
 @Injectable({
   providedIn: 'root'
 })
@@ -18,7 +20,7 @@ export class PersistencyService {
   constructor(private http : HttpClient) { }
 
   projectPermissions() {
-    return this.http.get<{ [key : string] : Set<ProjectPermissions> }>(this.url + '/project-permissions');
+    return this.http.get<ProjectsPermissions>(this.url + '/project-permissions');
   }
 
   mappings(project : string) {
